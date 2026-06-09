@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Profile — Contradiction of S</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .profile-saved-banner {
+      display: none;
+      background: var(--burgundy);
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .profile-saved-banner.visible { display: block; }
+    .profile-avatar-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 20px 0;
+    }
+    .profile-avatar-thumb {
+      width: 72px;
+      height: 96px;
+      border: 2px dashed rgba(92,26,26,0.2);
+      border-radius: 3px;
+      background: var(--bg);
+      flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .profile-avatar-thumb img {
+      position: absolute;
+      width: 100%; height: 100%;
+      object-fit: contain;
+    }
+    .profile-avatar-thumb img.raw-layer {
+      mix-blend-mode: multiply;
+    }
+    .profile-avatar-thumb .no-avatar {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.5;
+      padding: 4px;
+    }
+    .profile-avatar-thumb a {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--burgundy);
+      background: rgba(240,234,224,0.85);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .profile-avatar-thumb:hover a { opacity: 1; }
+    .profile-intro {
+      flex: 1;
+    }
+    .profile-intro .name-label {
+      font-family: 'IM Fell English', serif;
+      font-size: 18px;
+      color: var(--ink);
+      margin-bottom: 2px;
+      min-height: 24px;
+    }
+    .profile-intro .name-empty {
+      font-style: italic;
+      color: var(--muted);
+    }
+    .profile-intro .bio-preview {
+      font-size: 12px;
+      color: var(--warm-gray);
+      font-style: italic;
+      font-family: 'IM Fell English', serif;
+      line-height: 1.5;
+    }
+    .saved-name-row {
+      padding: 12px 20px 0;
+      display: none;
+    }
+    .saved-name-row.visible { display: block; }
+    .saved-name-row .snr-label {
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--warm-gray);
+      margin-bottom: 3px;
+    }
+    .saved-name-row .snr-name {
+      font-family: 'IM Fell English', serif;
+      font-size: 18px;
+      color: var(--burgundy);
+    }
+    .char-count {
+      font-size: 10px;
+      color: var(--muted);
+      text-align: right;
+      margin-top: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div id="saved-banner" class="profile-saved-banner">Profile saved</div>
+
+    <div class="page-header">
+      <div class="eyebrow">Who you are</div>
+      <h1 class="page-title">Your <em>Profile</em></h1>
+    </div>
+
+    <!-- Avatar + current info -->
+    <div class="profile-avatar-row">
+      <div class="profile-avatar-thumb" id="profile-avatar-thumb">
+        <div class="no-avatar" id="no-avatar-msg">No avatar yet</div>
+        <a href="avatar.html">Edit</a>
+      </div>
+      <div class="profile-intro">
+        <div class="name-label" id="preview-name"><span class="name-empty"><em>no name</em></span></div>
+        <div class="bio-preview" id="preview-bio"></div>
+      </div>
+    </div>
+
+    <div class="saved-name-row" id="identity-row">
+      <div class="snr-label">Condition</div>
+      <div class="snr-name" id="identity-val"></div>
+    </div>
+
+    <!-- Form -->
+    <div class="section" style="padding-top: 24px;">
+      <div class="card" style="margin: 0;">
+        <div class="field">
+          <label class="field-label" for="input-name">Your name</label>
+          <input class="field-input" id="input-name" type="text" placeholder="What do people call you?" maxlength="60" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="field-label" for="input-bio">A few words about yourself</label>
+          <textarea class="field-textarea" id="input-bio" placeholder="Who are you, in this moment?" maxlength="300"></textarea>
+          <div class="char-count"><span id="bio-chars">0</span>/300</div>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label class="field-label" for="input-location">Where you are</label>
+          <input class="field-input" id="input-location" type="text" placeholder="A city, a feeling, a room…" maxlength="80" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="padding-top: 16px;">
+      <button class="btn btn-primary" id="save-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3zm3-10H5V5h10v4z"/></svg>
+        Save profile
+      </button>
+    </div>
+
+
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</a>
+    <a href="profile.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>Profile</a>
+    <a href="avatar.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 110 10A5 5 0 0112 2zm0 12c5.3 0 8 2.7 8 4v2H4v-2c0-1.3 2.7-4 8-4z"/></svg>Avatar</a>
+    <a href="archive.html" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>Archive</a>
+  </nav>
+
+  <script src="js/app.js"></script>
+  <script>
+    const nameInput     = document.getElementById('input-name');
+    const bioInput      = document.getElementById('input-bio');
+    const locationInput = document.getElementById('input-location');
+    const saveBtn       = document.getElementById('save-btn');
+    const bioChars      = document.getElementById('bio-chars');
+
+    // Load existing profile
+    const p = App.getProfile();
+    if (p.name)     nameInput.value     = p.name;
+    if (p.bio)      bioInput.value      = p.bio;
+    if (p.location) locationInput.value = p.location;
+    updatePreview();
+    updateBioCount();
+
+    // Identity (Colour of Condition + Shape of Condition)
+    const identity = App.getAvatarIdentity();
+    if (identity && identity.colour && identity.shape) {
+      const row = document.getElementById('identity-row');
+      row.classList.add('visible');
+      document.getElementById('identity-val').textContent = `${identity.colour} ${identity.shape}`;
+    }
+
+    // Avatar portrait — prefer the saved flattened image over layer reconstruction
+    const portrait = App.getAvatarPortrait();
+    const state    = App.getAvatarState();
+    const thumb    = document.getElementById('profile-avatar-thumb');
+
+    if (portrait) {
+      document.getElementById('no-avatar-msg').style.display = 'none';
+      const img = document.createElement('img');
+      img.src = portrait;
+      img.alt = 'Avatar portrait';
+      thumb.appendChild(img);
+    } else if (state && state.layers) {
+      // Fallback: reconstruct from layers (no distortion, no drawing)
+      document.getElementById('no-avatar-msg').style.display = 'none';
+      const sorted = state.layers
+        .filter(l => l.visible !== false)
+        .sort((a, b) => (a.z || 1) - (b.z || 1));
+      sorted.forEach(l => {
+        const img = document.createElement('img');
+        img.src = l.src;
+        img.style.zIndex = l.z || 1;
+        if (l.raw) img.classList.add('raw-layer');
+        thumb.appendChild(img);
+      });
+    }
+
+    bioInput.addEventListener('input', () => { updateBioCount(); updatePreview(); });
+    nameInput.addEventListener('input', updatePreview);
+
+    function updateBioCount() {
+      bioChars.textContent = bioInput.value.length;
+    }
+    function updatePreview() {
+      const nameEl = document.getElementById('preview-name');
+      const bioEl  = document.getElementById('preview-bio');
+      if (nameInput.value.trim()) {
+        nameEl.textContent = nameInput.value.trim();
+        nameEl.classList.remove('name-empty');
+      } else {
+        nameEl.innerHTML = '<em class="name-empty">no name</em>';
+      }
+      bioEl.textContent = bioInput.value.slice(0, 60) + (bioInput.value.length > 60 ? '…' : '');
+    }
+
+    saveBtn.addEventListener('click', () => {
+      App.saveProfile({
+        name: nameInput.value.trim(),
+        bio:  bioInput.value.trim(),
+        location: locationInput.value.trim(),
+      });
+      const banner = document.getElementById('saved-banner');
+      banner.classList.add('visible');
+      setTimeout(() => banner.classList.remove('visible'), 2000);
+    });
+  </script>
+</body>
+</html>

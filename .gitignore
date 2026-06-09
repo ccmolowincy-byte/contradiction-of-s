@@ -1,0 +1,25 @@
+# ── Large source FBX files — NEVER commit these ──────────────────────────────
+# Each of the sculpture FBX files exceeds GitHub's 100MB file size limit.
+# The homepage title FBX has been converted to web/assets/title.glb — keep it out too.
+*.fbx
+
+# ── Source / working files not needed for deployment ─────────────────────────
+convert_title.py
+Home page.JPG
+Home page title default texture.png
+Hand drawn star stickers/
+preprocessing/
+Style reference/
+UI Reference/
+Name Library/
+Custom Icons/
+Font/
+
+# ── Local development files ────────────────────────────────────────────────────
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# ── Claude internal files ──────────────────────────────────────────────────────
+.claude/

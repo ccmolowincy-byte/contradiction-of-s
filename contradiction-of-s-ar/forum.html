@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>The Body Forum — Contradiction of S</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <style>
+    /* ── Reset & Base ────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #faf8f5;
+      --card:        #ffffff;
+      --text:        #2a2225;
+      --text-muted:  #9a8f95;
+      --rose:        #b5748a;
+      --rose-light:  #f2e4ea;
+      --sage:        #7a9e8e;
+      --sage-light:  #e4eeea;
+      --terra:       #c97b5a;
+      --terra-light: #f5e8e0;
+      --border:      #ede5dc;
+      --shadow:      0 2px 20px rgba(42, 34, 37, 0.07);
+      --radius:      18px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; font-weight: 400; }
+
+    /* ── Overlay / Modals ───────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(30, 20, 25, 0.55);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .overlay.hidden { display: none; }
+
+    .modal {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      max-width: 520px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+    }
+
+    /* ── Setup Modal ────────────────────────────────── */
+    .setup-step { display: none; }
+    .setup-step.active { display: block; }
+
+    .setup-step h2 {
+      font-size: 1.7rem;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .setup-step > p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 28px;
+    }
+
+    .step-indicator {
+      display: flex; gap: 8px; margin-bottom: 28px;
+    }
+    .step-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+    .step-dot.active { background: var(--rose); }
+
+    /* Avatar grid */
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .avatar-card {
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 12px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      background: var(--bg);
+    }
+    .avatar-card:hover { border-color: var(--rose); transform: translateY(-2px); }
+    .avatar-card.selected {
+      border-color: var(--rose);
+      background: var(--rose-light);
+      box-shadow: 0 0 0 3px rgba(181,116,138,0.2);
+    }
+    .avatar-card svg {
+      width: 100%; max-width: 110px; height: auto;
+      display: block; margin: 0 auto 8px;
+    }
+    .avatar-card-name {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Name step */
+    .name-suggestions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 18px;
+    }
+    .name-pill {
+      padding: 6px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 100px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+      background: var(--bg);
+    }
+    .name-pill:hover, .name-pill.chosen { border-color: var(--rose); background: var(--rose-light); color: var(--rose); }
+
+    input[type="text"], textarea {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, textarea:focus { border-color: var(--rose); }
+    textarea { resize: vertical; min-height: 120px; }
+
+    /* Draw step */
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto 20px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid var(--border);
+      aspect-ratio: 1;
+    }
+    .canvas-wrapper img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    #avatar-canvas {
+      position: absolute; inset: 0;
+      width: 100% !important; height: 100% !important;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .drawing-tools {
+      display: flex; flex-direction: column; gap: 14px;
+      margin-bottom: 24px;
+    }
+    .tool-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .tool-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; min-width: 50px; }
+
+    .color-swatch {
+      width: 28px; height: 28px; border-radius: 50%;
+      cursor: pointer; border: 2.5px solid transparent;
+      transition: transform 0.15s;
+    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.active { border-color: var(--text); transform: scale(1.15); }
+
+    .size-btn {
+      width: 34px; height: 34px;
+      border: 1.5px solid var(--border);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg);
+      transition: all 0.15s;
+    }
+    .size-btn:hover, .size-btn.active { border-color: var(--rose); background: var(--rose-light); }
+    .size-dot { border-radius: 50%; background: var(--text); }
+
+    .tool-btn {
+      padding: 7px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 100px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      background: var(--bg);
+      transition: all 0.15s;
+    }
+    .tool-btn:hover, .tool-btn.active { border-color: var(--rose); background: var(--rose-light); color: var(--rose); }
+    .tool-btn.danger:hover { border-color: #e05a5a; background: #fde8e8; color: #e05a5a; }
+
+    /* Buttons */
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--rose);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+    }
+    .btn-primary:hover { background: #a56278; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(181,116,138,0.3); }
+    .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-back {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 0.85rem;
+      padding: 0; margin-bottom: 20px;
+      font-family: inherit;
+    }
+    .btn-back:hover { color: var(--text); }
+
+    /* ── Navigation ─────────────────────────────────── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(250,248,245,0.9);
+      backdrop-filter: blur(10px);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .nav-ar-link {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: color 0.2s;
+    }
+    .nav-ar-link:hover { color: var(--text); }
+    .nav-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .user-chip {
+      display: flex; align-items: center; gap: 9px;
+      cursor: pointer; padding: 5px 12px 5px 5px;
+      border: 1.5px solid var(--border);
+      border-radius: 100px;
+      transition: border-color 0.2s;
+      background: var(--card);
+    }
+    .user-chip:hover { border-color: var(--rose); }
+    .user-chip-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+    .user-chip-name { font-size: 0.82rem; font-weight: 500; }
+
+    /* ── Header ─────────────────────────────────────── */
+    .forum-header {
+      text-align: center;
+      padding: 56px 24px 40px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .forum-header h1 { font-size: 2.8rem; line-height: 1.1; margin-bottom: 14px; }
+    .forum-header p { color: var(--text-muted); font-size: 1rem; line-height: 1.7; }
+    .forum-header .tagline {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 6px 18px;
+      background: var(--rose-light);
+      color: var(--rose);
+      border-radius: 100px;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Forum Container ────────────────────────────── */
+    .forum-container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+
+    /* Actions bar */
+    .forum-actions {
+      display: flex; flex-direction: column; gap: 16px;
+      margin-bottom: 32px;
+    }
+    .btn-new-post {
+      width: 100%;
+      padding: 16px;
+      background: var(--card);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      display: flex; align-items: center; gap: 14px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-new-post:hover { border-color: var(--rose); background: var(--rose-light); }
+    .btn-new-post-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--border); }
+    .btn-new-post-text { color: var(--text-muted); font-size: 0.95rem; }
+
+    /* Tag filters */
+    .tag-filters {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .tag-filter {
+      padding: 5px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 100px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      transition: all 0.15s;
+      background: var(--bg);
+    }
+    .tag-filter:hover { border-color: currentColor; }
+    .tag-filter.active { color: white; border-color: transparent; }
+
+    /* ── Posts Feed ──────────────────────────────────── */
+    .posts-feed { display: flex; flex-direction: column; gap: 20px; }
+
+    .post-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      transition: box-shadow 0.2s;
+    }
+    .post-card:hover { box-shadow: 0 4px 28px rgba(42,34,37,0.1); }
+
+    .post-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .post-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .post-meta { flex: 1; }
+    .post-author { font-weight: 500; font-size: 0.9rem; }
+    .post-time { font-size: 0.75rem; color: var(--text-muted); }
+
+    .post-content {
+      font-size: 0.97rem;
+      line-height: 1.75;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-bottom: 16px;
+    }
+
+    .post-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+    .post-tag {
+      padding: 3px 11px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      color: white;
+    }
+
+    .post-actions { display: flex; align-items: center; gap: 16px; }
+    .action-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: none; border: none; cursor: pointer;
+      font-size: 0.82rem; color: var(--text-muted);
+      font-family: inherit; padding: 6px 10px;
+      border-radius: 8px; transition: all 0.15s;
+    }
+    .action-btn:hover { background: var(--bg); color: var(--text); }
+    .action-btn.hearted { color: var(--rose); }
+    .action-btn .icon { font-size: 1rem; }
+
+    /* Replies */
+    .replies-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+    .replies-section.open { display: block; }
+    .reply-card {
+      display: flex; gap: 10px;
+      margin-bottom: 12px;
+    }
+    .reply-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .reply-bubble {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 10px 14px;
+      flex: 1;
+    }
+    .reply-author { font-size: 0.78rem; font-weight: 500; margin-bottom: 3px; }
+    .reply-content { font-size: 0.87rem; color: var(--text); }
+
+    .reply-input-row {
+      display: flex; gap: 10px; margin-top: 12px; align-items: flex-start;
+    }
+    .reply-input {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 0.87rem;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      resize: none;
+      min-height: 42px;
+      max-height: 120px;
+      transition: border-color 0.2s;
+    }
+    .reply-input:focus { border-color: var(--rose); }
+    .reply-submit {
+      padding: 10px 16px;
+      background: var(--rose);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .reply-submit:hover { background: #a56278; }
+
+    /* Empty / Loading states */
+    .state-message {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .state-message p { margin-top: 8px; font-size: 0.9rem; }
+
+    /* ── Post Modal ──────────────────────────────────── */
+    .post-modal-inner {
+      position: relative;
+    }
+    .close-btn {
+      position: absolute; top: 0; right: 0;
+      background: none; border: none;
+      font-size: 1.4rem; cursor: pointer;
+      color: var(--text-muted); line-height: 1;
+      padding: 4px;
+    }
+    .close-btn:hover { color: var(--text); }
+
+    .post-modal-inner h3 {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      padding-right: 30px;
+    }
+
+    .post-user-preview {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 18px;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: 12px;
+    }
+    .post-user-preview img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+    .post-user-preview span { font-size: 0.9rem; font-weight: 500; }
+
+    .char-count { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 6px; margin-bottom: 18px; }
+
+    .tag-selector p { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .tag-selector-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 24px; }
+    .tag-toggle {
+      padding: 5px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 100px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      background: var(--bg);
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .tag-toggle.selected { color: white; border-color: transparent; }
+
+    /* ── Scrollbar ───────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 480px) {
+      .modal { padding: 28px 20px; }
+      .forum-header h1 { font-size: 2.1rem; }
+      .avatar-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+     SETUP MODAL
+════════════════════════════════════════════════ -->
+<div class="overlay" id="setup-overlay">
+  <div class="modal">
+
+    <!-- Step dots -->
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
+    </div>
+
+    <!-- Step 1: Choose avatar -->
+    <div class="setup-step active" id="step-1">
+      <h2>Choose your character</h2>
+      <p>Each OC is an original character from the artist's world. Pick the one that speaks to you.</p>
+      <div class="avatar-grid" id="avatar-grid"></div>
+      <button class="btn-primary" id="next-1" onclick="goStep(2)" disabled>Next →</button>
+    </div>
+
+    <!-- Step 2: Name -->
+    <div class="setup-step" id="step-2">
+      <button class="btn-back" onclick="goStep(1)">← Back</button>
+      <h2>Give yourself a name</h2>
+      <p>This name is yours alone — it identifies you here, anonymously. No real names needed.</p>
+      <div class="name-suggestions" id="name-suggestions"></div>
+      <input type="text" id="name-input" placeholder="or write your own…" maxlength="25"
+             oninput="onNameInput()" />
+      <button class="btn-primary" id="next-2" onclick="goStep(3)" disabled style="margin-top:18px">Next →</button>
+    </div>
+
+    <!-- Step 3: Draw -->
+    <div class="setup-step" id="step-3">
+      <button class="btn-back" onclick="goStep(2)">← Back</button>
+      <h2>Make it yours</h2>
+      <p>Draw over your character with your finger. Add colour, marks, feeling. This becomes your identity here.</p>
+
+      <div class="canvas-wrapper" id="canvas-wrapper">
+        <img id="avatar-base-img" alt="avatar base" />
+        <canvas id="avatar-canvas" width="600" height="600"></canvas>
+      </div>
+
+      <div class="drawing-tools">
+        <div class="tool-row">
+          <span class="tool-label">Colour</span>
+          <div id="color-swatches"></div>
+        </div>
+        <div class="tool-row">
+          <span class="tool-label">Size</span>
+          <div id="size-buttons"></div>
+        </div>
+        <div class="tool-row">
+          <span class="tool-label">Tool</span>
+          <button class="tool-btn active" id="btn-pen" onclick="setTool('pen')">✏️ Pen</button>
+          <button class="tool-btn" id="btn-eraser" onclick="setTool('eraser')">⬜ Eraser</button>
+          <button class="tool-btn danger" onclick="clearCanvas()">Clear</button>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="saveAndEnter()">Enter the Forum →</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     POST CREATION MODAL
+════════════════════════════════════════════════ -->
+<div class="overlay hidden" id="post-overlay">
+  <div class="modal post-modal-inner">
+    <button class="close-btn" onclick="closePostModal()">×</button>
+    <h3>Share your story</h3>
+    <div class="post-user-preview" id="post-user-preview"></div>
+    <textarea id="post-content" placeholder="What's on your mind? Your experience matters here…"
+              maxlength="2000" oninput="onPostInput()"></textarea>
+    <div class="char-count"><span id="char-count">0</span> / 2000</div>
+    <div class="tag-selector">
+      <p>Add tags</p>
+      <div class="tag-selector-grid" id="tag-selector-grid"></div>
+    </div>
+    <button class="btn-primary" id="submit-post-btn" onclick="submitPost()" disabled>Share →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     NAV
+════════════════════════════════════════════════ -->
+<nav>
+  <a href="index.html" class="nav-ar-link">← AR Experience</a>
+  <span class="nav-title">Contradiction of S</span>
+  <div class="user-chip" id="user-chip" style="display:none" onclick="openEditAvatar()">
+    <img class="user-chip-avatar" id="chip-avatar" src="" alt="" />
+    <span class="user-chip-name" id="chip-name"></span>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════ -->
+<header class="forum-header">
+  <h1>The Body Forum</h1>
+  <p>A safe space for shared experience — scoliosis, disability, bodily truth, and everything in between.</p>
+  <span class="tagline">All bodies. All voices.</span>
+</header>
+
+<!-- ════════════════════════════════════════════════
+     FORUM
+════════════════════════════════════════════════ -->
+<main class="forum-container">
+
+  <div class="forum-actions">
+    <button class="btn-new-post" id="btn-new-post" onclick="openPostModal()">
+      <img class="btn-new-post-avatar" id="new-post-avatar" src="" alt="" />
+      <span class="btn-new-post-text">Share something with the forum…</span>
+    </button>
+    <div class="tag-filters" id="tag-filters"></div>
+  </div>
+
+  <div class="posts-feed" id="posts-feed">
+    <div class="state-message">
+      <div style="font-size:2rem">✦</div>
+      <p>Loading stories…</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- ════════════════════════════════════════════════
+     SCRIPT
+════════════════════════════════════════════════ -->
+<script>
+/* ── Supabase ─────────────────────────────────────── */
+const SUPA_URL = 'https://kgohdbyctcjgwnfedpkx.supabase.co'
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtnb2hkYnljdGNqZ3duZmVkcGt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2Nzg0MzAsImV4cCI6MjA5NjI1NDQzMH0.Gvz6iZ0hW5VyvSGGBGnakpiyRh8dfeHyX1lmgXfn36c'
+const db = supabase.createClient(SUPA_URL, SUPA_KEY)
+
+/* ── Avatar SVG definitions ───────────────────────── */
+// Placeholder OC line-art. Replace src with your own drawings in assets/avatars/.
+const AVATARS = [
+  {
+    id: 1, name: 'Crown', bg: '#f5ede6',
+    svg: `<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="100" cy="110" r="100" fill="#f5ede6"/>
+      <path d="M62 88 L72 62 L100 78 L128 62 L138 88" fill="none" stroke="#2a2225" stroke-width="2.8"/>
+      <circle cx="72" cy="92" r="14" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <circle cx="128" cy="92" r="14" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <ellipse cx="100" cy="115" rx="26" ry="28" fill="none" stroke="#2a2225" stroke-width="2.5"/>
+      <circle cx="92" cy="110" r="2.5" fill="#2a2225"/>
+      <circle cx="108" cy="110" r="2.5" fill="#2a2225"/>
+      <path d="M90 125 Q100 130 110 125" fill="none" stroke="#2a2225" stroke-width="1.5"/>
+      <path d="M88 143 C84 156 108 162 103 178" fill="none" stroke="#2a2225" stroke-width="2.5"/>
+      <path d="M70 148 Q60 163 62 180" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <path d="M130 150 Q140 165 138 182" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <path d="M82 198 L80 216" stroke="#2a2225" stroke-width="2"/>
+      <path d="M108 198 L110 216" stroke="#2a2225" stroke-width="2"/>
+      <path d="M60 183 Q100 190 140 183" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <path d="M100 58 L103 48 L107 58 L98 51 L108 51 Z" fill="#2a2225"/>
+    </svg>`
+  },
+  {
+    id: 2, name: 'Bows', bg: '#edf0ed',
+    svg: `<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="100" cy="110" r="100" fill="#edf0ed"/>
+      <path d="M30 80 C18 65 18 95 30 82 C42 68 57 80 57 80 C57 80 42 68 30 80 Z" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <path d="M84 80 C96 65 96 95 84 82 C72 68 57 80 57 80 C57 80 72 68 84 80 Z" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <circle cx="57" cy="80" r="4" fill="#2a2225"/>
+      <path d="M116 80 C104 65 104 95 116 82 C128 68 143 80 143 80 C143 80 128 68 116 80 Z" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <path d="M170 80 C182 65 182 95 170 82 C158 68 143 80 143 80 C143 80 158 68 170 80 Z" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <circle cx="143" cy="80" r="4" fill="#2a2225"/>
+      <ellipse cx="100" cy="115" rx="26" ry="28" fill="none" stroke="#2a2225" stroke-width="2.5"/>
+      <circle cx="92" cy="110" r="2.5" fill="#2a2225"/>
+      <circle cx="108" cy="110" r="2.5" fill="#2a2225"/>
+      <path d="M88 143 L88 192" stroke="#2a2225" stroke-width="2.5"/>
+      <path d="M112 143 L112 192" stroke="#2a2225" stroke-width="2.5"/>
+      <path d="M57 84 C50 110 55 135 50 158" stroke="#2a2225" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <path d="M143 84 C150 110 145 135 150 158" stroke="#2a2225" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <path d="M80 195 Q100 200 120 195" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <line x1="86" y1="200" x2="83" y2="218" stroke="#2a2225" stroke-width="2"/>
+      <line x1="114" y1="200" x2="117" y2="218" stroke="#2a2225" stroke-width="2"/>
+    </svg>`
+  },
+  {
+    id: 3, name: 'Tub', bg: '#e8eef5',
+    svg: `<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="100" cy="110" r="100" fill="#e8eef5"/>
+      <path d="M76 68 Q100 56 124 68" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <ellipse cx="100" cy="90" rx="26" ry="28" fill="none" stroke="#2a2225" stroke-width="2.5"/>
+      <circle cx="92" cy="85" r="2.5" fill="#2a2225"/>
+      <circle cx="108" cy="85" r="2.5" fill="#2a2225"/>
+      <path d="M90 100 Q100 106 110 100" fill="none" stroke="#2a2225" stroke-width="1.5"/>
+      <path d="M30 135 Q100 128 170 135" fill="none" stroke="#2a2225" stroke-width="3"/>
+      <path d="M38 135 Q35 172 42 186 Q100 194 158 186 Q165 172 162 135" fill="none" stroke="#2a2225" stroke-width="2.5"/>
+      <path d="M86 118 Q100 125 114 118" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <circle cx="62" cy="127" r="5" fill="none" stroke="#2a2225" stroke-width="1.5"/>
+      <circle cx="72" cy="120" r="3" fill="none" stroke="#2a2225" stroke-width="1.5"/>
+      <circle cx="138" cy="125" r="4" fill="none" stroke="#2a2225" stroke-width="1.5"/>
+      <circle cx="148" cy="117" r="6" fill="none" stroke="#2a2225" stroke-width="1.5"/>
+      <circle cx="130" cy="118" r="2" fill="none" stroke="#2a2225" stroke-width="1.5"/>
+      <line x1="158" y1="135" x2="158" y2="116" stroke="#2a2225" stroke-width="2"/>
+      <path d="M150 116 L166 116" stroke="#2a2225" stroke-width="2"/>
+      <circle cx="148" cy="116" r="2.5" fill="#2a2225"/>
+      <circle cx="168" cy="116" r="2.5" fill="#2a2225"/>
+    </svg>`
+  },
+  {
+    id: 4, name: 'Mirror', bg: '#f0ece8',
+    svg: `<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="100" cy="110" r="100" fill="#f0ece8"/>
+      <ellipse cx="100" cy="116" rx="74" ry="96" fill="none" stroke="#2a2225" stroke-width="3"/>
+      <ellipse cx="100" cy="116" rx="66" ry="88" fill="none" stroke="#2a2225" stroke-width="1"/>
+      <circle cx="100" cy="20" r="6" fill="#2a2225"/>
+      <path d="M86 24 Q100 18 114 24" fill="none" stroke="#2a2225" stroke-width="1.5"/>
+      <circle cx="100" cy="212" r="6" fill="#2a2225"/>
+      <circle cx="27" cy="110" r="4" fill="#2a2225"/>
+      <circle cx="173" cy="110" r="4" fill="#2a2225"/>
+      <ellipse cx="100" cy="82" rx="20" ry="22" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <circle cx="93" cy="79" r="2.5" fill="#2a2225"/>
+      <circle cx="107" cy="79" r="2.5" fill="#2a2225"/>
+      <path d="M88 104 C84 120 108 128 103 146 C99 160 85 163 88 178" fill="none" stroke="#2a2225" stroke-width="2.5"/>
+      <path d="M86 112 Q74 126 70 144" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <path d="M114 114 Q126 128 130 146" fill="none" stroke="#2a2225" stroke-width="2"/>
+      <line x1="92" y1="181" x2="89" y2="200" stroke="#2a2225" stroke-width="2"/>
+      <line x1="105" y1="181" x2="108" y2="200" stroke="#2a2225" stroke-width="2"/>
+    </svg>`
+  }
+]
+
+/* ── Tags ─────────────────────────────────────────── */
+const TAGS = [
+  { id: 'scoliosis',     label: 'Scoliosis',       color: '#b5748a' },
+  { id: 'chronic-pain',  label: 'Chronic pain',     color: '#c97b5a' },
+  { id: 'body-image',    label: 'Body image',       color: '#8b6b8a' },
+  { id: 'disability',    label: 'Disability',       color: '#6b8cae' },
+  { id: 'identity',      label: 'Identity',         color: '#7a9e8e' },
+  { id: 'movement',      label: 'Movement',         color: '#6b8a6b' },
+  { id: 'recovery',      label: 'Recovery',         color: '#c4a882' },
+  { id: 'community',     label: 'Community',        color: '#a8c4a2' },
+  { id: 'art-body',      label: 'Art & body',       color: '#9bbfa8' },
+]
+
+/* ── Suggested names ──────────────────────────────── */
+const NAMES = [
+  'Fernleaf','Solstice','Rivermist','Willowbend','Starling',
+  'Petalstone','Moonwood','Ashgrove','Duskpetal','Cloverhaze',
+  'Seafern','Glassroot','Cinderbloom','Thistledown','Brimholt',
+]
+
+/* ── State ────────────────────────────────────────── */
+let SESSION_ID    = localStorage.getItem('cos_session_id')
+let SESSION_DATA  = null
+let selectedAvatar = null
+let selectedTags  = new Set()
+let activeFilter  = null
+let postsCache    = []
+let drawTool      = 'pen'
+let drawColor     = '#2a2225'
+let drawSize      = 5
+let isDrawing     = false
+let lastX = 0, lastY = 0
+
+/* ── Init ─────────────────────────────────────────── */
+async function init() {
+  renderSetupUI()
+  renderTagFilters()
+
+  if (SESSION_ID) {
+    const { data } = await db.from('sessions').select('*').eq('id', SESSION_ID).single()
+    if (data) {
+      SESSION_DATA = data
+      hideSetup()
+      updateUserChip()
+      await loadPosts()
+      subscribeToRealtime()
+      return
+    }
+  }
+  showSetup()
+}
+
+/* ── Setup UI ─────────────────────────────────────── */
+function renderSetupUI() {
+  // Avatar grid
+  const grid = document.getElementById('avatar-grid')
+  grid.innerHTML = AVATARS.map(av => `
+    <div class="avatar-card" id="card-${av.id}" onclick="selectAvatar(${av.id})">
+      ${av.svg}
+      <div class="avatar-card-name">${av.name}</div>
+    </div>
+  `).join('')
+
+  // Name suggestions
+  const ns = document.getElementById('name-suggestions')
+  const picks = [...NAMES].sort(() => Math.random() - 0.5).slice(0, 8)
+  ns.innerHTML = picks.map(n =>
+    `<div class="name-pill" onclick="chooseName('${n}')">${n}</div>`
+  ).join('')
+
+  // Color swatches
+  const colors = ['#2a2225','#ffffff','#b5748a','#7a9e8e','#6b8cae','#c97b5a','#c4a882','#8b6b8a','#6b8a6b','#a85a6b','#5a7a6b','#d4b8c4']
+  document.getElementById('color-swatches').innerHTML = colors.map((c,i) =>
+    `<div class="color-swatch ${i===0?'active':''}" style="background:${c};border-color:${c==='#ffffff'?'#ddd':'transparent'}"
+         onclick="setColor('${c}',this)"></div>`
+  ).join('')
+
+  // Size buttons
+  const sizes = [3,6,12,22]
+  document.getElementById('size-buttons').innerHTML = sizes.map((s,i) =>
+    `<button class="size-btn ${i===1?'active':''}" onclick="setSize(${s},this)" title="${s}px">
+       <div class="size-dot" style="width:${Math.min(s,18)}px;height:${Math.min(s,18)}px"></div>
+     </button>`
+  ).join('')
+
+  // Post tag selector
+  document.getElementById('tag-selector-grid').innerHTML = TAGS.map(t =>
+    `<button class="tag-toggle" data-tag="${t.id}" style="--c:${t.color}"
+             onclick="togglePostTag('${t.id}',this,${JSON.stringify(t.color)})">${t.label}</button>`
+  ).join('')
+}
+
+function selectAvatar(id) {
+  selectedAvatar = id
+  document.querySelectorAll('.avatar-card').forEach(c => c.classList.remove('selected'))
+  document.getElementById(`card-${id}`).classList.add('selected')
+  document.getElementById('next-1').disabled = false
+}
+
+function chooseName(name) {
+  document.querySelectorAll('.name-pill').forEach(p => p.classList.remove('chosen'))
+  event.target.classList.add('chosen')
+  document.getElementById('name-input').value = name
+  document.getElementById('next-2').disabled = false
+}
+
+function onNameInput() {
+  document.querySelectorAll('.name-pill').forEach(p => p.classList.remove('chosen'))
+  document.getElementById('next-2').disabled = document.getElementById('name-input').value.trim().length < 1
+}
+
+function goStep(n) {
+  for (let i=1;i<=3;i++) {
+    document.getElementById(`step-${i}`).classList.toggle('active', i===n)
+    document.getElementById(`dot-${i}`).classList.toggle('active', i<=n)
+  }
+  if (n === 3) initCanvas()
+}
+
+/* ── Canvas drawing ───────────────────────────────── */
+function initCanvas() {
+  const av = AVATARS.find(a => a.id === selectedAvatar)
+  const img = document.getElementById('avatar-base-img')
+
+  // Convert SVG to data URL for the img element
+  const blob = new Blob([av.svg], {type:'image/svg+xml'})
+  img.src = URL.createObjectURL(blob)
+
+  const canvas = document.getElementById('avatar-canvas')
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, 600, 600)
+
+  // Mouse events
+  canvas.addEventListener('mousedown', startDraw)
+  canvas.addEventListener('mousemove', draw)
+  canvas.addEventListener('mouseup', stopDraw)
+  canvas.addEventListener('mouseleave', stopDraw)
+
+  // Touch events
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); startDraw(e.touches[0]) }, {passive:false})
+  canvas.addEventListener('touchmove',  e => { e.preventDefault(); draw(e.touches[0]) }, {passive:false})
+  canvas.addEventListener('touchend',   stopDraw, {passive:false})
+}
+
+function getPos(e, canvas) {
+  const r = canvas.getBoundingClientRect()
+  const scaleX = canvas.width / r.width
+  const scaleY = canvas.height / r.height
+  return {
+    x: (e.clientX - r.left) * scaleX,
+    y: (e.clientY - r.top)  * scaleY
+  }
+}
+
+function startDraw(e) {
+  isDrawing = true
+  const canvas = document.getElementById('avatar-canvas')
+  const p = getPos(e, canvas)
+  lastX = p.x; lastY = p.y
+}
+
+function draw(e) {
+  if (!isDrawing) return
+  const canvas = document.getElementById('avatar-canvas')
+  const ctx = canvas.getContext('2d')
+  const p = getPos(e, canvas)
+
+  ctx.beginPath()
+  ctx.moveTo(lastX, lastY)
+  ctx.lineTo(p.x, p.y)
+  ctx.strokeStyle = drawTool === 'eraser' ? 'rgba(0,0,0,0)' : drawColor
+  ctx.lineWidth   = drawSize * 2
+  ctx.lineCap     = 'round'
+  ctx.lineJoin    = 'round'
+  if (drawTool === 'eraser') {
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.lineWidth = drawSize * 4
+  } else {
+    ctx.globalCompositeOperation = 'source-over'
+  }
+  ctx.stroke()
+  lastX = p.x; lastY = p.y
+}
+
+function stopDraw() { isDrawing = false }
+
+function setColor(c, el) {
+  drawColor = c
+  drawTool = 'pen'
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'))
+  el.classList.add('active')
+  setToolActive('pen')
+}
+
+function setSize(s, el) {
+  drawSize = s
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'))
+  el.classList.add('active')
+}
+
+function setTool(t) {
+  drawTool = t
+  setToolActive(t)
+}
+
+function setToolActive(t) {
+  document.getElementById('btn-pen').classList.toggle('active', t==='pen')
+  document.getElementById('btn-eraser').classList.toggle('active', t==='eraser')
+}
+
+function clearCanvas() {
+  const canvas = document.getElementById('avatar-canvas')
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+}
+
+async function saveAndEnter() {
+  const name = document.getElementById('name-input').value.trim()
+  if (!name || !selectedAvatar) return
+
+  // Composite avatar: render SVG base + canvas drawing to a 300x300 offscreen canvas
+  const av = AVATARS.find(a => a.id === selectedAvatar)
+  const off = document.createElement('canvas')
+  off.width = off.height = 300
+  const oc = off.getContext('2d')
+
+  // Draw SVG base
+  const svgBlob = new Blob([av.svg], {type:'image/svg+xml'})
+  const svgUrl  = URL.createObjectURL(svgBlob)
+  const baseImg = new Image()
+  baseImg.src = svgUrl
+
+  await new Promise(res => { baseImg.onload = res })
+
+  oc.drawImage(baseImg, 0, 0, 300, 300)
+  // Draw canvas marks
+  oc.drawImage(document.getElementById('avatar-canvas'), 0, 0, 300, 300)
+  URL.revokeObjectURL(svgUrl)
+
+  const avatarData = off.toDataURL('image/png', 0.8)
+
+  // Save to Supabase
+  const { data, error } = await db.from('sessions').insert({
+    display_name: name,
+    avatar_base:  selectedAvatar,
+    avatar_data:  avatarData,
+    avatar_color: av.bg,
+  }).select().single()
+
+  if (error) { console.error(error); alert('Something went wrong. Please try again.'); return }
+
+  SESSION_ID   = data.id
+  SESSION_DATA = data
+  localStorage.setItem('cos_session_id', SESSION_ID)
+
+  hideSetup()
+  updateUserChip()
+  await loadPosts()
+  subscribeToRealtime()
+}
+
+function showSetup() { document.getElementById('setup-overlay').classList.remove('hidden') }
+function hideSetup()  { document.getElementById('setup-overlay').classList.add('hidden') }
+
+/* ── User chip ────────────────────────────────────── */
+function updateUserChip() {
+  if (!SESSION_DATA) return
+  const chip = document.getElementById('user-chip')
+  chip.style.display = 'flex'
+  document.getElementById('chip-avatar').src = SESSION_DATA.avatar_data || ''
+  document.getElementById('chip-name').textContent = SESSION_DATA.display_name
+
+  // New post button avatar
+  const npa = document.getElementById('new-post-avatar')
+  if (npa) npa.src = SESSION_DATA.avatar_data || ''
+
+  // Post modal preview
+  const pp = document.getElementById('post-user-preview')
+  if (pp) pp.innerHTML = `
+    <img src="${SESSION_DATA.avatar_data || ''}" style="width:40px;height:40px;border-radius:50%;object-fit:cover"/>
+    <span>${SESSION_DATA.display_name}</span>
+  `
+}
+
+function openEditAvatar() {
+  // Re-show setup to let them update their avatar/name
+  SESSION_ID = null
+  localStorage.removeItem('cos_session_id')
+  selectedAvatar = null
+  document.getElementById('name-input').value = ''
+  goStep(1)
+  showSetup()
+}
+
+/* ── Tag filters ──────────────────────────────────── */
+function renderTagFilters() {
+  const el = document.getElementById('tag-filters')
+  el.innerHTML = `<div class="tag-filter ${activeFilter===null?'active':''}"
+      style="${activeFilter===null?'background:#2a2225;color:#fff':''}"
+      onclick="filterTag(null)">All</div>` +
+    TAGS.map(t => `
+      <div class="tag-filter ${activeFilter===t.id?'active':''}"
+           style="color:${t.color};border-color:${t.color};${activeFilter===t.id?`background:${t.color};color:#fff`:''}"
+           onclick="filterTag('${t.id}')">${t.label}</div>
+    `).join('')
+}
+
+function filterTag(id) {
+  activeFilter = id
+  renderTagFilters()
+  renderPosts()
+}
+
+/* ── Posts ────────────────────────────────────────── */
+async function loadPosts() {
+  const { data, error } = await db.from('posts_with_details').select('*')
+  if (error) { console.error(error); return }
+  postsCache = data || []
+  renderPosts()
+}
+
+function renderPosts() {
+  const feed = document.getElementById('posts-feed')
+  let posts = activeFilter
+    ? postsCache.filter(p => p.tags && p.tags.includes(activeFilter))
+    : postsCache
+
+  if (!posts.length) {
+    feed.innerHTML = `<div class="state-message">
+      <div style="font-size:2rem">✦</div>
+      <p>${activeFilter ? 'No posts with this tag yet — be the first.' : 'No stories yet. Be the first to share.'}</p>
+    </div>`
+    return
+  }
+
+  feed.innerHTML = posts.map(post => renderPostCard(post)).join('')
+}
+
+function renderPostCard(post) {
+  const hearts = post.heart_count || 0
+  const tags   = (post.tags || [])
+  const time   = timeAgo(post.created_at)
+  const myHeart = hearted(post.id)
+  const tagHTML = tags.map(tid => {
+    const t = TAGS.find(x => x.id === tid)
+    return t ? `<span class="post-tag" style="background:${t.color}">${t.label}</span>` : ''
+  }).join('')
+
+  return `
+    <article class="post-card" id="post-${post.id}">
+      <div class="post-header">
+        <img class="post-avatar" src="${post.avatar_data || ''}" alt="${post.display_name}" onerror="this.style.background='#e8e0d5'" />
+        <div class="post-meta">
+          <div class="post-author">${escHtml(post.display_name)}</div>
+          <div class="post-time">${time}</div>
+        </div>
+      </div>
+      <div class="post-content">${escHtml(post.content)}</div>
+      ${tagHTML ? `<div class="post-tags">${tagHTML}</div>` : ''}
+      <div class="post-actions">
+        <button class="action-btn ${myHeart?'hearted':''}" onclick="toggleHeart('${post.id}',this)">
+          <span class="icon">${myHeart?'♥':'♡'}</span>
+          <span class="heart-count">${hearts}</span>
+        </button>
+        <button class="action-btn" onclick="toggleReplies('${post.id}')">
+          <span class="icon">💬</span> Reply
+        </button>
+      </div>
+      <div class="replies-section" id="replies-${post.id}">
+        <div class="replies-list" id="replies-list-${post.id}"></div>
+        <div class="reply-input-row">
+          <textarea class="reply-input" id="reply-input-${post.id}"
+                    placeholder="Write a reply…" rows="1"
+                    oninput="autoGrow(this)"></textarea>
+          <button class="reply-submit" onclick="submitReply('${post.id}')">Send</button>
+        </div>
+      </div>
+    </article>
+  `
+}
+
+function autoGrow(el) {
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+}
+
+/* ── Hearts ───────────────────────────────────────── */
+function getHeartedSet() {
+  try { return new Set(JSON.parse(localStorage.getItem('cos_hearts') || '[]')) }
+  catch { return new Set() }
+}
+
+function hearted(postId) { return getHeartedSet().has(postId) }
+
+async function toggleHeart(postId, btn) {
+  if (!SESSION_ID) return
+  const set = getHeartedSet()
+  const isHearted = set.has(postId)
+  const countEl = btn.querySelector('.heart-count')
+  const iconEl  = btn.querySelector('.icon')
+
+  if (isHearted) {
+    set.delete(postId)
+    await db.from('hearts').delete().eq('post_id', postId).eq('session_id', SESSION_ID)
+    btn.classList.remove('hearted')
+    iconEl.textContent = '♡'
+    countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1)
+  } else {
+    set.add(postId)
+    await db.from('hearts').insert({ post_id: postId, session_id: SESSION_ID })
+    btn.classList.add('hearted')
+    iconEl.textContent = '♥'
+    countEl.textContent = parseInt(countEl.textContent) + 1
+  }
+  localStorage.setItem('cos_hearts', JSON.stringify([...set]))
+}
+
+/* ── Replies ──────────────────────────────────────── */
+async function toggleReplies(postId) {
+  const section = document.getElementById(`replies-${postId}`)
+  const isOpen = section.classList.contains('open')
+  if (isOpen) { section.classList.remove('open'); return }
+
+  section.classList.add('open')
+  const { data } = await db.from('replies')
+    .select('*, sessions(display_name, avatar_data)')
+    .eq('post_id', postId)
+    .order('created_at', {ascending: true})
+
+  const list = document.getElementById(`replies-list-${postId}`)
+  list.innerHTML = (data || []).map(r => `
+    <div class="reply-card">
+      <img class="reply-avatar" src="${r.sessions?.avatar_data||''}" onerror="this.style.background='#e8e0d5'" />
+      <div class="reply-bubble">
+        <div class="reply-author">${escHtml(r.sessions?.display_name||'Anonymous')}</div>
+        <div class="reply-content">${escHtml(r.content)}</div>
+      </div>
+    </div>
+  `).join('') || '<p style="font-size:0.85rem;color:var(--text-muted);padding:8px 0">No replies yet.</p>'
+}
+
+async function submitReply(postId) {
+  if (!SESSION_ID) return
+  const inp = document.getElementById(`reply-input-${postId}`)
+  const content = inp.value.trim()
+  if (!content) return
+
+  const { data, error } = await db.from('replies').insert({
+    post_id: postId, session_id: SESSION_ID, content
+  }).select('*, sessions(display_name, avatar_data)').single()
+
+  if (error) { console.error(error); return }
+
+  inp.value = ''
+  inp.style.height = 'auto'
+
+  const list = document.getElementById(`replies-list-${postId}`)
+  list.insertAdjacentHTML('beforeend', `
+    <div class="reply-card">
+      <img class="reply-avatar" src="${SESSION_DATA?.avatar_data||''}" onerror="this.style.background='#e8e0d5'" />
+      <div class="reply-bubble">
+        <div class="reply-author">${escHtml(SESSION_DATA?.display_name||'You')}</div>
+        <div class="reply-content">${escHtml(content)}</div>
+      </div>
+    </div>
+  `)
+}
+
+/* ── New Post ─────────────────────────────────────── */
+function openPostModal() {
+  if (!SESSION_ID) { showSetup(); return }
+  document.getElementById('post-overlay').classList.remove('hidden')
+  updateUserChip()
+  document.getElementById('post-content').value = ''
+  document.getElementById('char-count').textContent = '0'
+  document.getElementById('submit-post-btn').disabled = true
+  selectedTags.clear()
+  document.querySelectorAll('.tag-toggle').forEach(b => b.classList.remove('selected'))
+}
+
+function closePostModal() {
+  document.getElementById('post-overlay').classList.add('hidden')
+}
+
+function onPostInput() {
+  const len = document.getElementById('post-content').value.length
+  document.getElementById('char-count').textContent = len
+  document.getElementById('submit-post-btn').disabled = len < 1
+}
+
+function togglePostTag(id, el, color) {
+  if (selectedTags.has(id)) {
+    selectedTags.delete(id)
+    el.classList.remove('selected')
+    el.style.background = ''
+    el.style.color = ''
+  } else {
+    selectedTags.add(id)
+    el.classList.add('selected')
+    el.style.background = color
+    el.style.borderColor = color
+    el.style.color = '#fff'
+  }
+}
+
+async function submitPost() {
+  const content = document.getElementById('post-content').value.trim()
+  if (!content || !SESSION_ID) return
+
+  const btn = document.getElementById('submit-post-btn')
+  btn.disabled = true
+  btn.textContent = 'Sharing…'
+
+  const { error } = await db.from('posts').insert({
+    session_id: SESSION_ID,
+    content,
+    tags: [...selectedTags]
+  })
+
+  if (error) { console.error(error); btn.disabled = false; btn.textContent = 'Share →'; return }
+
+  closePostModal()
+  await loadPosts()
+  window.scrollTo({ top: document.getElementById('posts-feed').offsetTop - 80, behavior: 'smooth' })
+}
+
+/* ── Realtime ─────────────────────────────────────── */
+function subscribeToRealtime() {
+  db.channel('forum')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, async () => {
+      await loadPosts()
+    })
+    .subscribe()
+}
+
+/* ── Helpers ──────────────────────────────────────── */
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function timeAgo(iso) {
+  const d = Math.floor((Date.now() - new Date(iso)) / 1000)
+  if (d < 60)   return 'just now'
+  if (d < 3600) return `${Math.floor(d/60)}m ago`
+  if (d < 86400)return `${Math.floor(d/3600)}h ago`
+  return new Date(iso).toLocaleDateString('en-GB', {day:'numeric',month:'short'})
+}
+
+/* ── Start ────────────────────────────────────────── */
+init()
+</script>
+</body>
+</html>
