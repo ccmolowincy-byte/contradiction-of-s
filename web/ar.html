@@ -18,14 +18,14 @@
       touch-action: none;
     }
 
-    /* ── Camera feed — mirrored for selfie ───────────────────────────────── */
+    /* ── Camera feed — mirrored for selfie only via JS class ────────────── */
     #ar-video {
       position: absolute;
       inset: 0;
       width: 100%; height: 100%;
       object-fit: cover;
-      transform: scaleX(-1);
     }
+    #ar-video.mirrored { transform: scaleX(-1); }
 
     /* ── Avatar overlay ──────────────────────────────────────────────────── */
     #ar-avatar-wrap {
@@ -238,7 +238,7 @@
     }
     #ar-capture-btn:active::after { background: #fff; }
 
-    #ar-reset-btn {
+    #ar-switch-btn {
       width: 40px; height: 40px;
       border-radius: 50%;
       background: rgba(240,234,224,0.1);
@@ -249,8 +249,8 @@
       justify-content: center;
       -webkit-tap-highlight-color: transparent;
     }
-    #ar-reset-btn svg { opacity: 0.6; }
-    #ar-reset-btn:active { background: rgba(240,234,224,0.2); }
+    #ar-switch-btn svg { opacity: 0.6; }
+    #ar-switch-btn:active { background: rgba(240,234,224,0.2); }
 
     /* ── Save confirmation ───────────────────────────────────────────────── */
     #ar-saved-msg {
@@ -302,9 +302,9 @@
 
     <!-- Controls -->
     <div id="ar-controls">
-      <button id="ar-reset-btn" aria-label="Reset position" title="Reset avatar position">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(240,234,224,0.8)">
-          <path d="M12 5V1L7 6l5 5V7c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6H4c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8z"/>
+      <button id="ar-switch-btn" aria-label="Switch camera" title="Switch front/rear camera">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(240,234,224,0.8)">
+          <path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-5 11.5V14H9v2.5L5.5 13 9 9.5V12h6V9.5l3.5 3.5-3.5 3.5z"/>
         </svg>
       </button>
       <button id="ar-capture-btn" aria-label="Take photo"></button>
@@ -364,19 +364,18 @@
     var startBtn   = document.getElementById('ar-start-btn');
     var errorEl    = document.getElementById('ar-cam-error');
     var noPortEl   = document.getElementById('ar-no-portrait');
-    var processingEl = document.getElementById('ar-processing');
     var hintEl     = document.getElementById('ar-hint');
     var captureBtn = document.getElementById('ar-capture-btn');
-    var resetBtn   = document.getElementById('ar-reset-btn');
+    var switchBtn  = document.getElementById('ar-switch-btn');
     var flashEl    = document.getElementById('ar-flash');
     var savedMsg   = document.getElementById('ar-saved-msg');
 
     // ── Avatar display state ───────────────────────────────────────────────
-    var BASE_W   = 160;   // CSS width of img element (px)
-    var aspectR  = 1.5;   // height / width ratio, set when image loads
-    var cx, cy;           // center of avatar in stage coordinates (px)
-    var sc       = 1.0;   // scale
-    var rot      = 0;     // rotation degrees
+    var BASE_W      = 160;
+    var aspectR     = 1.5;
+    var cx, cy;
+    var sc          = 1.0;
+    var rot         = 0;
     var hasPortrait = false;
 
     function resetAvatarPos() {
@@ -396,71 +395,58 @@
       wrap.style.transform = 'rotate(' + rot + 'deg) scale(' + sc + ')';
     }
 
-    // ── Background removal ─────────────────────────────────────────────────
-    // Removes pixels close to app background #F0EAE0 (rgb 240, 234, 224)
-    function removeBackground(src, done) {
-      var tmpImg = new Image();
-      tmpImg.onload = function () {
-        var c   = document.createElement('canvas');
-        c.width = tmpImg.naturalWidth;
-        c.height = tmpImg.naturalHeight;
-        var ctx = c.getContext('2d');
-        ctx.drawImage(tmpImg, 0, 0);
-        var d   = ctx.getImageData(0, 0, c.width, c.height);
-        var px  = d.data;
-        var br = 240, bg = 234, bb = 224, tol = 48;
-        for (var i = 0; i < px.length; i += 4) {
-          if (Math.abs(px[i]   - br) < tol &&
-              Math.abs(px[i+1] - bg) < tol &&
-              Math.abs(px[i+2] - bb) < tol) {
-            px[i+3] = 0;
-          }
-        }
-        ctx.putImageData(d, 0, 0);
-        done(c.toDataURL('image/png'));
-      };
-      tmpImg.src = src;
-    }
-
-    // ── Load saved portrait ────────────────────────────────────────────────
+    // ── Load portrait — transparent version preferred, flat portrait as fallback
     function loadPortrait() {
-      var portrait = App.getAvatarPortrait();
+      var portrait = App.getAvatarPortraitTransparent() || App.getAvatarPortrait();
       if (!portrait) {
         noPortEl.classList.add('visible');
         return;
       }
-      processingEl.classList.add('visible');
-      removeBackground(portrait, function (cleaned) {
-        processingEl.classList.remove('visible');
-        img.onload = function () {
-          aspectR = img.naturalHeight / img.naturalWidth;
-          img.style.width  = BASE_W + 'px';
-          img.style.height = 'auto';
-          resetAvatarPos();
-          wrap.style.display = 'block';
-          hasPortrait = true;
-          // Fade hint after 4 s
-          setTimeout(function () { hintEl.classList.add('fade'); }, 4000);
-        };
-        img.src = cleaned;
-      });
+      img.onload = function () {
+        aspectR = img.naturalHeight / img.naturalWidth;
+        img.style.width  = BASE_W + 'px';
+        img.style.height = 'auto';
+        resetAvatarPos();
+        wrap.style.display = 'block';
+        hasPortrait = true;
+        setTimeout(function () { hintEl.classList.add('fade'); }, 4000);
+      };
+      img.src = portrait;
     }
 
     // ── Camera ────────────────────────────────────────────────────────────
-    var stream = null;
+    var stream            = null;
+    var currentFacingMode = 'user';
+    var portraitLoaded    = false;
 
-    function startCamera() {
+    function startCamera(facingMode) {
+      currentFacingMode = facingMode || 'user';
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         errorEl.classList.add('visible');
         return;
       }
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      // Stop existing stream before switching
+      if (stream) {
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        stream = null;
+      }
+      // Mirror video CSS only for front (selfie) camera
+      if (currentFacingMode === 'user') {
+        videoEl.classList.add('mirrored');
+      } else {
+        videoEl.classList.remove('mirrored');
+      }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode }, audio: false })
         .then(function (s) {
           stream = s;
           videoEl.srcObject = s;
           videoEl.play();
           startEl.classList.add('hidden');
-          loadPortrait();
+          // Load portrait only once
+          if (!portraitLoaded) {
+            portraitLoaded = true;
+            loadPortrait();
+          }
         })
         .catch(function (err) {
           console.warn('Camera error:', err);
@@ -469,11 +455,18 @@
         });
     }
 
-    startBtn.addEventListener('click', startCamera);
+    startBtn.addEventListener('click', function () { startCamera('user'); });
+
+    // Switch camera
+    if (switchBtn) {
+      switchBtn.addEventListener('click', function () {
+        startCamera(currentFacingMode === 'user' ? 'environment' : 'user');
+      });
+    }
 
     // ── Gesture tracking ──────────────────────────────────────────────────
-    var ptrs = {};   // pointerId → {x, y}
-    var gs   = null; // gesture start snapshot
+    var ptrs = {};
+    var gs   = null;
 
     function ptrVals() { return Object.values(ptrs); }
 
@@ -523,8 +516,7 @@
 
     function endPointer(e) {
       delete ptrs[e.pointerId];
-      var remaining = Object.keys(ptrs).length;
-      if (remaining === 0) gs = null;
+      if (Object.keys(ptrs).length === 0) gs = null;
       else startGesture();
     }
     document.addEventListener('pointerup',     endPointer);
@@ -533,17 +525,12 @@
     // Mouse wheel: scale on desktop
     stage.addEventListener('wheel', function (e) {
       e.preventDefault();
-      var delta = e.deltaY > 0 ? 0.9 : 1.11;
-      sc = Math.max(0.15, Math.min(5, sc * delta));
+      sc = Math.max(0.15, Math.min(5, sc * (e.deltaY > 0 ? 0.9 : 1.11)));
       updateWrap();
     }, { passive: false });
 
-    // Reset button
-    resetBtn.addEventListener('click', resetAvatarPos);
-
     // ── Capture photo ──────────────────────────────────────────────────────
     captureBtn.addEventListener('click', function () {
-      // Shutter flash
       flashEl.classList.add('active');
       setTimeout(function () { flashEl.classList.remove('active'); }, 180);
 
@@ -554,35 +541,33 @@
       capCanvas.height = vh;
       var ctx = capCanvas.getContext('2d');
 
-      // Draw mirrored video (matches the CSS scaleX(-1) display)
-      ctx.save();
-      ctx.translate(vw, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(videoEl, 0, 0, vw, vh);
-      ctx.restore();
+      // Mirror video frame only for front camera (matches CSS display)
+      if (currentFacingMode === 'user') {
+        ctx.save();
+        ctx.translate(vw, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(videoEl, 0, 0, vw, vh);
+        ctx.restore();
+      } else {
+        ctx.drawImage(videoEl, 0, 0, vw, vh);
+      }
 
-      // Draw avatar if loaded
+      // Composite avatar at its current position/scale/rotation
       if (hasPortrait && img.complete && img.naturalWidth > 0) {
         var stageW = stage.offsetWidth  || window.innerWidth;
         var stageH = stage.offsetHeight || (window.innerHeight - 56);
         var ratioX = vw / stageW;
         var ratioY = vh / stageH;
-
-        // Use average ratio to keep avatar proportional
-        var ratio = (ratioX + ratioY) / 2;
-        var capW  = BASE_W * sc * ratio;
-        var capH  = BASE_W * aspectR * sc * ratio;
-        var capCx = cx * ratioX;
-        var capCy = cy * ratioY;
-
+        var ratio  = (ratioX + ratioY) / 2;
+        var capW   = BASE_W * sc * ratio;
+        var capH   = BASE_W * aspectR * sc * ratio;
         ctx.save();
-        ctx.translate(capCx, capCy);
+        ctx.translate(cx * ratioX, cy * ratioY);
         ctx.rotate(rot * Math.PI / 180);
         ctx.drawImage(img, -capW / 2, -capH / 2, capW, capH);
         ctx.restore();
       }
 
-      // Download
       try {
         var link = document.createElement('a');
         link.download = 'contradiction-of-s.jpg';

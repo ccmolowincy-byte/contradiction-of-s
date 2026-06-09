@@ -1002,37 +1002,26 @@
   /* ════════════════════════════════════ Portrait capture */
 
   /* ─────────────────────────────────────────────────────────────────────────
-   * captureAvatarPortrait  →  1024×1024 canvas
+   * buildAvatarCanvas(fillBackground)  →  { avCanvas, avLeft, avTop, avW_px, avH_px }
    *
-   * Always uses the composition view (stage at scale 0.5) to compute avatar
-   * position, regardless of which tab is currently active. This ensures the
-   * background drawing and the composited avatar are always aligned: both use
-   * the same bgCanvas pixel-coordinate system derived from getBoundingClientRect.
+   * Shared geometry + layer-draw helper used by both capture functions.
+   * fillBackground=true  : fills avCanvas with BG_COLOR so multiply compositing
+   *                        works correctly (raw JPG layers multiply against cream).
+   * fillBackground=false : starts transparent; raw JPG layers have their white
+   *                        background converted to alpha before compositing.
    * ───────────────────────────────────────────────────────────────────────── */
-  function captureAvatarPortrait() {
-    // 1. Ensure bgCanvas CSS size is current
+  function buildAvatarCanvas(fillBackground) {
     fitBgCanvas();
 
-    // 2. Temporarily apply composition scale so rects reflect the 0.5-scale layout
     const prevTransform = stage.style.transform;
     stage.style.transform = 'scale(0.5)';
-
-    // 3. Measure positions (getBoundingClientRect forces reflow)
     const bgRect    = bgCanvas.getBoundingClientRect();
     const stageRect = stage.getBoundingClientRect();
-
-    // 4. Restore transform immediately — same JS tick, no visible flicker
     stage.style.transform = prevTransform;
 
-    // 5. Guard: bgCanvas must have a non-zero CSS size
     const bW = bgRect.width, bH = bgRect.height;
-    if (!bW || !bH) {
-      const fb = document.createElement('canvas');
-      fb.width = BG_SIZE; fb.height = BG_SIZE;
-      return fb;
-    }
+    if (!bW || !bH) return null;
 
-    // 6. Map avatar bounding rect into bgCanvas pixel space
     const scaleX = BG_SIZE / bW;
     const scaleY = BG_SIZE / bH;
     const avLeft = (stageRect.left - bgRect.left) * scaleX;
@@ -1040,7 +1029,6 @@
     const avW    = stageRect.width  * scaleX;
     const avH    = stageRect.height * scaleY;
 
-    // 7. Render all avatar layers onto an offscreen canvas at composition size
     const avW_px = Math.max(1, Math.round(avW));
     const avH_px = Math.max(1, Math.round(avH));
     const avCanvas = document.createElement('canvas');
@@ -1049,6 +1037,12 @@
     const avCtx   = avCanvas.getContext('2d');
     const lScaleX = avW / STAGE_W;
     const lScaleY = avH / STAGE_H;
+
+    // Fill background so raw-layer multiply has a correct base (flat export)
+    if (fillBackground) {
+      avCtx.fillStyle = BG_COLOR;
+      avCtx.fillRect(0, 0, avW_px, avH_px);
+    }
 
     const sorted = Object.values(layers).sort((a, b) => a.z - b.z);
     for (const layer of sorted) {
@@ -1059,24 +1053,60 @@
       const imgEl   = el.querySelector('.layer-img');
       const src = (lCanvas && lCanvas.style.display !== 'none') ? lCanvas : imgEl;
       if (!src) continue;
+
+      const cx = (layer.x + layer.w / 2) * lScaleX;
+      const cy = (layer.y + layer.h / 2) * lScaleY;
+      const dW = layer.w * lScaleX;
+      const dH = layer.h * lScaleY;
+
       try {
         avCtx.save();
-        avCtx.globalCompositeOperation = layer.raw ? 'multiply' : 'source-over';
-        const cx = (layer.x + layer.w / 2) * lScaleX;
-        const cy = (layer.y + layer.h / 2) * lScaleY;
-        avCtx.translate(cx, cy);
-        avCtx.rotate(layer.rot * Math.PI / 180);
-        avCtx.drawImage(src,
-          -layer.w * lScaleX / 2, -layer.h * lScaleY / 2,
-           layer.w * lScaleX,      layer.h * lScaleY);
+        if (!fillBackground && layer.raw) {
+          // Transparent mode: JPG has white background — convert only this layer's
+          // white pixels to alpha before compositing (raw format artifact, not content)
+          const tmp = document.createElement('canvas');
+          tmp.width  = Math.max(1, Math.round(dW));
+          tmp.height = Math.max(1, Math.round(dH));
+          const tCtx = tmp.getContext('2d');
+          tCtx.fillStyle = '#ffffff';
+          tCtx.fillRect(0, 0, tmp.width, tmp.height);
+          tCtx.drawImage(src, 0, 0, tmp.width, tmp.height);
+          const id = tCtx.getImageData(0, 0, tmp.width, tmp.height);
+          const px = id.data;
+          for (let i = 0; i < px.length; i += 4) {
+            if (px[i] > 220 && px[i+1] > 220 && px[i+2] > 220) px[i+3] = 0;
+          }
+          tCtx.putImageData(id, 0, 0);
+          avCtx.globalCompositeOperation = 'source-over';
+          avCtx.translate(cx, cy);
+          avCtx.rotate(layer.rot * Math.PI / 180);
+          avCtx.drawImage(tmp, -dW / 2, -dH / 2, dW, dH);
+        } else {
+          avCtx.globalCompositeOperation = layer.raw ? 'multiply' : 'source-over';
+          avCtx.translate(cx, cy);
+          avCtx.rotate(layer.rot * Math.PI / 180);
+          avCtx.drawImage(src, -dW / 2, -dH / 2, dW, dH);
+        }
         avCtx.restore();
       } catch (_) { avCtx.restore(); }
     }
-    // Foreground pen drawing (drawCanvas is 300×440; scale to composition size)
+
+    // Foreground pen drawing
     avCtx.globalCompositeOperation = 'source-over';
     avCtx.drawImage(drawCanvas, 0, 0, avW_px, avH_px);
 
-    // 8. Composite into 1024×1024 output
+    return { avCanvas, avLeft, avTop, avW_px, avH_px };
+  }
+
+  /* captureAvatarPortrait → 1024×1024 canvas with BG_COLOR + background drawing */
+  function captureAvatarPortrait() {
+    const result = buildAvatarCanvas(true);
+    if (!result) {
+      const fb = document.createElement('canvas');
+      fb.width = BG_SIZE; fb.height = BG_SIZE;
+      return fb;
+    }
+    const { avCanvas, avLeft, avTop, avW_px, avH_px } = result;
     const canvas = document.createElement('canvas');
     canvas.width = BG_SIZE; canvas.height = BG_SIZE;
     const ctx = canvas.getContext('2d');
@@ -1084,8 +1114,13 @@
     ctx.fillRect(0, 0, BG_SIZE, BG_SIZE);
     ctx.drawImage(bgCanvas, 0, 0, BG_SIZE, BG_SIZE);
     ctx.drawImage(avCanvas, Math.round(avLeft), Math.round(avTop), avW_px, avH_px);
-
     return canvas;
+  }
+
+  /* captureAvatarTransparentPNG → avCanvas-sized transparent PNG for AR overlay */
+  function captureAvatarTransparentPNG() {
+    const result = buildAvatarCanvas(false);
+    return result ? result.avCanvas : document.createElement('canvas');
   }
 
   /* ════════════════════════════════════ Crop modal
@@ -1258,6 +1293,15 @@
     }
 
     App.saveAvatarPortrait(output.toDataURL('image/png'));
+
+    // Also save a transparent-background version for AR overlay
+    try {
+      const transparentCanvas = captureAvatarTransparentPNG();
+      if (transparentCanvas && transparentCanvas.width > 0) {
+        App.saveAvatarPortraitTransparent(transparentCanvas.toDataURL('image/png'));
+      }
+    } catch (e) { console.warn('Transparent PNG export failed:', e); }
+
     App.saveAvatarIdentity(selectedColour, selectedShape);
     saveState();
     closeCropModal();

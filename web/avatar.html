@@ -445,15 +445,29 @@
     }
     .collection-grid.open { display: grid; }
     .collection-thumb {
-      aspect-ratio: 1;
       border-radius: 3px;
       border: 1px solid rgba(92,26,26,0.12);
-      overflow: hidden;
       background: var(--bg);
+      display: flex;
+      flex-direction: column;
+    }
+    .collection-thumb-img {
+      aspect-ratio: 1;
+      overflow: hidden;
     }
     .collection-thumb img {
       width: 100%; height: 100%;
       object-fit: cover;
+    }
+    .collection-thumb-label {
+      font-family: 'IM Fell English', serif;
+      font-size: 8px;
+      font-style: italic;
+      color: var(--warm-gray);
+      padding: 3px 4px 4px;
+      line-height: 1.35;
+      word-break: break-word;
+      hyphens: auto;
     }
     .collection-empty {
       font-family: 'IM Fell English', serif;
@@ -858,11 +872,21 @@
         stickers.slice().reverse().forEach(function (s) {
           var div = document.createElement('div');
           div.className = 'collection-thumb';
-          div.title = s.prompt || '';
+          // Image
+          var imgWrap = document.createElement('div');
+          imgWrap.className = 'collection-thumb-img';
           var img = document.createElement('img');
           img.src = s.image;
           img.alt = s.prompt || 'sticker';
-          div.appendChild(img);
+          imgWrap.appendChild(img);
+          div.appendChild(imgWrap);
+          // Prompt text
+          if (s.prompt) {
+            var label = document.createElement('div');
+            label.className = 'collection-thumb-label';
+            label.textContent = s.prompt;
+            div.appendChild(label);
+          }
           grid.appendChild(div);
         });
       }

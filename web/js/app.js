@@ -22,6 +22,14 @@ const App = (() => {
     localStorage.setItem('avatarPortrait', dataURL);
   }
 
+  /* ── Avatar portrait — transparent PNG for AR overlay ── */
+  function getAvatarPortraitTransparent() {
+    return localStorage.getItem('avatarPortraitTransparent') || null;
+  }
+  function saveAvatarPortraitTransparent(dataURL) {
+    localStorage.setItem('avatarPortraitTransparent', dataURL);
+  }
+
   /* ── Avatar identity (Colour of Condition + Shape of Condition) ── */
   function getAvatarIdentity() {
     try { return JSON.parse(localStorage.getItem('avatarIdentity') || 'null'); } catch { return null; }
@@ -248,6 +256,7 @@ const App = (() => {
     getProfile, saveProfile,
     getAvatarState, saveAvatarState,
     getAvatarPortrait, saveAvatarPortrait,
+    getAvatarPortraitTransparent, saveAvatarPortraitTransparent,
     getAvatarIdentity, saveAvatarIdentity,
     getArchive, addArchiveEntry,
     highlightNav, fmtTime,

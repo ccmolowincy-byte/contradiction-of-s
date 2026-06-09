@@ -202,6 +202,24 @@
       font-size: 7px;
     }
 
+    /* ── Delete button ───────────────────────────────────────────────────── */
+    .contrib-delete-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-family: 'Space Grotesk', sans-serif;
+      letter-spacing: 0.06em;
+      opacity: 0.55;
+      transition: opacity 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .contrib-delete-btn:hover,
+    .contrib-delete-btn:active { opacity: 1; color: var(--burgundy); }
+
     /* ── CTA to create ───────────────────────────────────────────────────── */
     .community-cta {
       margin: 24px 20px 0;
@@ -289,43 +307,8 @@
   (function () {
     'use strict';
 
-    // ── Placeholder SVG drawings (abstract marks for seed entries) ─────────
-    function placeholderSVG(idx) {
-      var marks = [
-        // 0 — concentric circles
-        '<circle cx="50" cy="50" r="32" fill="none" stroke="%235c1a1a" stroke-width="1.5"/><circle cx="50" cy="50" r="20" fill="none" stroke="%235c1a1a" stroke-width="1"/><circle cx="50" cy="50" r="9" fill="%235c1a1a"/>',
-        // 1 — cross / mark
-        '<line x1="20" y1="50" x2="80" y2="50" stroke="%235c1a1a" stroke-width="2"/><line x1="50" y1="20" x2="50" y2="80" stroke="%235c1a1a" stroke-width="2"/><circle cx="50" cy="50" r="6" fill="%23f0eae0" stroke="%235c1a1a" stroke-width="1.5"/>',
-        // 2 — wave
-        '<path d="M 10 55 Q 28 30 50 50 Q 72 70 90 45" fill="none" stroke="%235c1a1a" stroke-width="2"/><path d="M 10 65 Q 28 40 50 60 Q 72 80 90 55" fill="none" stroke="%235c1a1a" stroke-width="1" opacity="0.4"/>',
-        // 3 — nested triangles
-        '<polygon points="50,15 82,72 18,72" fill="none" stroke="%235c1a1a" stroke-width="1.5"/><polygon points="50,30 70,65 30,65" fill="none" stroke="%235c1a1a" stroke-width="1" stroke-dasharray="4,3"/>',
-        // 4 — spiral fragment
-        '<path d="M50,50 m0,-25 a25,25 0 1,1 -0.01,0" fill="none" stroke="%235c1a1a" stroke-width="1.5"/><path d="M50,50 m0,-14 a14,14 0 1,1 -0.01,0" fill="none" stroke="%235c1a1a" stroke-width="1"/><circle cx="50" cy="50" r="3" fill="%235c1a1a"/>',
-        // 5 — irregular polygon / fragment
-        '<path d="M28,28 L60,22 L76,48 L65,74 L36,78 L22,54 Z" fill="none" stroke="%235c1a1a" stroke-width="1.5"/><line x1="60" y1="22" x2="36" y2="78" stroke="%235c1a1a" stroke-width="0.8" stroke-dasharray="4,3"/>'
-      ];
-      var inner = marks[idx % marks.length];
-      return 'data:image/svg+xml;charset=utf-8,' +
-        encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23faf6ef" width="100" height="100"/>' + inner + '</svg>');
-    }
-
-    // ── Seed contributions (prototype data) ───────────────────────────────
-    var SEED = [
-      { id: 'seed-1', nickname: 'quiet cartography', prompt: 'Draw something others cannot see.', description: 'a map of all the places I rest without being asked why', created: '2026-05-12', image: null },
-      { id: 'seed-2', nickname: 'amber spiral',      prompt: 'Draw a shape for discomfort.',      description: 'the feeling between knowing and not saying',              created: '2026-05-18', image: null },
-      { id: 'seed-3', nickname: 'bone horizon',       prompt: 'Draw something your body remembers.', description: 'recurring threshold, different floor',               created: '2026-05-24', image: null },
-      { id: 'seed-4', nickname: 'fog fragment',       prompt: 'Draw a mark for recovery.',        description: 'not healed, just learning the perimeter',               created: '2026-05-28', image: null },
-      { id: 'seed-5', nickname: 'ivory coil',         prompt: 'Draw something you wish people understood.', description: 'the distance between fine and functional',   created: '2026-05-30', image: null },
-      { id: 'seed-6', nickname: 'shadow fold',        prompt: 'Draw a symbol for support.',       description: 'what holds without needing to be seen',                 created: '2026-06-02', image: null },
-    ];
-
-    // ── Load user-published contributions ─────────────────────────────────
-    var userContribs = [];
-    try { userContribs = JSON.parse(localStorage.getItem('cos_community') || '[]'); } catch (e) {}
-
-    // User entries first (most recent), then seed
-    var all = userContribs.slice().reverse().concat(SEED);
+    var feed     = document.getElementById('community-feed');
+    var emptyEl  = document.getElementById('community-empty');
 
     // ── Format date ───────────────────────────────────────────────────────
     function fmtDate(str) {
@@ -336,30 +319,35 @@
       return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
     }
 
+    // ── Load contributions from localStorage ──────────────────────────────
+    function loadContribs() {
+      try { return JSON.parse(localStorage.getItem('cos_community') || '[]'); } catch (e) { return []; }
+    }
+
+    // ── Delete a contribution by id ───────────────────────────────────────
+    function deleteContrib(id, cardEl) {
+      var contribs = loadContribs();
+      var updated  = contribs.filter(function (c) { return c.id !== id; });
+      localStorage.setItem('cos_community', JSON.stringify(updated));
+      if (cardEl && cardEl.parentNode) cardEl.parentNode.removeChild(cardEl);
+      // Show empty state if no cards remain
+      if (feed.children.length === 0) emptyEl.classList.add('visible');
+    }
+
     // ── Build card ────────────────────────────────────────────────────────
-    function buildCard(entry, idx, isOwn) {
+    function buildCard(entry) {
       var card = document.createElement('div');
-      card.className = 'contrib-card' + (isOwn ? ' own-entry' : '');
+      card.className = 'contrib-card own-entry';
 
       // Image area
       var imgWrap = document.createElement('div');
       imgWrap.className = 'contrib-card-img';
-
       if (entry.image) {
-        var i = document.createElement('img');
-        i.src = entry.image;
-        i.alt = entry.prompt || '';
-        i.loading = 'lazy';
-        imgWrap.appendChild(i);
-      } else {
-        var ph = document.createElement('div');
-        ph.className = 'contrib-img-placeholder';
-        var svgUrl = placeholderSVG(idx);
-        var phImg = document.createElement('img');
-        phImg.src = svgUrl;
-        phImg.alt = '';
-        ph.appendChild(phImg);
-        imgWrap.appendChild(ph);
+        var imgEl = document.createElement('img');
+        imgEl.src = entry.image;
+        imgEl.alt = entry.prompt || '';
+        imgEl.loading = 'lazy';
+        imgWrap.appendChild(imgEl);
       }
       card.appendChild(imgWrap);
 
@@ -367,15 +355,19 @@
       var body = document.createElement('div');
       body.className = 'contrib-card-body';
 
-      var prompt = document.createElement('div');
-      prompt.className = 'contrib-prompt';
-      prompt.textContent = entry.prompt || '';
-      body.appendChild(prompt);
+      if (entry.prompt) {
+        var prompt = document.createElement('div');
+        prompt.className = 'contrib-prompt';
+        prompt.textContent = entry.prompt;
+        body.appendChild(prompt);
+      }
 
-      var desc = document.createElement('div');
-      desc.className = 'contrib-description';
-      desc.textContent = entry.description || '';
-      body.appendChild(desc);
+      if (entry.description) {
+        var desc = document.createElement('div');
+        desc.className = 'contrib-description';
+        desc.textContent = entry.description;
+        body.appendChild(desc);
+      }
 
       var meta = document.createElement('div');
       meta.className = 'contrib-meta';
@@ -385,25 +377,38 @@
       nick.textContent = entry.nickname || 'anonymous';
       meta.appendChild(nick);
 
+      var right = document.createElement('div');
+      right.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
       var date = document.createElement('div');
       date.className = 'contrib-date';
       date.textContent = fmtDate(entry.created);
-      meta.appendChild(date);
+      right.appendChild(date);
 
+      // Delete button
+      var delBtn = document.createElement('button');
+      delBtn.className = 'contrib-delete-btn';
+      delBtn.textContent = 'delete';
+      delBtn.setAttribute('aria-label', 'Delete this post');
+      delBtn.addEventListener('click', function () {
+        deleteContrib(entry.id, card);
+      });
+      right.appendChild(delBtn);
+
+      meta.appendChild(right);
       body.appendChild(meta);
       card.appendChild(body);
       return card;
     }
 
     // ── Render feed ───────────────────────────────────────────────────────
-    var feed = document.getElementById('community-feed');
+    var contribs = loadContribs().slice().reverse();   // newest first
 
-    if (all.length === 0) {
-      document.getElementById('community-empty').classList.add('visible');
+    if (contribs.length === 0) {
+      emptyEl.classList.add('visible');
     } else {
-      all.forEach(function (entry, idx) {
-        var isOwn = userContribs.indexOf(entry) !== -1;
-        feed.appendChild(buildCard(entry, idx, isOwn));
+      contribs.forEach(function (entry) {
+        feed.appendChild(buildCard(entry));
       });
     }
 
