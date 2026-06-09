@@ -42,6 +42,7 @@
     body: 'Body', face: 'Face',
     'hair-top': 'Hair (top)', 'hair-bottom': 'Hair (low)',
     tops: 'Top', bottoms: 'Bottom',
+    sticker: 'Sticker',
   };
 
   /* ════════════════════════════════════════════ State */
@@ -606,6 +607,69 @@
       return;
     }
 
+    /* ── My Collection tab — shows saved stickers, places them on the stage ── */
+    if (cat === 'collection') {
+      let stickers = [];
+      try { stickers = JSON.parse(localStorage.getItem('cos_stickers') || '[]'); } catch (e) {}
+
+      if (stickers.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'collection-tray-empty';
+        empty.innerHTML = '<p>No stickers yet.</p><a href="sticker.html">Make a sticker →</a>';
+        tray.appendChild(empty);
+        return;
+      }
+
+      stickers.slice().reverse().forEach(s => {
+        const stickerId = 'sticker-' + s.id;
+        const isActive  = layers['sticker'] && layers['sticker'].id === stickerId;
+
+        const thumb = document.createElement('div');
+        thumb.className = 'asset-thumb coll-thumb' + (isActive ? ' selected' : '');
+
+        const img = document.createElement('img');
+        img.src = s.image; img.alt = s.prompt || 'sticker';
+        thumb.appendChild(img);
+
+        if (s.prompt) {
+          const lbl = document.createElement('div');
+          lbl.className = 'coll-thumb-label';
+          lbl.textContent = s.prompt;
+          thumb.appendChild(lbl);
+        }
+
+        thumb.addEventListener('click', () => {
+          if (isActive) return;   // already placed
+          const ex = layers['sticker'];
+          // Preserve position/size/rotation if a sticker was already placed
+          const sLayer = {
+            cat:     'sticker',
+            id:      stickerId,
+            src:     s.image,
+            x:       ex ? ex.x   : 80,
+            y:       ex ? ex.y   : 100,
+            w:       ex ? ex.w   : 120,
+            h:       ex ? ex.h   : 120,
+            z:       ex ? ex.z   : 8,
+            rot:     ex ? ex.rot : 0,
+            mesh:    makeMesh(),
+            visible: true,
+            raw:     false,
+          };
+          document.querySelector('.avatar-layer[data-cat="sticker"]')?.remove();
+          layers['sticker'] = sLayer;
+          renderLayer(sLayer);
+          selectLayer('sticker');
+          renderAssetTray('collection');
+          if (layerPanelOpen) renderLayerPanel();
+          recordState();
+        });
+
+        tray.appendChild(thumb);
+      });
+      return;
+    }
+
     if (cat !== 'body') {
       const none = document.createElement('div');
       none.className = 'asset-thumb none-thumb' + (!layers[cat] ? ' selected' : '');
@@ -1004,44 +1068,35 @@
   /* ─────────────────────────────────────────────────────────────────────────
    * buildAvatarCanvas(fillBackground)  →  { avCanvas, avLeft, avTop, avW_px, avH_px }
    *
-   * Shared geometry + layer-draw helper used by both capture functions.
-   * fillBackground=true  : fills avCanvas with BG_COLOR so multiply compositing
-   *                        works correctly (raw JPG layers multiply against cream).
-   * fillBackground=false : starts transparent; raw JPG layers have their white
-   *                        background converted to alpha before compositing.
+   * Draws all layers in STAGE pixel space (STAGE_W × STAGE_H = 300×440).
+   * Layer x/y/w/h/rot are stored in stage pixels, so NO screen measurement
+   * (getBoundingClientRect) is needed — the old approach of temporarily
+   * forcing scale(0.5) was wrong because CSS scale shrinks from center,
+   * shifting the bounding rect's left/top inward and corrupting avLeft/avTop.
+   *
+   * The output position in the 1024×1024 bgCanvas is calculated from known
+   * constants: in composition view the stage is at scale(0.5), centred inside
+   * the bgCanvas CSS square (side = bgCSSSize px).
+   *
+   * fillBackground=true  : fills avCanvas with BG_COLOR before drawing, so
+   *   raw JPG layers get correct multiply compositing (portrait export).
+   * fillBackground=false : transparent canvas; raw JPG layers have near-pure-
+   *   white pixels removed per-layer with a tight threshold (AR overlay export).
    * ───────────────────────────────────────────────────────────────────────── */
   function buildAvatarCanvas(fillBackground) {
     fitBgCanvas();
+    const bgCSSSize = parseFloat(bgCanvas.style.width) || 0;
+    if (!bgCSSSize) return null;
 
-    const prevTransform = stage.style.transform;
-    stage.style.transform = 'scale(0.5)';
-    const bgRect    = bgCanvas.getBoundingClientRect();
-    const stageRect = stage.getBoundingClientRect();
-    stage.style.transform = prevTransform;
-
-    const bW = bgRect.width, bH = bgRect.height;
-    if (!bW || !bH) return null;
-
-    const scaleX = BG_SIZE / bW;
-    const scaleY = BG_SIZE / bH;
-    const avLeft = (stageRect.left - bgRect.left) * scaleX;
-    const avTop  = (stageRect.top  - bgRect.top)  * scaleY;
-    const avW    = stageRect.width  * scaleX;
-    const avH    = stageRect.height * scaleY;
-
-    const avW_px = Math.max(1, Math.round(avW));
-    const avH_px = Math.max(1, Math.round(avH));
+    // avCanvas exactly matches the stage — layer coordinates are directly usable
     const avCanvas = document.createElement('canvas');
-    avCanvas.width  = avW_px;
-    avCanvas.height = avH_px;
-    const avCtx   = avCanvas.getContext('2d');
-    const lScaleX = avW / STAGE_W;
-    const lScaleY = avH / STAGE_H;
+    avCanvas.width  = STAGE_W;
+    avCanvas.height = STAGE_H;
+    const avCtx = avCanvas.getContext('2d');
 
-    // Fill background so raw-layer multiply has a correct base (flat export)
     if (fillBackground) {
       avCtx.fillStyle = BG_COLOR;
-      avCtx.fillRect(0, 0, avW_px, avH_px);
+      avCtx.fillRect(0, 0, STAGE_W, STAGE_H);
     }
 
     const sorted = Object.values(layers).sort((a, b) => a.z - b.z);
@@ -1054,51 +1109,64 @@
       const src = (lCanvas && lCanvas.style.display !== 'none') ? lCanvas : imgEl;
       if (!src) continue;
 
-      const cx = (layer.x + layer.w / 2) * lScaleX;
-      const cy = (layer.y + layer.h / 2) * lScaleY;
-      const dW = layer.w * lScaleX;
-      const dH = layer.h * lScaleY;
+      // All coordinates are already in stage pixels — draw directly, no scaling
+      const cx = layer.x + layer.w / 2;
+      const cy = layer.y + layer.h / 2;
 
       try {
         avCtx.save();
         if (!fillBackground && layer.raw) {
-          // Transparent mode: JPG has white background — convert only this layer's
-          // white pixels to alpha before compositing (raw format artifact, not content)
+          // Transparent export: render JPG on white, then erase near-pure-white
+          // pixels (JPEG background artifact). Tight threshold (>248) preserves
+          // body content while removing the white background.
+          const tw = Math.max(1, layer.w), th = Math.max(1, layer.h);
           const tmp = document.createElement('canvas');
-          tmp.width  = Math.max(1, Math.round(dW));
-          tmp.height = Math.max(1, Math.round(dH));
+          tmp.width = tw; tmp.height = th;
           const tCtx = tmp.getContext('2d');
           tCtx.fillStyle = '#ffffff';
-          tCtx.fillRect(0, 0, tmp.width, tmp.height);
-          tCtx.drawImage(src, 0, 0, tmp.width, tmp.height);
-          const id = tCtx.getImageData(0, 0, tmp.width, tmp.height);
+          tCtx.fillRect(0, 0, tw, th);
+          tCtx.drawImage(src, 0, 0, tw, th);
+          const id = tCtx.getImageData(0, 0, tw, th);
           const px = id.data;
           for (let i = 0; i < px.length; i += 4) {
-            if (px[i] > 220 && px[i+1] > 220 && px[i+2] > 220) px[i+3] = 0;
+            if (px[i] > 248 && px[i+1] > 248 && px[i+2] > 248) px[i+3] = 0;
           }
           tCtx.putImageData(id, 0, 0);
           avCtx.globalCompositeOperation = 'source-over';
           avCtx.translate(cx, cy);
           avCtx.rotate(layer.rot * Math.PI / 180);
-          avCtx.drawImage(tmp, -dW / 2, -dH / 2, dW, dH);
+          avCtx.drawImage(tmp, -layer.w / 2, -layer.h / 2, layer.w, layer.h);
         } else {
           avCtx.globalCompositeOperation = layer.raw ? 'multiply' : 'source-over';
           avCtx.translate(cx, cy);
           avCtx.rotate(layer.rot * Math.PI / 180);
-          avCtx.drawImage(src, -dW / 2, -dH / 2, dW, dH);
+          avCtx.drawImage(src, -layer.w / 2, -layer.h / 2, layer.w, layer.h);
         }
         avCtx.restore();
       } catch (_) { avCtx.restore(); }
     }
 
-    // Foreground pen drawing
+    // Foreground pen drawing — drawCanvas is exactly STAGE_W × STAGE_H
     avCtx.globalCompositeOperation = 'source-over';
-    avCtx.drawImage(drawCanvas, 0, 0, avW_px, avH_px);
+    avCtx.drawImage(drawCanvas, 0, 0);
+
+    // ── Where does the 300×440 avCanvas sit in the 1024×1024 bgCanvas?
+    // In composition mode, stage is at scale(0.5) centred in the bgCanvas CSS
+    // square. No getBoundingClientRect needed — pure math from known constants.
+    const bgPerCSS = BG_SIZE / bgCSSSize;       // canvas px per CSS px
+    const cssW = STAGE_W * 0.5;                  // stage at scale(0.5): 150 CSS px
+    const cssH = STAGE_H * 0.5;                  // 220 CSS px
+    const avW  = cssW * bgPerCSS;
+    const avH  = cssH * bgPerCSS;
+    const avLeft = Math.round((BG_SIZE - avW) / 2);
+    const avTop  = Math.round((BG_SIZE - avH) / 2);
+    const avW_px = Math.round(avW);
+    const avH_px = Math.round(avH);
 
     return { avCanvas, avLeft, avTop, avW_px, avH_px };
   }
 
-  /* captureAvatarPortrait → 1024×1024 canvas with BG_COLOR + background drawing */
+  /* captureAvatarPortrait → 1024×1024 canvas, BG_COLOR + background drawing */
   function captureAvatarPortrait() {
     const result = buildAvatarCanvas(true);
     if (!result) {
@@ -1113,11 +1181,12 @@
     ctx.fillStyle = BG_COLOR;
     ctx.fillRect(0, 0, BG_SIZE, BG_SIZE);
     ctx.drawImage(bgCanvas, 0, 0, BG_SIZE, BG_SIZE);
-    ctx.drawImage(avCanvas, Math.round(avLeft), Math.round(avTop), avW_px, avH_px);
+    // Scale the 300×440 avCanvas into its composition-view position in the output
+    ctx.drawImage(avCanvas, avLeft, avTop, avW_px, avH_px);
     return canvas;
   }
 
-  /* captureAvatarTransparentPNG → avCanvas-sized transparent PNG for AR overlay */
+  /* captureAvatarTransparentPNG → 300×440 transparent PNG for AR overlay */
   function captureAvatarTransparentPNG() {
     const result = buildAvatarCanvas(false);
     return result ? result.avCanvas : document.createElement('canvas');

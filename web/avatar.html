@@ -75,9 +75,10 @@
     }
     .cat-tab.active .cat-tab-label { color: var(--burgundy); }
 
-    /* Layers + Background special tabs */
+    /* Layers + Background + Collection special tabs */
     .cat-tab-layers .tab-icon-svg,
-    .cat-tab-bg .tab-icon-svg {
+    .cat-tab-bg .tab-icon-svg,
+    .cat-tab-collection .tab-icon-svg {
       display: block;
       margin: 0 auto 1px;
       width: 20px; height: 20px;
@@ -85,7 +86,52 @@
       transition: fill 0.15s;
     }
     .cat-tab-layers.active .tab-icon-svg,
-    .cat-tab-bg.active .tab-icon-svg { fill: var(--burgundy); }
+    .cat-tab-bg.active .tab-icon-svg,
+    .cat-tab-collection.active .tab-icon-svg { fill: var(--burgundy); }
+
+    /* ── My Collection tray ── */
+    .collection-tray-empty {
+      padding: 16px 14px;
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      color: var(--warm-gray);
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .collection-tray-empty a {
+      color: var(--burgundy);
+      text-decoration: none;
+      display: block;
+      margin-top: 6px;
+    }
+    .coll-thumb {
+      /* override asset-thumb to allow label below the image */
+      height: auto !important;
+      padding: 0 !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      justify-content: flex-start !important;
+      overflow: visible !important;
+    }
+    .coll-thumb img {
+      width: 100% !important;
+      height: auto !important;
+      aspect-ratio: 1;
+      object-fit: cover;
+      display: block;
+      flex-shrink: 0;
+    }
+    .coll-thumb-label {
+      font-family: 'IM Fell English', serif;
+      font-size: 7px;
+      font-style: italic;
+      color: var(--warm-gray);
+      padding: 2px 4px 3px;
+      line-height: 1.3;
+      word-break: break-word;
+      hyphens: auto;
+    }
 
     /* ── Layer panel ── */
     #layer-panel {
@@ -408,86 +454,6 @@
       text-align: center;
     }
 
-    /* ── My Collection ── */
-    .collection-wrap {
-      border-top: 1px dashed rgba(92,26,26,0.15);
-      padding: 12px 12px 16px;
-    }
-    .collection-toggle {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0 0 0 2px;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 9px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--warm-gray);
-      -webkit-tap-highlight-color: transparent;
-    }
-    .collection-count {
-      background: rgba(92,26,26,0.12);
-      color: var(--burgundy);
-      border-radius: 20px;
-      padding: 1px 7px;
-      font-size: 8px;
-      letter-spacing: 0.1em;
-    }
-    .collection-grid {
-      display: none;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      margin-top: 10px;
-    }
-    .collection-grid.open { display: grid; }
-    .collection-thumb {
-      border-radius: 3px;
-      border: 1px solid rgba(92,26,26,0.12);
-      background: var(--bg);
-      display: flex;
-      flex-direction: column;
-    }
-    .collection-thumb-img {
-      aspect-ratio: 1;
-      overflow: hidden;
-    }
-    .collection-thumb img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-    }
-    .collection-thumb-label {
-      font-family: 'IM Fell English', serif;
-      font-size: 8px;
-      font-style: italic;
-      color: var(--warm-gray);
-      padding: 3px 4px 4px;
-      line-height: 1.35;
-      word-break: break-word;
-      hyphens: auto;
-    }
-    .collection-empty {
-      font-family: 'IM Fell English', serif;
-      font-size: 11px;
-      font-style: italic;
-      color: var(--muted);
-      padding: 8px 0 0;
-      display: none;
-    }
-    .collection-empty.visible { display: block; }
-    .collection-link {
-      display: block;
-      text-align: right;
-      font-size: 9px;
-      letter-spacing: 0.1em;
-      text-decoration: none;
-      color: var(--burgundy);
-      opacity: 0.7;
-      margin-top: 8px;
-    }
 
     /* ── Crop modal — dark cinema-style framing UI ── */
     #crop-modal {
@@ -695,6 +661,13 @@
             <span class="cat-tab-label">Body</span>
           </button>
 
+          <button class="cat-tab cat-tab-collection" data-cat="collection" role="tab" title="My sticker collection">
+            <svg class="tab-icon-svg" viewBox="0 0 24 24">
+              <path d="M12 2l2.47 7.6H22l-6.47 4.7 2.47 7.6L12 17.2l-6 4.7 2.47-7.6L2 9.6h7.53z"/>
+            </svg>
+            <span class="cat-tab-label">Stickers</span>
+          </button>
+
           <button class="cat-tab" data-cat="face" role="tab">
             <img class="tab-icon" src="icons/Face.jpeg" alt="">
             <span class="cat-tab-label">Face</span>
@@ -795,17 +768,6 @@
         </div>
       </div>
 
-      <!-- ── My Collection ── -->
-      <div class="collection-wrap">
-        <button class="collection-toggle" id="collection-toggle" aria-expanded="false">
-          <span>My Collection</span>
-          <span class="collection-count" id="collection-count">0</span>
-        </button>
-        <p class="collection-empty" id="collection-empty">No stickers yet — draw one on the Sticker page.</p>
-        <div class="collection-grid" id="collection-grid"></div>
-        <a href="sticker.html" class="collection-link">make a sticker →</a>
-      </div>
-
     </div><!-- /.avatar-creator -->
   </div>
 
@@ -853,49 +815,5 @@
 
   <script src="js/app.js"></script>
   <script src="js/avatar.js"></script>
-  <script>
-    // ── My Collection — load stickers from localStorage ──────────────────────
-    (function () {
-      var toggle  = document.getElementById('collection-toggle');
-      var grid    = document.getElementById('collection-grid');
-      var countEl = document.getElementById('collection-count');
-      var emptyEl = document.getElementById('collection-empty');
-
-      var stickers = [];
-      try { stickers = JSON.parse(localStorage.getItem('cos_stickers') || '[]'); } catch (e) {}
-
-      countEl.textContent = stickers.length;
-
-      if (stickers.length === 0) {
-        emptyEl.classList.add('visible');
-      } else {
-        stickers.slice().reverse().forEach(function (s) {
-          var div = document.createElement('div');
-          div.className = 'collection-thumb';
-          // Image
-          var imgWrap = document.createElement('div');
-          imgWrap.className = 'collection-thumb-img';
-          var img = document.createElement('img');
-          img.src = s.image;
-          img.alt = s.prompt || 'sticker';
-          imgWrap.appendChild(img);
-          div.appendChild(imgWrap);
-          // Prompt text
-          if (s.prompt) {
-            var label = document.createElement('div');
-            label.className = 'collection-thumb-label';
-            label.textContent = s.prompt;
-            div.appendChild(label);
-          }
-          grid.appendChild(div);
-        });
-      }
-
-      toggle.addEventListener('click', function () {
-        var open = grid.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', open);
-      });
-    }());
-  </script>
 </body>
 </html>
