@@ -335,9 +335,10 @@ hr.divider {
 .avatar-creator {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--nav-h));
-  overflow: hidden;
-  /* Name panel at bottom reduces stage area */
+  /* min-height fills the viewport; on short phones the page can scroll
+     vertically so Save Portrait / identity remain reachable */
+  min-height: calc(100vh - var(--nav-h));
+  overflow: visible;
 }
 .avatar-toolbar {
   display: flex;

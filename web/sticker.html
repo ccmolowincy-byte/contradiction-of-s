@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Sticker — Contradiction of S</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { overflow-x: hidden; overflow-y: auto; }
+
+    /* ── Page wrapper ──────────────────────────────────────────────────────── */
+    .sticker-page {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100vh - var(--nav-h));
+      padding: 16px 16px 32px;
+      gap: 14px;
+    }
+
+    /* ── Prompt card ───────────────────────────────────────────────────────── */
+    .s-prompt-card {
+      background: var(--burgundy);
+      color: #f5ede0;
+      border-radius: 3px;
+      padding: 14px 16px 14px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .s-prompt-body { flex: 1; min-width: 0; }
+    .s-prompt-label {
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-family: 'Space Grotesk', sans-serif;
+      opacity: 0.6;
+      margin-bottom: 6px;
+    }
+    .s-prompt-text {
+      font-family: 'IM Fell English', serif;
+      font-size: 16px;
+      line-height: 1.45;
+      font-style: italic;
+    }
+    .s-prompt-next {
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: rgba(255,255,255,0.85);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: 'Space Grotesk', sans-serif;
+      padding: 5px 9px;
+      border-radius: 2px;
+      cursor: pointer;
+      align-self: center;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+      transition: background 0.12s;
+    }
+    .s-prompt-next:active { background: rgba(255,255,255,0.28); }
+
+    /* ── Canvas ────────────────────────────────────────────────────────────── */
+    .s-canvas-wrap {
+      display: flex;
+      justify-content: center;
+    }
+    #sticker-canvas {
+      display: block;
+      border-radius: 2px;
+      box-shadow: 0 2px 14px rgba(92,26,26,0.12), 0 0 0 1px rgba(92,26,26,0.08);
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    /* ── Tool row ──────────────────────────────────────────────────────────── */
+    .s-tools {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .s-tool-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      background: none;
+      border: none;
+      color: var(--warm-gray);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-family: 'Space Grotesk', sans-serif;
+      padding: 5px 11px;
+      border-radius: 4px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.12s;
+    }
+    .s-tool-btn svg { width: 20px; height: 20px; }
+    .s-tool-btn.active { color: var(--burgundy); background: rgba(92,26,26,0.08); }
+    .s-tool-btn:active  { background: rgba(92,26,26,0.13); }
+
+    /* ── Colour row ────────────────────────────────────────────────────────── */
+    .s-colors {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 2px 0;
+    }
+    .s-color-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2.5px solid transparent;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.1s;
+      padding: 0;
+    }
+    .s-color-dot.active {
+      border-color: var(--ink);
+      transform: scale(1.18);
+    }
+
+    /* ── Brush-size row ────────────────────────────────────────────────────── */
+    .s-sizes {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 4px 2px;
+    }
+    .s-size-btn {
+      border-radius: 50%;
+      background: var(--ink);
+      border: none;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+      opacity: 0.35;
+      transition: opacity 0.12s, transform 0.1s;
+      padding: 0;
+    }
+    .s-size-btn.active { opacity: 1; transform: scale(1.15); }
+
+    /* ── Section label ─────────────────────────────────────────────────────── */
+    .s-section-label {
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--warm-gray);
+      margin-bottom: 2px;
+    }
+
+    /* ── Action buttons ────────────────────────────────────────────────────── */
+    .s-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    #sticker-save-btn {
+      width: 100%;
+      padding: 11px 16px;
+      background: var(--burgundy);
+      color: #f5ede0;
+      border: none;
+      border-radius: 3px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+    #sticker-save-btn:active, #sticker-save-btn.saved { background: var(--red); }
+    #sticker-clear-btn {
+      width: 100%;
+      padding: 8px;
+      background: none;
+      border: 1px solid rgba(92,26,26,0.2);
+      color: var(--warm-gray);
+      border-radius: 3px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.12s, color 0.12s;
+    }
+    #sticker-clear-btn:active { color: var(--burgundy); border-color: var(--burgundy); }
+
+    /* ── Saved confirmation ────────────────────────────────────────────────── */
+    #sticker-saved-msg {
+      text-align: center;
+      font-family: 'IM Fell English', serif;
+      font-size: 14px;
+      font-style: italic;
+      color: var(--burgundy);
+      padding: 2px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #sticker-saved-msg.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="sticker-page">
+
+      <!-- ── Prompt ── -->
+      <div class="s-prompt-card">
+        <div class="s-prompt-body">
+          <div class="s-prompt-label">Draw a response</div>
+          <div class="s-prompt-text" id="sticker-prompt-text">Loading…</div>
+        </div>
+        <button class="s-prompt-next" id="prompt-next-btn" aria-label="Next prompt">next →</button>
+      </div>
+
+      <!-- ── Canvas ── -->
+      <div class="s-canvas-wrap">
+        <canvas id="sticker-canvas"></canvas>
+      </div>
+
+      <!-- ── Tools ── -->
+      <div class="s-tools">
+        <button class="s-tool-btn active" id="s-tool-pen">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+          </svg>
+          Draw
+        </button>
+        <button class="s-tool-btn" id="s-tool-erase">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.14 3c-.51 0-1.02.2-1.41.59L2.59 14.73c-.78.77-.78 2.04 0 2.83L5.03 20H4v2h16v-2h-6.23l7.64-7.64c.78-.78.78-2.05 0-2.83l-4-4A1.987 1.987 0 0015.14 3z"/>
+          </svg>
+          Erase
+        </button>
+        <div style="flex:1"></div>
+        <button class="s-tool-btn" id="s-tool-undo">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12.5 8c-2.65 0-5.05 1-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+          </svg>
+          Undo
+        </button>
+      </div>
+
+      <!-- ── Colours ── -->
+      <div>
+        <div class="s-section-label">Colour</div>
+        <div class="s-colors" id="sticker-colors"></div>
+      </div>
+
+      <!-- ── Brush size ── -->
+      <div>
+        <div class="s-section-label">Size</div>
+        <div class="s-sizes" id="sticker-sizes"></div>
+      </div>
+
+      <!-- ── Actions ── -->
+      <div class="s-actions">
+        <button id="sticker-save-btn">Save Sticker</button>
+        <button id="sticker-clear-btn">Clear canvas</button>
+        <div id="sticker-saved-msg">Sticker saved to your collection.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Bottom nav ── -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Home
+    </a>
+    <a href="profile.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+      Profile
+    </a>
+    <a href="avatar.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 110 10A5 5 0 0112 2zm0 12c5.3 0 8 2.7 8 4v2H4v-2c0-1.3 2.7-4 8-4z"/></svg>
+      Avatar
+    </a>
+    <a href="sticker.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.6H21l-5.6 4 2.2 6.6L12 15.2 6.4 19.2l2.2-6.6L3 8.6h6.8z"/></svg>
+      Sticker
+    </a>
+  </nav>
+
+  <script src="js/app.js"></script>
+  <script src="js/sticker.js"></script>
+</body>
+</html>
