@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>AR — Contradiction of S</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { overflow: hidden; background: #000; }
+
+    /* ── AR stage — fills screen above nav ───────────────────────────────── */
+    #ar-stage {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      bottom: var(--nav-h);
+      background: #111;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    /* ── Camera feed — mirrored for selfie ───────────────────────────────── */
+    #ar-video {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    /* ── Avatar overlay ──────────────────────────────────────────────────── */
+    #ar-avatar-wrap {
+      position: absolute;
+      top: 0; left: 0;
+      transform-origin: center center;
+      touch-action: none;
+      cursor: grab;
+      z-index: 10;
+      will-change: transform;
+    }
+    #ar-avatar-wrap:active { cursor: grabbing; }
+    #ar-avatar {
+      display: block;
+      width: 160px;
+      height: auto;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    /* ── Start / permission screen ───────────────────────────────────────── */
+    #ar-start {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 30;
+      background: radial-gradient(ellipse at 50% 40%, rgba(92,26,26,0.18) 0%, rgba(8,4,4,0.92) 100%);
+    }
+    #ar-start.hidden { display: none; }
+    #ar-start-eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(240,234,224,0.4);
+    }
+    #ar-start-title {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 22px;
+      font-style: italic;
+      color: rgba(240,234,224,0.9);
+      text-align: center;
+      line-height: 1.4;
+      padding: 0 40px;
+      letter-spacing: 0.02em;
+    }
+    #ar-start-sub {
+      font-family: 'IM Fell English', serif;
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(240,234,224,0.45);
+      text-align: center;
+      padding: 0 48px;
+      line-height: 1.6;
+    }
+    #ar-start-btn {
+      margin-top: 8px;
+      padding: 14px 44px;
+      background: var(--burgundy);
+      color: #f5ede0;
+      border: none;
+      font-family: 'IM Fell English', serif;
+      font-size: 15px;
+      font-style: italic;
+      letter-spacing: 0.1em;
+      border-radius: 2px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+    #ar-start-btn:active { background: var(--red); }
+
+    /* ── Camera error ────────────────────────────────────────────────────── */
+    #ar-cam-error {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 30;
+      background: rgba(8,4,4,0.92);
+      text-align: center;
+      padding: 40px 32px;
+    }
+    #ar-cam-error.visible { display: flex; }
+    #ar-cam-error p {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      color: rgba(240,234,224,0.7);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    #ar-cam-error a {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 13px;
+      color: var(--burgundy);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── No portrait prompt ──────────────────────────────────────────────── */
+    #ar-no-portrait {
+      position: absolute;
+      top: 14px; left: 0; right: 0;
+      display: none;
+      justify-content: center;
+      z-index: 20;
+      pointer-events: none;
+    }
+    #ar-no-portrait.visible { display: flex; }
+    .ar-np-pill {
+      background: rgba(240,234,224,0.88);
+      backdrop-filter: blur(6px);
+      border-radius: 20px;
+      padding: 8px 18px;
+      font-family: 'IM Fell English', serif;
+      font-size: 12px;
+      font-style: italic;
+      color: var(--burgundy);
+      pointer-events: auto;
+    }
+    .ar-np-pill a { color: var(--burgundy); text-decoration: underline; }
+
+    /* ── Processing spinner ──────────────────────────────────────────────── */
+    #ar-processing {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 25;
+      pointer-events: none;
+    }
+    #ar-processing.visible { display: flex; }
+    .ar-spinner {
+      width: 28px; height: 28px;
+      border: 2px solid rgba(240,234,224,0.2);
+      border-top-color: rgba(240,234,224,0.8);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Gesture hint ────────────────────────────────────────────────────── */
+    #ar-hint {
+      position: absolute;
+      bottom: 90px; left: 0; right: 0;
+      text-align: center;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(240,234,224,0.38);
+      font-family: 'Space Grotesk', sans-serif;
+      pointer-events: none;
+      z-index: 15;
+      transition: opacity 1s ease;
+    }
+    #ar-hint.fade { opacity: 0; }
+
+    /* ── Flash feedback ──────────────────────────────────────────────────── */
+    #ar-flash {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.08s;
+    }
+    #ar-flash.active { opacity: 0.6; }
+
+    /* ── Capture controls ────────────────────────────────────────────────── */
+    #ar-controls {
+      position: absolute;
+      bottom: 20px; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      z-index: 20;
+    }
+
+    #ar-capture-btn {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      background: transparent;
+      border: 3px solid rgba(240,234,224,0.75);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.1s;
+      flex-shrink: 0;
+    }
+    #ar-capture-btn::after {
+      content: '';
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      background: rgba(240,234,224,0.88);
+      transition: background 0.1s;
+    }
+    #ar-capture-btn:active::after { background: #fff; }
+
+    #ar-reset-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(240,234,224,0.1);
+      border: 1px solid rgba(240,234,224,0.25);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #ar-reset-btn svg { opacity: 0.6; }
+    #ar-reset-btn:active { background: rgba(240,234,224,0.2); }
+
+    /* ── Save confirmation ───────────────────────────────────────────────── */
+    #ar-saved-msg {
+      position: absolute;
+      bottom: 100px; left: 0; right: 0;
+      text-align: center;
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 13px;
+      color: rgba(240,234,224,0.9);
+      letter-spacing: 0.06em;
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+      z-index: 20;
+    }
+    #ar-saved-msg.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <div id="ar-stage">
+
+    <!-- Camera feed -->
+    <video id="ar-video" autoplay playsinline muted></video>
+
+    <!-- Avatar overlay: drag + pinch -->
+    <div id="ar-avatar-wrap">
+      <img id="ar-avatar" alt="" draggable="false">
+    </div>
+
+    <!-- Prompts / states -->
+    <div id="ar-no-portrait">
+      <div class="ar-np-pill">No avatar saved — <a href="avatar.html">create one →</a></div>
+    </div>
+
+    <div id="ar-processing">
+      <div class="ar-spinner"></div>
+    </div>
+
+    <!-- Gesture hint -->
+    <div id="ar-hint">Drag to move &nbsp;·&nbsp; Pinch to resize &amp; rotate</div>
+
+    <!-- Shutter flash -->
+    <div id="ar-flash"></div>
+
+    <!-- Save feedback -->
+    <div id="ar-saved-msg">Photo saved</div>
+
+    <!-- Controls -->
+    <div id="ar-controls">
+      <button id="ar-reset-btn" aria-label="Reset position" title="Reset avatar position">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(240,234,224,0.8)">
+          <path d="M12 5V1L7 6l5 5V7c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6H4c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8z"/>
+        </svg>
+      </button>
+      <button id="ar-capture-btn" aria-label="Take photo"></button>
+      <div style="width:40px;height:40px;flex-shrink:0;"></div><!-- spacer -->
+    </div>
+
+    <!-- Start / permission screen (shown first) -->
+    <div id="ar-start">
+      <div id="ar-start-eyebrow">Contradiction of S</div>
+      <div id="ar-start-title">Step into<br>your avatar</div>
+      <div id="ar-start-sub">Place your creation in the world.<br>Take a photograph.</div>
+      <button id="ar-start-btn">Open Camera</button>
+    </div>
+
+    <!-- Camera error -->
+    <div id="ar-cam-error">
+      <p>Camera not available.<br>Allow camera access in your<br>browser settings and try again.</p>
+      <a href="avatar.html">← back to avatar</a>
+    </div>
+
+  </div><!-- /#ar-stage -->
+
+  <!-- ── Navigation ──────────────────────────────────────────────────────── -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Home
+    </a>
+    <a href="avatar.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 110 10A5 5 0 0112 2zm0 12c5.3 0 8 2.7 8 4v2H4v-2c0-1.3 2.7-4 8-4z"/></svg>
+      Avatar
+    </a>
+    <a href="ar.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H4V7h4.05l1.83-2h4.24l1.83 2H20v12zM12 8c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/></svg>
+      AR
+    </a>
+    <a href="sticker.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      Sticker
+    </a>
+    <a href="community.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      Community
+    </a>
+  </nav>
+
+  <script src="js/app.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    var stage      = document.getElementById('ar-stage');
+    var videoEl    = document.getElementById('ar-video');
+    var wrap       = document.getElementById('ar-avatar-wrap');
+    var img        = document.getElementById('ar-avatar');
+    var startEl    = document.getElementById('ar-start');
+    var startBtn   = document.getElementById('ar-start-btn');
+    var errorEl    = document.getElementById('ar-cam-error');
+    var noPortEl   = document.getElementById('ar-no-portrait');
+    var processingEl = document.getElementById('ar-processing');
+    var hintEl     = document.getElementById('ar-hint');
+    var captureBtn = document.getElementById('ar-capture-btn');
+    var resetBtn   = document.getElementById('ar-reset-btn');
+    var flashEl    = document.getElementById('ar-flash');
+    var savedMsg   = document.getElementById('ar-saved-msg');
+
+    // ── Avatar display state ───────────────────────────────────────────────
+    var BASE_W   = 160;   // CSS width of img element (px)
+    var aspectR  = 1.5;   // height / width ratio, set when image loads
+    var cx, cy;           // center of avatar in stage coordinates (px)
+    var sc       = 1.0;   // scale
+    var rot      = 0;     // rotation degrees
+    var hasPortrait = false;
+
+    function resetAvatarPos() {
+      var stageW = stage.offsetWidth  || window.innerWidth;
+      var stageH = stage.offsetHeight || (window.innerHeight - 56);
+      cx  = stageW * 0.5;
+      cy  = stageH * 0.38;
+      sc  = 1.0;
+      rot = 0;
+      updateWrap();
+    }
+
+    function updateWrap() {
+      var h = BASE_W * aspectR;
+      wrap.style.left      = (cx - BASE_W / 2) + 'px';
+      wrap.style.top       = (cy - h  / 2)     + 'px';
+      wrap.style.transform = 'rotate(' + rot + 'deg) scale(' + sc + ')';
+    }
+
+    // ── Background removal ─────────────────────────────────────────────────
+    // Removes pixels close to app background #F0EAE0 (rgb 240, 234, 224)
+    function removeBackground(src, done) {
+      var tmpImg = new Image();
+      tmpImg.onload = function () {
+        var c   = document.createElement('canvas');
+        c.width = tmpImg.naturalWidth;
+        c.height = tmpImg.naturalHeight;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(tmpImg, 0, 0);
+        var d   = ctx.getImageData(0, 0, c.width, c.height);
+        var px  = d.data;
+        var br = 240, bg = 234, bb = 224, tol = 48;
+        for (var i = 0; i < px.length; i += 4) {
+          if (Math.abs(px[i]   - br) < tol &&
+              Math.abs(px[i+1] - bg) < tol &&
+              Math.abs(px[i+2] - bb) < tol) {
+            px[i+3] = 0;
+          }
+        }
+        ctx.putImageData(d, 0, 0);
+        done(c.toDataURL('image/png'));
+      };
+      tmpImg.src = src;
+    }
+
+    // ── Load saved portrait ────────────────────────────────────────────────
+    function loadPortrait() {
+      var portrait = App.getAvatarPortrait();
+      if (!portrait) {
+        noPortEl.classList.add('visible');
+        return;
+      }
+      processingEl.classList.add('visible');
+      removeBackground(portrait, function (cleaned) {
+        processingEl.classList.remove('visible');
+        img.onload = function () {
+          aspectR = img.naturalHeight / img.naturalWidth;
+          img.style.width  = BASE_W + 'px';
+          img.style.height = 'auto';
+          resetAvatarPos();
+          wrap.style.display = 'block';
+          hasPortrait = true;
+          // Fade hint after 4 s
+          setTimeout(function () { hintEl.classList.add('fade'); }, 4000);
+        };
+        img.src = cleaned;
+      });
+    }
+
+    // ── Camera ────────────────────────────────────────────────────────────
+    var stream = null;
+
+    function startCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        errorEl.classList.add('visible');
+        return;
+      }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+        .then(function (s) {
+          stream = s;
+          videoEl.srcObject = s;
+          videoEl.play();
+          startEl.classList.add('hidden');
+          loadPortrait();
+        })
+        .catch(function (err) {
+          console.warn('Camera error:', err);
+          startEl.classList.add('hidden');
+          errorEl.classList.add('visible');
+        });
+    }
+
+    startBtn.addEventListener('click', startCamera);
+
+    // ── Gesture tracking ──────────────────────────────────────────────────
+    var ptrs = {};   // pointerId → {x, y}
+    var gs   = null; // gesture start snapshot
+
+    function ptrVals() { return Object.values(ptrs); }
+
+    function startGesture() {
+      var vals = ptrVals();
+      gs = { cx: cx, cy: cy, sc: sc, rot: rot,
+             ptrs: vals.map(function (p) { return { x: p.x, y: p.y }; }) };
+      if (vals.length >= 2) {
+        gs.dist  = Math.hypot(vals[1].x - vals[0].x, vals[1].y - vals[0].y);
+        gs.angle = Math.atan2(vals[1].y - vals[0].y, vals[1].x - vals[0].x);
+        gs.midX  = (vals[0].x + vals[1].x) / 2;
+        gs.midY  = (vals[0].y + vals[1].y) / 2;
+      }
+    }
+
+    function applyGesture() {
+      if (!gs) return;
+      var vals = ptrVals();
+      if (vals.length === 1) {
+        cx = gs.cx + (vals[0].x - gs.ptrs[0].x);
+        cy = gs.cy + (vals[0].y - gs.ptrs[0].y);
+      } else if (vals.length >= 2) {
+        var newDist  = Math.hypot(vals[1].x - vals[0].x, vals[1].y - vals[0].y);
+        var newAngle = Math.atan2(vals[1].y - vals[0].y, vals[1].x - vals[0].x);
+        var newMidX  = (vals[0].x + vals[1].x) / 2;
+        var newMidY  = (vals[0].y + vals[1].y) / 2;
+        sc  = Math.max(0.15, Math.min(5, gs.sc  * (newDist / (gs.dist  || 1))));
+        rot = gs.rot + (newAngle - gs.angle) * 180 / Math.PI;
+        cx  = gs.cx + (newMidX - gs.midX);
+        cy  = gs.cy + (newMidY - gs.midY);
+      }
+      updateWrap();
+    }
+
+    wrap.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      wrap.setPointerCapture(e.pointerId);
+      ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+      startGesture();
+    });
+
+    document.addEventListener('pointermove', function (e) {
+      if (!(e.pointerId in ptrs)) return;
+      ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
+      applyGesture();
+    });
+
+    function endPointer(e) {
+      delete ptrs[e.pointerId];
+      var remaining = Object.keys(ptrs).length;
+      if (remaining === 0) gs = null;
+      else startGesture();
+    }
+    document.addEventListener('pointerup',     endPointer);
+    document.addEventListener('pointercancel', endPointer);
+
+    // Mouse wheel: scale on desktop
+    stage.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var delta = e.deltaY > 0 ? 0.9 : 1.11;
+      sc = Math.max(0.15, Math.min(5, sc * delta));
+      updateWrap();
+    }, { passive: false });
+
+    // Reset button
+    resetBtn.addEventListener('click', resetAvatarPos);
+
+    // ── Capture photo ──────────────────────────────────────────────────────
+    captureBtn.addEventListener('click', function () {
+      // Shutter flash
+      flashEl.classList.add('active');
+      setTimeout(function () { flashEl.classList.remove('active'); }, 180);
+
+      var vw = videoEl.videoWidth  || 1280;
+      var vh = videoEl.videoHeight || 720;
+      var capCanvas = document.createElement('canvas');
+      capCanvas.width  = vw;
+      capCanvas.height = vh;
+      var ctx = capCanvas.getContext('2d');
+
+      // Draw mirrored video (matches the CSS scaleX(-1) display)
+      ctx.save();
+      ctx.translate(vw, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoEl, 0, 0, vw, vh);
+      ctx.restore();
+
+      // Draw avatar if loaded
+      if (hasPortrait && img.complete && img.naturalWidth > 0) {
+        var stageW = stage.offsetWidth  || window.innerWidth;
+        var stageH = stage.offsetHeight || (window.innerHeight - 56);
+        var ratioX = vw / stageW;
+        var ratioY = vh / stageH;
+
+        // Use average ratio to keep avatar proportional
+        var ratio = (ratioX + ratioY) / 2;
+        var capW  = BASE_W * sc * ratio;
+        var capH  = BASE_W * aspectR * sc * ratio;
+        var capCx = cx * ratioX;
+        var capCy = cy * ratioY;
+
+        ctx.save();
+        ctx.translate(capCx, capCy);
+        ctx.rotate(rot * Math.PI / 180);
+        ctx.drawImage(img, -capW / 2, -capH / 2, capW, capH);
+        ctx.restore();
+      }
+
+      // Download
+      try {
+        var link = document.createElement('a');
+        link.download = 'contradiction-of-s.jpg';
+        link.href = capCanvas.toDataURL('image/jpeg', 0.92);
+        link.click();
+        showSaved();
+      } catch (e) {
+        console.warn('Download failed:', e);
+        showSaved('Saved');
+      }
+    });
+
+    function showSaved(text) {
+      savedMsg.textContent = text || 'Photo saved';
+      savedMsg.classList.add('visible');
+      setTimeout(function () { savedMsg.classList.remove('visible'); }, 2200);
+    }
+
+    // ── Cleanup on page hide ──────────────────────────────────────────────
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden && stream) {
+        stream.getTracks().forEach(function (t) { t.stop(); });
+      }
+    });
+
+    // ── Hide avatar wrap until portrait loads ─────────────────────────────
+    wrap.style.display = 'none';
+
+  }());
+  </script>
+</body>
+</html>

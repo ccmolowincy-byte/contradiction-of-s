@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Community — Contradiction of S</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { overflow-x: hidden; overflow-y: auto; }
+
+    .community-page {
+      min-height: calc(100vh - var(--nav-h));
+      padding-bottom: 40px;
+    }
+
+    /* ── Feed header ─────────────────────────────────────────────────────── */
+    .community-header {
+      padding: 28px 20px 0;
+      text-align: center;
+    }
+    .community-eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--warm-gray);
+      margin-bottom: 8px;
+    }
+    .community-title {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 26px;
+      font-style: italic;
+      color: var(--burgundy);
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
+    }
+    .community-subtitle {
+      font-family: 'IM Fell English', serif;
+      font-size: 12px;
+      font-style: italic;
+      color: var(--muted);
+      line-height: 1.6;
+      padding: 0 24px;
+      margin-bottom: 24px;
+    }
+
+    /* ── Divider ─────────────────────────────────────────────────────────── */
+    .community-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px 20px;
+    }
+    .community-divider::before,
+    .community-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(92,26,26,0.12);
+    }
+    .community-divider-label {
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'Space Grotesk', sans-serif;
+      white-space: nowrap;
+    }
+
+    /* ── Feed ────────────────────────────────────────────────────────────── */
+    #community-feed {
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Contribution card ───────────────────────────────────────────────── */
+    .contrib-card {
+      background: var(--cream);
+      border: 1px solid rgba(92,26,26,0.1);
+      border-radius: 2px;
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    /* slight rotation on alternating cards — scrapbook feel */
+    .contrib-card:nth-child(even) {
+      transform: rotate(-0.4deg);
+    }
+    .contrib-card:nth-child(3n) {
+      transform: rotate(0.35deg);
+    }
+
+    .contrib-card-img {
+      width: 100%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(92,26,26,0.08);
+      background: #faf6ef;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .contrib-card-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* Placeholder when no image */
+    .contrib-img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .contrib-img-placeholder svg {
+      width: 70%; height: 70%;
+      opacity: 0.65;
+    }
+
+    .contrib-card-body {
+      padding: 14px 16px 16px;
+    }
+
+    .contrib-prompt {
+      font-family: 'IM Fell English', serif;
+      font-size: 11px;
+      font-style: italic;
+      color: var(--warm-gray);
+      letter-spacing: 0.03em;
+      margin-bottom: 8px;
+      line-height: 1.5;
+      border-left: 2px solid rgba(92,26,26,0.2);
+      padding-left: 8px;
+    }
+
+    .contrib-description {
+      font-family: 'IM Fell English', serif;
+      font-size: 14px;
+      color: var(--ink);
+      line-height: 1.6;
+      margin-bottom: 12px;
+      letter-spacing: 0.01em;
+    }
+
+    .contrib-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .contrib-nickname {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--burgundy);
+    }
+    .contrib-date {
+      font-family: 'IM Fell English', serif;
+      font-size: 10px;
+      font-style: italic;
+      color: var(--muted);
+    }
+
+    /* ── 2-column grid on wider screens ─────────────────────────────────── */
+    @media (min-width: 480px) {
+      #community-feed {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+    }
+
+    /* ── Empty state ─────────────────────────────────────────────────────── */
+    #community-empty {
+      display: none;
+      text-align: center;
+      padding: 48px 32px;
+    }
+    #community-empty.visible { display: block; }
+    #community-empty p {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+
+    /* ── User's own section label ────────────────────────────────────────── */
+    .contrib-card.own-entry {
+      border-color: rgba(92,26,26,0.25);
+    }
+    .contrib-card.own-entry .contrib-nickname::before {
+      content: '✦ ';
+      font-size: 7px;
+    }
+
+    /* ── CTA to create ───────────────────────────────────────────────────── */
+    .community-cta {
+      margin: 24px 20px 0;
+      padding: 16px 20px;
+      background: rgba(92,26,26,0.05);
+      border: 1px dashed rgba(92,26,26,0.2);
+      border-radius: 2px;
+      text-align: center;
+    }
+    .community-cta p {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      color: var(--warm-gray);
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+    .community-cta a {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 12px;
+      color: var(--burgundy);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="community-page">
+
+    <div class="community-header">
+      <div class="community-eyebrow">Contradiction of S</div>
+      <div class="community-title">Community</div>
+      <p class="community-subtitle">An ongoing archive of invisible things.<br>Drawn, saved, shared.</p>
+    </div>
+
+    <div class="community-divider">
+      <span class="community-divider-label">Contributions</span>
+    </div>
+
+    <!-- Feed populated by JS -->
+    <div id="community-feed"></div>
+
+    <!-- Empty state -->
+    <div id="community-empty">
+      <p>No contributions yet.<br>Make a sticker and share it here.</p>
+      <a href="sticker.html" class="btn btn-ghost" style="display:inline-flex;">Make a sticker →</a>
+    </div>
+
+    <!-- CTA -->
+    <div class="community-cta">
+      <p>Your drawings are part of this archive.<br>Save a sticker and publish it to the community.</p>
+      <a href="sticker.html">Draw something →</a>
+    </div>
+
+  </div>
+
+  <!-- ── Navigation ──────────────────────────────────────────────────────── -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Home
+    </a>
+    <a href="avatar.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 110 10A5 5 0 0112 2zm0 12c5.3 0 8 2.7 8 4v2H4v-2c0-1.3 2.7-4 8-4z"/></svg>
+      Avatar
+    </a>
+    <a href="ar.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H4V7h4.05l1.83-2h4.24l1.83 2H20v12zM12 8c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/></svg>
+      AR
+    </a>
+    <a href="sticker.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      Sticker
+    </a>
+    <a href="community.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      Community
+    </a>
+  </nav>
+
+  <script src="js/app.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    // ── Placeholder SVG drawings (abstract marks for seed entries) ─────────
+    function placeholderSVG(idx) {
+      var marks = [
+        // 0 — concentric circles
+        '<circle cx="50" cy="50" r="32" fill="none" stroke="%235c1a1a" stroke-width="1.5"/><circle cx="50" cy="50" r="20" fill="none" stroke="%235c1a1a" stroke-width="1"/><circle cx="50" cy="50" r="9" fill="%235c1a1a"/>',
+        // 1 — cross / mark
+        '<line x1="20" y1="50" x2="80" y2="50" stroke="%235c1a1a" stroke-width="2"/><line x1="50" y1="20" x2="50" y2="80" stroke="%235c1a1a" stroke-width="2"/><circle cx="50" cy="50" r="6" fill="%23f0eae0" stroke="%235c1a1a" stroke-width="1.5"/>',
+        // 2 — wave
+        '<path d="M 10 55 Q 28 30 50 50 Q 72 70 90 45" fill="none" stroke="%235c1a1a" stroke-width="2"/><path d="M 10 65 Q 28 40 50 60 Q 72 80 90 55" fill="none" stroke="%235c1a1a" stroke-width="1" opacity="0.4"/>',
+        // 3 — nested triangles
+        '<polygon points="50,15 82,72 18,72" fill="none" stroke="%235c1a1a" stroke-width="1.5"/><polygon points="50,30 70,65 30,65" fill="none" stroke="%235c1a1a" stroke-width="1" stroke-dasharray="4,3"/>',
+        // 4 — spiral fragment
+        '<path d="M50,50 m0,-25 a25,25 0 1,1 -0.01,0" fill="none" stroke="%235c1a1a" stroke-width="1.5"/><path d="M50,50 m0,-14 a14,14 0 1,1 -0.01,0" fill="none" stroke="%235c1a1a" stroke-width="1"/><circle cx="50" cy="50" r="3" fill="%235c1a1a"/>',
+        // 5 — irregular polygon / fragment
+        '<path d="M28,28 L60,22 L76,48 L65,74 L36,78 L22,54 Z" fill="none" stroke="%235c1a1a" stroke-width="1.5"/><line x1="60" y1="22" x2="36" y2="78" stroke="%235c1a1a" stroke-width="0.8" stroke-dasharray="4,3"/>'
+      ];
+      var inner = marks[idx % marks.length];
+      return 'data:image/svg+xml;charset=utf-8,' +
+        encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23faf6ef" width="100" height="100"/>' + inner + '</svg>');
+    }
+
+    // ── Seed contributions (prototype data) ───────────────────────────────
+    var SEED = [
+      { id: 'seed-1', nickname: 'quiet cartography', prompt: 'Draw something others cannot see.', description: 'a map of all the places I rest without being asked why', created: '2026-05-12', image: null },
+      { id: 'seed-2', nickname: 'amber spiral',      prompt: 'Draw a shape for discomfort.',      description: 'the feeling between knowing and not saying',              created: '2026-05-18', image: null },
+      { id: 'seed-3', nickname: 'bone horizon',       prompt: 'Draw something your body remembers.', description: 'recurring threshold, different floor',               created: '2026-05-24', image: null },
+      { id: 'seed-4', nickname: 'fog fragment',       prompt: 'Draw a mark for recovery.',        description: 'not healed, just learning the perimeter',               created: '2026-05-28', image: null },
+      { id: 'seed-5', nickname: 'ivory coil',         prompt: 'Draw something you wish people understood.', description: 'the distance between fine and functional',   created: '2026-05-30', image: null },
+      { id: 'seed-6', nickname: 'shadow fold',        prompt: 'Draw a symbol for support.',       description: 'what holds without needing to be seen',                 created: '2026-06-02', image: null },
+    ];
+
+    // ── Load user-published contributions ─────────────────────────────────
+    var userContribs = [];
+    try { userContribs = JSON.parse(localStorage.getItem('cos_community') || '[]'); } catch (e) {}
+
+    // User entries first (most recent), then seed
+    var all = userContribs.slice().reverse().concat(SEED);
+
+    // ── Format date ───────────────────────────────────────────────────────
+    function fmtDate(str) {
+      if (!str) return '';
+      var d = new Date(str);
+      if (isNaN(d.getTime())) return str;
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+
+    // ── Build card ────────────────────────────────────────────────────────
+    function buildCard(entry, idx, isOwn) {
+      var card = document.createElement('div');
+      card.className = 'contrib-card' + (isOwn ? ' own-entry' : '');
+
+      // Image area
+      var imgWrap = document.createElement('div');
+      imgWrap.className = 'contrib-card-img';
+
+      if (entry.image) {
+        var i = document.createElement('img');
+        i.src = entry.image;
+        i.alt = entry.prompt || '';
+        i.loading = 'lazy';
+        imgWrap.appendChild(i);
+      } else {
+        var ph = document.createElement('div');
+        ph.className = 'contrib-img-placeholder';
+        var svgUrl = placeholderSVG(idx);
+        var phImg = document.createElement('img');
+        phImg.src = svgUrl;
+        phImg.alt = '';
+        ph.appendChild(phImg);
+        imgWrap.appendChild(ph);
+      }
+      card.appendChild(imgWrap);
+
+      // Body
+      var body = document.createElement('div');
+      body.className = 'contrib-card-body';
+
+      var prompt = document.createElement('div');
+      prompt.className = 'contrib-prompt';
+      prompt.textContent = entry.prompt || '';
+      body.appendChild(prompt);
+
+      var desc = document.createElement('div');
+      desc.className = 'contrib-description';
+      desc.textContent = entry.description || '';
+      body.appendChild(desc);
+
+      var meta = document.createElement('div');
+      meta.className = 'contrib-meta';
+
+      var nick = document.createElement('div');
+      nick.className = 'contrib-nickname';
+      nick.textContent = entry.nickname || 'anonymous';
+      meta.appendChild(nick);
+
+      var date = document.createElement('div');
+      date.className = 'contrib-date';
+      date.textContent = fmtDate(entry.created);
+      meta.appendChild(date);
+
+      body.appendChild(meta);
+      card.appendChild(body);
+      return card;
+    }
+
+    // ── Render feed ───────────────────────────────────────────────────────
+    var feed = document.getElementById('community-feed');
+
+    if (all.length === 0) {
+      document.getElementById('community-empty').classList.add('visible');
+    } else {
+      all.forEach(function (entry, idx) {
+        var isOwn = userContribs.indexOf(entry) !== -1;
+        feed.appendChild(buildCard(entry, idx, isOwn));
+      });
+    }
+
+  }());
+  </script>
+</body>
+</html>

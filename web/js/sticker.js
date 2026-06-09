@@ -49,10 +49,20 @@
   const saveBtn    = document.getElementById('sticker-save-btn');
   const clearBtn   = document.getElementById('sticker-clear-btn');
   const savedMsg   = document.getElementById('sticker-saved-msg');
+  const publishRow = document.getElementById('sticker-publish-row');
+  const publishBtn = document.getElementById('sticker-publish-btn');
   const colorsWrap = document.getElementById('sticker-colors');
   const sizesWrap  = document.getElementById('sticker-sizes');
 
+  // publish modal
+  const modal        = document.getElementById('publish-modal');
+  const nickInput    = document.getElementById('publish-nickname');
+  const descInput    = document.getElementById('publish-desc');
+  const confirmBtn   = document.getElementById('publish-confirm-btn');
+  const skipBtn      = document.getElementById('publish-skip-btn');
+
   /* ── State ────────────────────────────────────────────────────────────── */
+  let lastSavedSticker = null;   // {image, prompt, created} — set after save
   let promptIdx = Math.floor(Math.random() * PROMPTS.length);
   let tool      = 'pen';
   let color     = COLOURS[0].hex;
@@ -208,15 +218,15 @@
 
   /* ── Save to localStorage ─────────────────────────────────────────────── */
   saveBtn.addEventListener('click', () => {
+    const image   = canvas.toDataURL('image/png');
+    const prompt  = PROMPTS[promptIdx];
+    const created = new Date().toISOString();
+
     try {
       const stickers = JSON.parse(localStorage.getItem('cos_stickers') || '[]');
-      stickers.push({
-        id:      Date.now(),
-        prompt:  PROMPTS[promptIdx],
-        image:   canvas.toDataURL('image/png'),
-        created: new Date().toISOString(),
-      });
+      stickers.push({ id: Date.now(), prompt, image, created });
       localStorage.setItem('cos_stickers', JSON.stringify(stickers));
+      lastSavedSticker = { image, prompt, created };
     } catch (err) {
       console.warn('Could not save sticker:', err);
     }
@@ -224,12 +234,71 @@
     saveBtn.textContent = 'Saved ✓';
     saveBtn.classList.add('saved');
     savedMsg.classList.add('visible');
+    publishRow.classList.add('visible');   // show Share button
 
     setTimeout(() => {
       saveBtn.textContent = 'Save Sticker';
       saveBtn.classList.remove('saved');
-      savedMsg.classList.remove('visible');
-    }, 2500);
+    }, 2000);
+  });
+
+  /* ── Publish to Community modal ───────────────────────────────────────── */
+  function openPublishModal() {
+    // Pre-fill nickname from saved profile if available
+    if (nickInput && !nickInput.value.trim()) {
+      try {
+        const profile = JSON.parse(localStorage.getItem('profile') || '{}');
+        if (profile.name) nickInput.value = profile.name;
+      } catch (e) {}
+    }
+    if (modal) modal.classList.add('open');
+  }
+
+  function closePublishModal() {
+    if (modal) modal.classList.remove('open');
+  }
+
+  if (publishBtn) publishBtn.addEventListener('click', openPublishModal);
+
+  if (skipBtn) skipBtn.addEventListener('click', () => {
+    closePublishModal();
+    savedMsg.textContent = 'Saved to your collection.';
+  });
+
+  // Close modal on backdrop tap
+  if (modal) modal.addEventListener('click', (e) => {
+    if (e.target === modal) closePublishModal();
+  });
+
+  if (confirmBtn) confirmBtn.addEventListener('click', () => {
+    if (!lastSavedSticker) { closePublishModal(); return; }
+
+    const nickname = (nickInput ? nickInput.value.trim() : '') || 'anonymous';
+    const desc     = (descInput ? descInput.value.trim() : '') || '';
+
+    const entry = {
+      id:          Date.now(),
+      nickname,
+      prompt:      lastSavedSticker.prompt,
+      description: desc,
+      image:       lastSavedSticker.image,
+      created:     lastSavedSticker.created,
+    };
+
+    try {
+      const community = JSON.parse(localStorage.getItem('cos_community') || '[]');
+      community.push(entry);
+      localStorage.setItem('cos_community', JSON.stringify(community));
+    } catch (err) {
+      console.warn('Could not publish to community:', err);
+    }
+
+    closePublishModal();
+    savedMsg.textContent = 'Published to Community ✓';
+    publishRow.classList.remove('visible');
+
+    // Clear fields for next time
+    if (descInput) descInput.value = '';
   });
 
   /* ── Init ─────────────────────────────────────────────────────────────── */
