@@ -408,6 +408,73 @@
       text-align: center;
     }
 
+    /* ── My Collection ── */
+    .collection-wrap {
+      border-top: 1px dashed rgba(92,26,26,0.15);
+      padding: 12px 12px 16px;
+    }
+    .collection-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0 0 0 2px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--warm-gray);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .collection-count {
+      background: rgba(92,26,26,0.12);
+      color: var(--burgundy);
+      border-radius: 20px;
+      padding: 1px 7px;
+      font-size: 8px;
+      letter-spacing: 0.1em;
+    }
+    .collection-grid {
+      display: none;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .collection-grid.open { display: grid; }
+    .collection-thumb {
+      aspect-ratio: 1;
+      border-radius: 3px;
+      border: 1px solid rgba(92,26,26,0.12);
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .collection-thumb img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .collection-empty {
+      font-family: 'IM Fell English', serif;
+      font-size: 11px;
+      font-style: italic;
+      color: var(--muted);
+      padding: 8px 0 0;
+      display: none;
+    }
+    .collection-empty.visible { display: block; }
+    .collection-link {
+      display: block;
+      text-align: right;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-decoration: none;
+      color: var(--burgundy);
+      opacity: 0.7;
+      margin-top: 8px;
+    }
+
     /* ── Crop modal — dark cinema-style framing UI ── */
     #crop-modal {
       position: fixed;
@@ -559,22 +626,22 @@
         </button>
 
         <button class="tool-btn" id="tool-draw" title="Draw with red pen">
-          <img class="custom-icon" src="../Custom Icons/Draw Brush.jpeg" alt="Draw">
+          <img class="custom-icon" src="icons/DrawBrush.jpeg" alt="Draw">
           Draw
         </button>
 
         <button class="tool-btn" id="tool-distort" title="Drag to warp figure">
-          <img class="custom-icon" src="../Custom Icons/Distort Brush.jpeg" alt="Distort">
+          <img class="custom-icon" src="icons/DistortBrush.jpeg" alt="Distort">
           Distort
         </button>
 
         <button class="tool-btn" id="tool-remove" title="Remove selected layer">
-          <img class="custom-icon" src="../Custom Icons/Remove.jpeg" alt="Remove">
+          <img class="custom-icon" src="icons/Remove.jpeg" alt="Remove">
           Remove
         </button>
 
         <button class="tool-btn" id="tool-clear-draw" title="Clear all — reset to blank body">
-          <img class="custom-icon" src="../Custom Icons/Clear.jpeg" alt="Clear">
+          <img class="custom-icon" src="icons/Clear.jpeg" alt="Clear">
           Clear all
         </button>
 
@@ -610,32 +677,32 @@
         <div class="cat-tabs" role="tablist">
 
           <button class="cat-tab active" data-cat="body" role="tab">
-            <img class="tab-icon" src="../Custom Icons/Body.jpeg" alt="">
+            <img class="tab-icon" src="icons/Body.jpeg" alt="">
             <span class="cat-tab-label">Body</span>
           </button>
 
           <button class="cat-tab" data-cat="face" role="tab">
-            <img class="tab-icon" src="../Custom Icons/Face.jpeg" alt="">
+            <img class="tab-icon" src="icons/Face.jpeg" alt="">
             <span class="cat-tab-label">Face</span>
           </button>
 
           <button class="cat-tab" data-cat="hair-top" role="tab">
-            <img class="tab-icon" src="../Custom Icons/Hair Top.jpeg" alt="">
+            <img class="tab-icon" src="icons/HairTop.jpeg" alt="">
             <span class="cat-tab-label">Hair top</span>
           </button>
 
           <button class="cat-tab" data-cat="hair-bottom" role="tab">
-            <img class="tab-icon" src="../Custom Icons/Hair Low.jpeg" alt="">
+            <img class="tab-icon" src="icons/HairLow.jpeg" alt="">
             <span class="cat-tab-label">Hair low</span>
           </button>
 
           <button class="cat-tab" data-cat="tops" role="tab">
-            <img class="tab-icon" src="../Custom Icons/Clothes.jpeg" alt="">
+            <img class="tab-icon" src="icons/Clothes.jpeg" alt="">
             <span class="cat-tab-label">Tops</span>
           </button>
 
           <button class="cat-tab" data-cat="bottoms" role="tab">
-            <img class="tab-icon" src="../Custom Icons/Clothes.jpeg" alt="">
+            <img class="tab-icon" src="icons/Clothes.jpeg" alt="">
             <span class="cat-tab-label">Bottoms</span>
           </button>
 
@@ -714,13 +781,24 @@
         </div>
       </div>
 
+      <!-- ── My Collection ── -->
+      <div class="collection-wrap">
+        <button class="collection-toggle" id="collection-toggle" aria-expanded="false">
+          <span>My Collection</span>
+          <span class="collection-count" id="collection-count">0</span>
+        </button>
+        <p class="collection-empty" id="collection-empty">No stickers yet — draw one on the Sticker page.</p>
+        <div class="collection-grid" id="collection-grid"></div>
+        <a href="sticker.html" class="collection-link">make a sticker →</a>
+      </div>
+
     </div><!-- /.avatar-creator -->
   </div>
 
-  <!-- Bottom nav — 4 items -->
+  <!-- Bottom nav -->
   <nav class="bottom-nav">
     <a href="index.html"   class="nav-item">
-      <img src="../Custom Icons/Home.jpeg" style="width:24px;height:24px;object-fit:contain;mix-blend-mode:screen;filter:invert(1) sepia(1) saturate(0) brightness(2);" alt="">
+      <img src="icons/Home.jpeg" style="width:24px;height:24px;object-fit:contain;mix-blend-mode:screen;filter:invert(1) sepia(1) saturate(0) brightness(2);" alt="">
       Home
     </a>
     <a href="profile.html" class="nav-item">
@@ -731,8 +809,12 @@
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 110 10A5 5 0 0112 2zm0 12c5.3 0 8 2.7 8 4v2H4v-2c0-1.3 2.7-4 8-4z"/></svg>
       Avatar
     </a>
-    <a href="sticker.html" class="nav-item">
+    <a href="name.html" class="nav-item">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.6H21l-5.6 4 2.2 6.6L12 15.2 6.4 19.2l2.2-6.6L3 8.6h6.8z"/></svg>
+      Name
+    </a>
+    <a href="sticker.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
       Sticker
     </a>
   </nav>
@@ -757,5 +839,39 @@
 
   <script src="js/app.js"></script>
   <script src="js/avatar.js"></script>
+  <script>
+    // ── My Collection — load stickers from localStorage ──────────────────────
+    (function () {
+      var toggle  = document.getElementById('collection-toggle');
+      var grid    = document.getElementById('collection-grid');
+      var countEl = document.getElementById('collection-count');
+      var emptyEl = document.getElementById('collection-empty');
+
+      var stickers = [];
+      try { stickers = JSON.parse(localStorage.getItem('cos_stickers') || '[]'); } catch (e) {}
+
+      countEl.textContent = stickers.length;
+
+      if (stickers.length === 0) {
+        emptyEl.classList.add('visible');
+      } else {
+        stickers.slice().reverse().forEach(function (s) {
+          var div = document.createElement('div');
+          div.className = 'collection-thumb';
+          div.title = s.prompt || '';
+          var img = document.createElement('img');
+          img.src = s.image;
+          img.alt = s.prompt || 'sticker';
+          div.appendChild(img);
+          grid.appendChild(div);
+        });
+      }
+
+      toggle.addEventListener('click', function () {
+        var open = grid.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', open);
+      });
+    }());
+  </script>
 </body>
 </html>
