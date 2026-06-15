@@ -3,22 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-  <title>AR — Contradiction of S</title>
+  <title>Archive — Contradiction of S</title>
   <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js" } }
+  </script>
   <style>
     body { overflow: hidden; background: #000; }
 
-    /* ── AR stage — fills screen above nav ───────────────────────────────── */
+    /* ── AR stage ────────────────────────────────────────────────────────── */
     #ar-stage {
       position: fixed;
       top: 0; left: 0; right: 0;
       bottom: var(--nav-h);
-      background: #111;
+      background: #080404;
       overflow: hidden;
-      touch-action: none;
     }
 
-    /* ── Camera feed — mirrored for selfie only via JS class ────────────── */
+    /* ── Camera feed ─────────────────────────────────────────────────────── */
     #ar-video {
       position: absolute;
       inset: 0;
@@ -27,138 +29,35 @@
     }
     #ar-video.mirrored { transform: scaleX(-1); }
 
-    /* ── Avatar overlay ──────────────────────────────────────────────────── */
-    #ar-avatar-wrap {
+    /* ── Three.js garden canvas ──────────────────────────────────────────── */
+    #garden-canvas {
       position: absolute;
-      top: 0; left: 0;
-      transform-origin: center center;
-      touch-action: none;
-      cursor: grab;
-      z-index: 10;
-      will-change: transform;
-    }
-    #ar-avatar-wrap:active { cursor: grabbing; }
-    #ar-avatar {
+      inset: 0;
       display: block;
-      width: 160px;
-      height: auto;
-      user-select: none;
-      -webkit-user-drag: none;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
     }
 
-    /* ── Start / permission screen ───────────────────────────────────────── */
-    #ar-start {
+    /* ── Trace count ─────────────────────────────────────────────────────── */
+    #ar-trace-count {
       position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      z-index: 30;
-      background: radial-gradient(ellipse at 50% 40%, rgba(92,26,26,0.18) 0%, rgba(8,4,4,0.92) 100%);
-    }
-    #ar-start.hidden { display: none; }
-    #ar-start-eyebrow {
+      top: 20px; left: 0; right: 0;
+      text-align: center;
       font-family: 'Space Grotesk', sans-serif;
       font-size: 9px;
       letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: rgba(240,234,224,0.4);
-    }
-    #ar-start-title {
-      font-family: 'IM Fell English', Georgia, serif;
-      font-size: 22px;
-      font-style: italic;
-      color: rgba(240,234,224,0.9);
-      text-align: center;
-      line-height: 1.4;
-      padding: 0 40px;
-      letter-spacing: 0.02em;
-    }
-    #ar-start-sub {
-      font-family: 'IM Fell English', serif;
-      font-size: 13px;
-      font-style: italic;
-      color: rgba(240,234,224,0.45);
-      text-align: center;
-      padding: 0 48px;
-      line-height: 1.6;
-    }
-    #ar-start-btn {
-      margin-top: 8px;
-      padding: 14px 44px;
-      background: var(--burgundy);
-      color: #f5ede0;
-      border: none;
-      font-family: 'IM Fell English', serif;
-      font-size: 15px;
-      font-style: italic;
-      letter-spacing: 0.1em;
-      border-radius: 2px;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.15s;
-    }
-    #ar-start-btn:active { background: var(--red); }
-
-    /* ── Camera error ────────────────────────────────────────────────────── */
-    #ar-cam-error {
-      position: absolute;
-      inset: 0;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      z-index: 30;
-      background: rgba(8,4,4,0.92);
-      text-align: center;
-      padding: 40px 32px;
-    }
-    #ar-cam-error.visible { display: flex; }
-    #ar-cam-error p {
-      font-family: 'IM Fell English', serif;
-      font-style: italic;
-      color: rgba(240,234,224,0.7);
-      font-size: 14px;
-      line-height: 1.7;
-    }
-    #ar-cam-error a {
-      font-family: 'IM Fell English', serif;
-      font-style: italic;
-      font-size: 13px;
-      color: var(--burgundy);
-      text-decoration: none;
-      letter-spacing: 0.05em;
-    }
-
-    /* ── No portrait prompt ──────────────────────────────────────────────── */
-    #ar-no-portrait {
-      position: absolute;
-      top: 14px; left: 0; right: 0;
-      display: none;
-      justify-content: center;
-      z-index: 20;
+      color: rgba(240,234,224,0.26);
       pointer-events: none;
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.6s;
     }
-    #ar-no-portrait.visible { display: flex; }
-    .ar-np-pill {
-      background: rgba(240,234,224,0.88);
-      backdrop-filter: blur(6px);
-      border-radius: 20px;
-      padding: 8px 18px;
-      font-family: 'IM Fell English', serif;
-      font-size: 12px;
-      font-style: italic;
-      color: var(--burgundy);
-      pointer-events: auto;
-    }
-    .ar-np-pill a { color: var(--burgundy); text-decoration: underline; }
+    #ar-trace-count.visible { opacity: 1; }
 
-    /* ── Processing spinner ──────────────────────────────────────────────── */
-    #ar-processing {
+    /* ── Loading ─────────────────────────────────────────────────────────── */
+    #ar-loading {
       position: absolute;
       inset: 0;
       display: none;
@@ -167,45 +66,66 @@
       z-index: 25;
       pointer-events: none;
     }
-    #ar-processing.visible { display: flex; }
+    #ar-loading.visible { display: flex; }
     .ar-spinner {
-      width: 28px; height: 28px;
-      border: 2px solid rgba(240,234,224,0.2);
-      border-top-color: rgba(240,234,224,0.8);
+      width: 24px; height: 24px;
+      border: 1.5px solid rgba(240,234,224,0.18);
+      border-top-color: rgba(240,234,224,0.65);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.9s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Gesture hint ────────────────────────────────────────────────────── */
-    #ar-hint {
-      position: absolute;
-      bottom: 90px; left: 0; right: 0;
-      text-align: center;
-      font-size: 9px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: rgba(240,234,224,0.38);
-      font-family: 'Space Grotesk', sans-serif;
-      pointer-events: none;
-      z-index: 15;
-      transition: opacity 1s ease;
-    }
-    #ar-hint.fade { opacity: 0; }
-
-    /* ── Flash feedback ──────────────────────────────────────────────────── */
-    #ar-flash {
+    /* ── Empty state ─────────────────────────────────────────────────────── */
+    #ar-empty {
       position: absolute;
       inset: 0;
-      background: #fff;
-      z-index: 40;
-      opacity: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       pointer-events: none;
-      transition: opacity 0.08s;
+      z-index: 5;
     }
-    #ar-flash.active { opacity: 0.6; }
+    #ar-empty.visible { display: flex; }
+    #ar-empty-text {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 15px;
+      font-style: italic;
+      color: rgba(240,234,224,0.28);
+      text-align: center;
+      padding: 0 48px;
+      line-height: 1.7;
+    }
+    #ar-empty-link {
+      margin-top: 18px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(240,234,224,0.2);
+      text-decoration: none;
+      pointer-events: auto;
+    }
 
-    /* ── Capture controls ────────────────────────────────────────────────── */
+    /* ── New-trace pulse ─────────────────────────────────────────────────── */
+    #ar-new-trace {
+      position: absolute;
+      top: 44px; left: 0; right: 0;
+      text-align: center;
+      font-family: 'IM Fell English', serif;
+      font-size: 11px;
+      font-style: italic;
+      color: rgba(240,234,224,0.5);
+      letter-spacing: 0.06em;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    #ar-new-trace.visible { opacity: 1; }
+
+    /* ── Controls ────────────────────────────────────────────────────────── */
     #ar-controls {
       position: absolute;
       bottom: 20px; left: 0; right: 0;
@@ -215,25 +135,23 @@
       gap: 28px;
       z-index: 20;
     }
-
     #ar-capture-btn {
       width: 68px; height: 68px;
       border-radius: 50%;
       background: transparent;
-      border: 3px solid rgba(240,234,224,0.75);
+      border: 3px solid rgba(240,234,224,0.6);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      -webkit-tap-highlight-color: transparent;
-      transition: border-color 0.1s;
       flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
     }
     #ar-capture-btn::after {
       content: '';
       width: 50px; height: 50px;
       border-radius: 50%;
-      background: rgba(240,234,224,0.88);
+      background: rgba(240,234,224,0.78);
       transition: background 0.1s;
     }
     #ar-capture-btn:active::after { background: #fff; }
@@ -241,33 +159,179 @@
     #ar-switch-btn {
       width: 40px; height: 40px;
       border-radius: 50%;
-      background: rgba(240,234,224,0.1);
-      border: 1px solid rgba(240,234,224,0.25);
+      background: rgba(240,234,224,0.08);
+      border: 1px solid rgba(240,234,224,0.2);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       -webkit-tap-highlight-color: transparent;
     }
-    #ar-switch-btn svg { opacity: 0.6; }
-    #ar-switch-btn:active { background: rgba(240,234,224,0.2); }
+    #ar-switch-btn:active { background: rgba(240,234,224,0.16); }
 
-    /* ── Save confirmation ───────────────────────────────────────────────── */
+    /* ── Draw CTA ────────────────────────────────────────────────────────── */
+    #ar-draw-cta {
+      position: absolute;
+      bottom: 106px; left: 0; right: 0;
+      display: flex;
+      justify-content: center;
+      z-index: 20;
+      pointer-events: none;
+    }
+    #ar-draw-cta a {
+      pointer-events: auto;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(240,234,224,0.22);
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #ar-draw-cta a:active { color: rgba(240,234,224,0.6); }
+
+    /* ── Saved msg ───────────────────────────────────────────────────────── */
     #ar-saved-msg {
       position: absolute;
-      bottom: 100px; left: 0; right: 0;
+      bottom: 102px; left: 0; right: 0;
       text-align: center;
       font-family: 'IM Fell English', serif;
       font-style: italic;
       font-size: 13px;
-      color: rgba(240,234,224,0.9);
-      letter-spacing: 0.06em;
-      opacity: 0;
-      transition: opacity 0.4s;
+      color: rgba(240,234,224,0.88);
       pointer-events: none;
       z-index: 20;
+      opacity: 0;
+      transition: opacity 0.4s;
     }
     #ar-saved-msg.visible { opacity: 1; }
+
+    /* ── Flash ───────────────────────────────────────────────────────────── */
+    #ar-flash {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.07s;
+    }
+    #ar-flash.active { opacity: 0.55; }
+
+    /* ── iOS motion permission ───────────────────────────────────────────── */
+    #orientation-btn {
+      display: none;
+      position: absolute;
+      top: 16px; right: 16px;
+      background: rgba(240,234,224,0.09);
+      border: 1px solid rgba(240,234,224,0.18);
+      color: rgba(240,234,224,0.45);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 7px 12px;
+      border-radius: 2px;
+      cursor: pointer;
+      z-index: 25;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #orientation-btn.visible { display: block; }
+
+    /* ── Start screen ────────────────────────────────────────────────────── */
+    #ar-start {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      z-index: 30;
+      background: radial-gradient(ellipse at 50% 38%, rgba(92,26,26,0.18) 0%, rgba(8,4,4,0.96) 100%);
+    }
+    #ar-start.hidden { display: none; }
+    #ar-start-eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(240,234,224,0.32);
+    }
+    #ar-start-title {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 26px;
+      font-style: italic;
+      color: rgba(240,234,224,0.92);
+      text-align: center;
+      padding: 0 40px;
+      line-height: 1.32;
+      letter-spacing: 0.02em;
+    }
+    #ar-start-sub {
+      font-family: 'IM Fell English', serif;
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(240,234,224,0.38);
+      text-align: center;
+      padding: 0 52px;
+      line-height: 1.7;
+    }
+    #ar-start-btn {
+      margin-top: 10px;
+      padding: 15px 48px;
+      background: var(--burgundy);
+      color: #f5ede0;
+      border: none;
+      font-family: 'IM Fell English', serif;
+      font-size: 16px;
+      font-style: italic;
+      letter-spacing: 0.09em;
+      border-radius: 2px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.14s;
+    }
+    #ar-start-btn:active { background: var(--red); }
+    #ar-start-draw-link {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 12px;
+      color: rgba(240,234,224,0.25);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Camera error ────────────────────────────────────────────────────── */
+    #ar-cam-error {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 30;
+      background: rgba(8,4,4,0.95);
+      text-align: center;
+      padding: 40px 32px;
+    }
+    #ar-cam-error.visible { display: flex; }
+    #ar-cam-error p {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      color: rgba(240,234,224,0.6);
+      font-size: 14px;
+      line-height: 1.75;
+    }
+    #ar-cam-error a {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 13px;
+      color: var(--burgundy);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+    }
   </style>
 </head>
 <body>
@@ -277,326 +341,311 @@
     <!-- Camera feed -->
     <video id="ar-video" autoplay playsinline muted></video>
 
-    <!-- Avatar overlay: drag + pinch -->
-    <div id="ar-avatar-wrap">
-      <img id="ar-avatar" alt="" draggable="false">
+    <!-- Three.js archive garden (alpha, layered over video) -->
+    <canvas id="garden-canvas"></canvas>
+
+    <!-- Gesture count — top centre -->
+    <div id="ar-trace-count"></div>
+
+    <!-- Real-time arrival label -->
+    <div id="ar-new-trace">new gesture received</div>
+
+    <!-- Empty state -->
+    <div id="ar-empty">
+      <div id="ar-empty-text">No gestures yet.<br>Be the first.</div>
+      <a href="gesture.html" id="ar-empty-link">Record a gesture →</a>
     </div>
 
-    <!-- Prompts / states -->
-    <div id="ar-no-portrait">
-      <div class="ar-np-pill">No avatar saved — <a href="avatar.html">create one →</a></div>
-    </div>
+    <!-- Loading -->
+    <div id="ar-loading"><div class="ar-spinner"></div></div>
 
-    <div id="ar-processing">
-      <div class="ar-spinner"></div>
-    </div>
-
-    <!-- Gesture hint -->
-    <div id="ar-hint">Drag to move &nbsp;·&nbsp; Pinch to resize &amp; rotate</div>
+    <!-- Photo saved msg -->
+    <div id="ar-saved-msg">Archive captured</div>
 
     <!-- Shutter flash -->
     <div id="ar-flash"></div>
 
-    <!-- Save feedback -->
-    <div id="ar-saved-msg">Photo saved</div>
+    <!-- Draw CTA -->
+    <div id="ar-draw-cta"><a href="gesture.html">Add your gesture →</a></div>
 
     <!-- Controls -->
     <div id="ar-controls">
-      <button id="ar-switch-btn" aria-label="Switch camera" title="Switch front/rear camera">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(240,234,224,0.8)">
+      <button id="ar-switch-btn" aria-label="Switch camera">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(240,234,224,0.75)">
           <path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-5 11.5V14H9v2.5L5.5 13 9 9.5V12h6V9.5l3.5 3.5-3.5 3.5z"/>
         </svg>
       </button>
-      <button id="ar-capture-btn" aria-label="Take photo"></button>
-      <div style="width:40px;height:40px;flex-shrink:0;"></div><!-- spacer -->
+      <button id="ar-capture-btn" aria-label="Photograph the archive"></button>
+      <div style="width:40px;height:40px;flex-shrink:0;"></div>
     </div>
 
-    <!-- Start / permission screen (shown first) -->
+    <!-- iOS motion permission -->
+    <button id="orientation-btn">Enable motion</button>
+
+    <!-- Start screen -->
     <div id="ar-start">
-      <div id="ar-start-eyebrow">Contradiction of S</div>
-      <div id="ar-start-title">Step into<br>your avatar</div>
-      <div id="ar-start-sub">Place your creation in the world.<br>Take a photograph.</div>
-      <button id="ar-start-btn">Open Camera</button>
+      <div id="ar-start-eyebrow">Pain Archive</div>
+      <div id="ar-start-title">A growing garden<br>of gesture</div>
+      <div id="ar-start-sub">Every trace is a body.<br>Every movement, remembered.</div>
+      <button id="ar-start-btn">Open Archive</button>
+      <a href="gesture.html" id="ar-start-draw-link">or record a gesture →</a>
     </div>
 
     <!-- Camera error -->
     <div id="ar-cam-error">
-      <p>Camera not available.<br>Allow camera access in your<br>browser settings and try again.</p>
-      <a href="avatar.html">← back to avatar</a>
+      <p>Camera not available.<br>Allow camera access in your browser settings.</p>
+      <a href="draw.html">← contribute a gesture instead</a>
     </div>
 
   </div><!-- /#ar-stage -->
 
-  <!-- ── Navigation ──────────────────────────────────────────────────────── -->
   <nav class="bottom-nav">
     <a href="index.html" class="nav-item">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
       Home
     </a>
-    <a href="avatar.html" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 110 10A5 5 0 0112 2zm0 12c5.3 0 8 2.7 8 4v2H4v-2c0-1.3 2.7-4 8-4z"/></svg>
-      Avatar
+    <a href="gesture.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 100 10A5 5 0 0012 2zm0 12c-5.33 0-8 2.67-8 4v1h16v-1c0-1.33-2.67-4-8-4z"/></svg>
+      Record
     </a>
     <a href="ar.html" class="nav-item active">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H4V7h4.05l1.83-2h4.24l1.83 2H20v12zM12 8c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/></svg>
       AR
     </a>
-    <a href="sticker.html" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-      Sticker
-    </a>
-    <a href="community.html" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-      Community
-    </a>
   </nav>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="js/app.js"></script>
-  <script>
-  (function () {
-    'use strict';
+  <script type="module">
+    import { initGarden } from './js/archive-cloud.js';
 
-    var stage      = document.getElementById('ar-stage');
-    var videoEl    = document.getElementById('ar-video');
-    var wrap       = document.getElementById('ar-avatar-wrap');
-    var img        = document.getElementById('ar-avatar');
-    var startEl    = document.getElementById('ar-start');
-    var startBtn   = document.getElementById('ar-start-btn');
-    var errorEl    = document.getElementById('ar-cam-error');
-    var noPortEl   = document.getElementById('ar-no-portrait');
-    var hintEl     = document.getElementById('ar-hint');
-    var captureBtn = document.getElementById('ar-capture-btn');
-    var switchBtn  = document.getElementById('ar-switch-btn');
-    var flashEl    = document.getElementById('ar-flash');
-    var savedMsg   = document.getElementById('ar-saved-msg');
+    const SUPA_URL = 'https://kgohdbyctcjgwnfedpkx.supabase.co';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtnb2hkYnljdGNqZ3duZmVkcGt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2Nzg0MzAsImV4cCI6MjA5NjI1NDQzMH0.Gvz6iZ0hW5VyvSGGBGnakpiyRh8dfeHyX1lmgXfn36c';
+    const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-    // ── Avatar display state ───────────────────────────────────────────────
-    var BASE_W      = 160;
-    var aspectR     = 1.5;
-    var cx, cy;
-    var sc          = 1.0;
-    var rot         = 0;
-    var hasPortrait = false;
+    // DOM
+    const stage        = document.getElementById('ar-stage');
+    const videoEl      = document.getElementById('ar-video');
+    const gardenCanvas = document.getElementById('garden-canvas');
+    const startEl      = document.getElementById('ar-start');
+    const startBtn     = document.getElementById('ar-start-btn');
+    const errorEl      = document.getElementById('ar-cam-error');
+    const loadingEl    = document.getElementById('ar-loading');
+    const emptyEl      = document.getElementById('ar-empty');
+    const countEl      = document.getElementById('ar-trace-count');
+    const newTraceEl   = document.getElementById('ar-new-trace');
+    const switchBtn    = document.getElementById('ar-switch-btn');
+    const captureBtn   = document.getElementById('ar-capture-btn');
+    const flashEl      = document.getElementById('ar-flash');
+    const savedMsg     = document.getElementById('ar-saved-msg');
+    const orientBtn    = document.getElementById('orientation-btn');
 
-    function resetAvatarPos() {
-      var stageW = stage.offsetWidth  || window.innerWidth;
-      var stageH = stage.offsetHeight || (window.innerHeight - 56);
-      cx  = stageW * 0.5;
-      cy  = stageH * 0.38;
-      sc  = 1.0;
-      rot = 0;
-      updateWrap();
-    }
+    let garden = null;
+    let stream = null;
+    let animId = null;
+    let currentFacing = 'environment';
+    let traceCount = 0;
+    let newTracePulseTimer = null;
 
-    function updateWrap() {
-      var h = BASE_W * aspectR;
-      wrap.style.left      = (cx - BASE_W / 2) + 'px';
-      wrap.style.top       = (cy - h  / 2)     + 'px';
-      wrap.style.transform = 'rotate(' + rot + 'deg) scale(' + sc + ')';
-    }
-
-    // ── Load portrait — transparent version preferred, flat portrait as fallback
-    function loadPortrait() {
-      var portrait = App.getAvatarPortraitTransparent() || App.getAvatarPortrait();
-      if (!portrait) {
-        noPortEl.classList.add('visible');
-        return;
+    /* ── Count display ──────────────────────────────────────────────────── */
+    function updateCount(n) {
+      traceCount = n;
+      if (n > 0) {
+        countEl.textContent = n === 1 ? '1 gesture in the archive' : n + ' gestures in the archive';
+        countEl.classList.add('visible');
+        emptyEl.classList.remove('visible');
+      } else {
+        countEl.classList.remove('visible');
+        emptyEl.classList.add('visible');
       }
-      img.onload = function () {
-        aspectR = img.naturalHeight / img.naturalWidth;
-        img.style.width  = BASE_W + 'px';
-        img.style.height = 'auto';
-        resetAvatarPos();
-        wrap.style.display = 'block';
-        hasPortrait = true;
-        setTimeout(function () { hintEl.classList.add('fade'); }, 4000);
-      };
-      img.src = portrait;
     }
 
-    // ── Camera ────────────────────────────────────────────────────────────
-    var stream            = null;
-    var currentFacingMode = 'user';
-    var portraitLoaded    = false;
-
-    function startCamera(facingMode) {
-      currentFacingMode = facingMode || 'user';
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    /* ── Camera ─────────────────────────────────────────────────────────── */
+    async function startCamera(facing) {
+      currentFacing = facing || 'environment';
+      if (!navigator.mediaDevices?.getUserMedia) {
         errorEl.classList.add('visible');
-        return;
+        return false;
       }
-      // Stop existing stream before switching
       if (stream) {
-        stream.getTracks().forEach(function (t) { t.stop(); });
+        stream.getTracks().forEach(t => t.stop());
         stream = null;
       }
-      // Mirror video CSS only for front (selfie) camera
-      if (currentFacingMode === 'user') {
-        videoEl.classList.add('mirrored');
-      } else {
-        videoEl.classList.remove('mirrored');
-      }
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode }, audio: false })
-        .then(function (s) {
-          stream = s;
-          videoEl.srcObject = s;
-          videoEl.play();
-          startEl.classList.add('hidden');
-          // Load portrait only once
-          if (!portraitLoaded) {
-            portraitLoaded = true;
-            loadPortrait();
-          }
-        })
-        .catch(function (err) {
-          console.warn('Camera error:', err);
-          startEl.classList.add('hidden');
-          errorEl.classList.add('visible');
+      videoEl.classList.toggle('mirrored', currentFacing === 'user');
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: currentFacing }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
         });
+        videoEl.srcObject = stream;
+        await videoEl.play();
+        return true;
+      } catch (err) {
+        console.warn('Camera:', err);
+        errorEl.classList.add('visible');
+        return false;
+      }
     }
 
-    startBtn.addEventListener('click', function () { startCamera('user'); });
+    /* ── Main init ──────────────────────────────────────────────────────── */
+    async function startExperience() {
+      startEl.classList.add('hidden');
+      loadingEl.classList.add('visible');
 
-    // Switch camera
-    if (switchBtn) {
-      switchBtn.addEventListener('click', function () {
-        startCamera(currentFacingMode === 'user' ? 'environment' : 'user');
+      const camOk = await startCamera('environment');
+      if (!camOk) { loadingEl.classList.remove('visible'); return; }
+
+      // Init garden over camera feed
+      const _newTraceId = new URLSearchParams(window.location.search).get('trace');
+      garden = initGarden(gardenCanvas, {
+        onTraceAdded:     (n) => updateCount(n),
+        highlightTraceId: _newTraceId || null,
       });
-    }
 
-    // ── Gesture tracking ──────────────────────────────────────────────────
-    var ptrs = {};
-    var gs   = null;
-
-    function ptrVals() { return Object.values(ptrs); }
-
-    function startGesture() {
-      var vals = ptrVals();
-      gs = { cx: cx, cy: cy, sc: sc, rot: rot,
-             ptrs: vals.map(function (p) { return { x: p.x, y: p.y }; }) };
-      if (vals.length >= 2) {
-        gs.dist  = Math.hypot(vals[1].x - vals[0].x, vals[1].y - vals[0].y);
-        gs.angle = Math.atan2(vals[1].y - vals[0].y, vals[1].x - vals[0].x);
-        gs.midX  = (vals[0].x + vals[1].x) / 2;
-        gs.midY  = (vals[0].y + vals[1].y) / 2;
+      // If arriving from gesture capture, show welcome message
+      if (_newTraceId) {
+        savedMsg.textContent = 'Your gesture has entered the archive';
+        setTimeout(() => {
+          savedMsg.classList.add('visible');
+          setTimeout(() => savedMsg.classList.remove('visible'), 4200);
+        }, 1400);
       }
-    }
 
-    function applyGesture() {
-      if (!gs) return;
-      var vals = ptrVals();
-      if (vals.length === 1) {
-        cx = gs.cx + (vals[0].x - gs.ptrs[0].x);
-        cy = gs.cy + (vals[0].y - gs.ptrs[0].y);
-      } else if (vals.length >= 2) {
-        var newDist  = Math.hypot(vals[1].x - vals[0].x, vals[1].y - vals[0].y);
-        var newAngle = Math.atan2(vals[1].y - vals[0].y, vals[1].x - vals[0].x);
-        var newMidX  = (vals[0].x + vals[1].x) / 2;
-        var newMidY  = (vals[0].y + vals[1].y) / 2;
-        sc  = Math.max(0.15, Math.min(5, gs.sc  * (newDist / (gs.dist  || 1))));
-        rot = gs.rot + (newAngle - gs.angle) * 180 / Math.PI;
-        cx  = gs.cx + (newMidX - gs.midX);
-        cy  = gs.cy + (newMidY - gs.midY);
+      // Load existing traces (oldest first → newest ends at center)
+      try {
+        const { data, error } = await db.from('pain_traces')
+          .select('*')
+          .order('created_at', { ascending: true })
+          .limit(200);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          garden.loadBatch(data);
+          updateCount(data.length);
+        } else {
+          emptyEl.classList.add('visible');
+        }
+      } catch (err) {
+        console.warn('Load traces:', err);
+        emptyEl.classList.add('visible');
       }
-      updateWrap();
+
+      // Realtime — new traces arrive as visitors draw on other devices
+      db.channel('ar-archive-live')
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'pain_traces',
+        }, (payload) => {
+          if (!garden) return;
+          garden.addTrace(payload.new);
+          // Flash "new gesture" label
+          newTraceEl.classList.add('visible');
+          clearTimeout(newTracePulseTimer);
+          newTracePulseTimer = setTimeout(() => newTraceEl.classList.remove('visible'), 2800);
+        })
+        .subscribe();
+
+      // Device orientation parallax
+      setupOrientation();
+
+      // Resize when viewport changes (orientation flip, etc.)
+      window.addEventListener('resize', () => { if (garden) garden.resize(); });
+
+      loadingEl.classList.remove('visible');
+
+      // Animation loop
+      let prev = performance.now();
+      function tick(now) {
+        const dt = Math.min((now - prev) / 1000, 0.05);
+        prev = now;
+        if (garden) garden.update(dt);
+        animId = requestAnimationFrame(tick);
+      }
+      animId = requestAnimationFrame(tick);
     }
 
-    wrap.addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      wrap.setPointerCapture(e.pointerId);
-      ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
-      startGesture();
+    startBtn.addEventListener('click', startExperience);
+
+    // Auto-start if arriving from gesture capture (gesture.html → ar.html?trace=id)
+    const _urlTrace = new URLSearchParams(window.location.search).get('trace');
+    if (_urlTrace) startExperience();
+
+    /* ── Camera switch ───────────────────────────────────────────────────── */
+    switchBtn.addEventListener('click', () => {
+      startCamera(currentFacing === 'environment' ? 'user' : 'environment');
     });
 
-    document.addEventListener('pointermove', function (e) {
-      if (!(e.pointerId in ptrs)) return;
-      ptrs[e.pointerId] = { x: e.clientX, y: e.clientY };
-      applyGesture();
-    });
+    /* ── Device orientation (parallax effect) ───────────────────────────── */
+    function setupOrientation() {
+      if (!window.DeviceOrientationEvent) return;
 
-    function endPointer(e) {
-      delete ptrs[e.pointerId];
-      if (Object.keys(ptrs).length === 0) gs = null;
-      else startGesture();
-    }
-    document.addEventListener('pointerup',     endPointer);
-    document.addEventListener('pointercancel', endPointer);
+      const handler = (e) => {
+        if (!garden) return;
+        const gamma = ((e.gamma || 0) * Math.PI) / 180;
+        const beta  = ((e.beta  || 0) * Math.PI) / 180;
+        garden.setOrientation(gamma, beta);
+      };
 
-    // Mouse wheel: scale on desktop
-    stage.addEventListener('wheel', function (e) {
-      e.preventDefault();
-      sc = Math.max(0.15, Math.min(5, sc * (e.deltaY > 0 ? 0.9 : 1.11)));
-      updateWrap();
-    }, { passive: false });
-
-    // ── Capture photo ──────────────────────────────────────────────────────
-    captureBtn.addEventListener('click', function () {
-      flashEl.classList.add('active');
-      setTimeout(function () { flashEl.classList.remove('active'); }, 180);
-
-      var vw = videoEl.videoWidth  || 1280;
-      var vh = videoEl.videoHeight || 720;
-      var capCanvas = document.createElement('canvas');
-      capCanvas.width  = vw;
-      capCanvas.height = vh;
-      var ctx = capCanvas.getContext('2d');
-
-      // Mirror video frame only for front camera (matches CSS display)
-      if (currentFacingMode === 'user') {
-        ctx.save();
-        ctx.translate(vw, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(videoEl, 0, 0, vw, vh);
-        ctx.restore();
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS 13+ requires tap-to-grant
+        orientBtn.classList.add('visible');
+        orientBtn.addEventListener('click', async () => {
+          try {
+            const perm = await DeviceOrientationEvent.requestPermission();
+            if (perm === 'granted') {
+              window.addEventListener('deviceorientation', handler, { passive: true });
+              orientBtn.classList.remove('visible');
+            }
+          } catch (_) {}
+        }, { once: true });
       } else {
-        ctx.drawImage(videoEl, 0, 0, vw, vh);
+        window.addEventListener('deviceorientation', handler, { passive: true });
+      }
+    }
+
+    /* ── Composite photo capture ─────────────────────────────────────────── */
+    captureBtn.addEventListener('click', () => {
+      // Flash feedback
+      flashEl.classList.add('active');
+      setTimeout(() => flashEl.classList.remove('active'), 160);
+
+      const vw = videoEl.videoWidth  || 1280;
+      const vh = videoEl.videoHeight || 720;
+      const cap = document.createElement('canvas');
+      cap.width = vw; cap.height = vh;
+      const ctx2d = cap.getContext('2d');
+
+      // Draw video frame (mirrored if front camera)
+      if (currentFacing === 'user') {
+        ctx2d.save();
+        ctx2d.translate(vw, 0);
+        ctx2d.scale(-1, 1);
+        ctx2d.drawImage(videoEl, 0, 0, vw, vh);
+        ctx2d.restore();
+      } else {
+        ctx2d.drawImage(videoEl, 0, 0, vw, vh);
       }
 
-      // Composite avatar at its current position/scale/rotation
-      if (hasPortrait && img.complete && img.naturalWidth > 0) {
-        var stageW = stage.offsetWidth  || window.innerWidth;
-        var stageH = stage.offsetHeight || (window.innerHeight - 56);
-        var ratioX = vw / stageW;
-        var ratioY = vh / stageH;
-        var ratio  = (ratioX + ratioY) / 2;
-        var capW   = BASE_W * sc * ratio;
-        var capH   = BASE_W * aspectR * sc * ratio;
-        ctx.save();
-        ctx.translate(cx * ratioX, cy * ratioY);
-        ctx.rotate(rot * Math.PI / 180);
-        ctx.drawImage(img, -capW / 2, -capH / 2, capW, capH);
-        ctx.restore();
-      }
+      // Composite garden canvas on top
+      ctx2d.drawImage(gardenCanvas, 0, 0, vw, vh);
 
       try {
-        var link = document.createElement('a');
-        link.download = 'contradiction-of-s.jpg';
-        link.href = capCanvas.toDataURL('image/jpeg', 0.92);
+        const link = document.createElement('a');
+        link.download = 'pain-archive.jpg';
+        link.href = cap.toDataURL('image/jpeg', 0.92);
         link.click();
-        showSaved();
-      } catch (e) {
-        console.warn('Download failed:', e);
-        showSaved('Saved');
-      }
-    });
+      } catch (_) {}
 
-    function showSaved(text) {
-      savedMsg.textContent = text || 'Photo saved';
       savedMsg.classList.add('visible');
-      setTimeout(function () { savedMsg.classList.remove('visible'); }, 2200);
-    }
-
-    // ── Cleanup on page hide ──────────────────────────────────────────────
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden && stream) {
-        stream.getTracks().forEach(function (t) { t.stop(); });
-      }
+      setTimeout(() => savedMsg.classList.remove('visible'), 2400);
     });
 
-    // ── Hide avatar wrap until portrait loads ─────────────────────────────
-    wrap.style.display = 'none';
-
-  }());
+    /* ── Cleanup ─────────────────────────────────────────────────────────── */
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+    });
   </script>
 </body>
 </html>

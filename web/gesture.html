@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Record — Pain Archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --film-black:   #060A0E;
+      --film-grey:    #1A2030;
+      --bone-white:   #C8D8E0;
+      --vert-white:   #EEF6F8;
+      --titanium:     rgba(178,190,202,0.72);
+      --nav-h:        56px;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--film-black);
+      overflow: hidden;
+      color: var(--bone-white);
+    }
+
+    /* ── Camera feed ──────────────────────────────────────────────────────── */
+    #g-video {
+      position: fixed;
+      inset: 0 0 var(--nav-h) 0;
+      width: 100%;
+      height: calc(100% - var(--nav-h));
+      object-fit: cover;
+      background: var(--film-black);
+    }
+    #g-video.mirrored { transform: scaleX(-1); }
+
+    /* ── Skeleton + trail overlay ─────────────────────────────────────────── */
+    #g-overlay {
+      position: fixed;
+      inset: 0 0 var(--nav-h) 0;
+      width: 100%;
+      height: calc(100% - var(--nav-h));
+      display: block;
+      pointer-events: none;
+    }
+
+    /* ── State panels — all absolute over the camera ──────────────────────── */
+    .s-panel {
+      position: fixed;
+      inset: 0 0 var(--nav-h) 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+    .s-panel.hidden { display: none; }
+
+    /* ── LOADING ─────────────────────────────────────────────────────────── */
+    #s-loading {
+      justify-content: center;
+      gap: 20px;
+      background: rgba(6,10,14,0.82);
+    }
+    .g-spinner {
+      width: 22px; height: 22px;
+      border: 1.5px solid rgba(200,216,224,0.15);
+      border-top-color: rgba(200,216,224,0.55);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .g-loading-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(200,216,224,0.28);
+    }
+
+    /* ── PREVIEW ─────────────────────────────────────────────────────────── */
+    #s-preview {
+      justify-content: space-between;
+      padding: 28px 0 40px;
+      background: linear-gradient(
+        to bottom,
+        rgba(6,10,14,0.72) 0%,
+        rgba(6,10,14,0) 30%,
+        rgba(6,10,14,0) 65%,
+        rgba(6,10,14,0.82) 100%
+      );
+      pointer-events: auto;
+    }
+    #g-prompt-wrap {
+      width: 100%;
+      padding: 0 28px;
+      text-align: center;
+    }
+    #g-eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: rgba(200,216,224,0.30);
+      margin-bottom: 12px;
+    }
+    #g-prompt-text {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      font-size: 18px;
+      line-height: 1.55;
+      color: rgba(238,246,248,0.82);
+      letter-spacing: 0.02em;
+    }
+    #g-body-hint {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      color: rgba(200,216,224,0.20);
+      text-transform: uppercase;
+      text-align: center;
+      padding: 0 40px;
+    }
+    #g-preview-bottom {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    #g-start-btn {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: transparent;
+      border: 2px solid rgba(200,216,224,0.55);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.15s;
+    }
+    #g-start-btn::after {
+      content: '';
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: rgba(200,216,224,0.72);
+      transition: background 0.1s;
+    }
+    #g-start-btn:active { border-color: rgba(200,216,224,0.9); }
+    #g-start-btn:active::after { background: var(--vert-white); }
+    #g-start-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      color: rgba(200,216,224,0.28);
+    }
+
+    /* Switch camera — top right corner */
+    #g-switch-btn {
+      position: absolute;
+      top: 18px; right: 18px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(200,216,224,0.06);
+      border: 1px solid rgba(200,216,224,0.14);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #g-switch-btn svg { opacity: 0.45; }
+
+    /* ── RECORDING ────────────────────────────────────────────────────────── */
+    #s-recording {
+      justify-content: space-between;
+      padding: 22px 0 40px;
+      pointer-events: auto;
+    }
+    #g-rec-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #g-rec-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(200,216,224,0.72);
+      animation: pulse-dot 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.22; }
+    }
+    /* Countdown number */
+    #g-countdown {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: rgba(200,216,224,0.40);
+      font-weight: 300;
+      min-width: 2ch;
+      text-align: right;
+    }
+
+    /* Thin progress bar drains across top of recording panel */
+    #g-progress-wrap {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: rgba(200,216,224,0.06);
+    }
+    #g-progress-bar {
+      height: 100%;
+      background: rgba(200,216,224,0.38);
+      width: 100%;
+      transition: width 0.1s linear;
+    }
+    #g-stop-btn {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: transparent;
+      border: 2px solid rgba(200,216,224,0.55);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Square stop icon */
+    #g-stop-btn::after {
+      content: '';
+      width: 26px; height: 26px;
+      background: rgba(200,216,224,0.72);
+      border-radius: 3px;
+    }
+    #g-stop-btn:active::after { background: var(--vert-white); }
+    #g-recording-note {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 7.5px;
+      letter-spacing: 0.14em;
+      color: rgba(200,216,224,0.18);
+      text-transform: uppercase;
+      text-align: center;
+      padding: 0 40px;
+    }
+
+    /* ── REVIEW ───────────────────────────────────────────────────────────── */
+    #s-review {
+      background: rgba(6,10,14,0.92);
+      justify-content: flex-end;
+      padding-bottom: 40px;
+      pointer-events: auto;
+    }
+    #g-review-header {
+      position: absolute;
+      top: 32px; left: 0; right: 0;
+      text-align: center;
+      padding: 0 32px;
+    }
+    #g-review-eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: rgba(200,216,224,0.22);
+      margin-bottom: 10px;
+    }
+    #g-review-title {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      font-size: 16px;
+      color: rgba(238,246,248,0.60);
+      letter-spacing: 0.02em;
+    }
+    #g-review-canvas {
+      position: absolute;
+      top: 90px;
+      left: 20px; right: 20px;
+      bottom: 180px;
+      border-radius: 2px;
+    }
+    #g-review-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      padding: 0 40px;
+    }
+    #g-save-btn {
+      width: 100%;
+      padding: 16px;
+      background: transparent;
+      border: 1.5px solid rgba(200,216,224,0.45);
+      color: rgba(238,246,248,0.82);
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 16px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      border-radius: 2px;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #g-save-btn:active { border-color: rgba(200,216,224,0.9); color: var(--vert-white); }
+    #g-review-secondary {
+      display: flex;
+      gap: 40px;
+    }
+    .g-secondary-btn {
+      background: none;
+      border: none;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(200,216,224,0.22);
+      cursor: pointer;
+      padding: 6px 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .g-secondary-btn:active { color: rgba(200,216,224,0.55); }
+
+    /* ── SAVING ───────────────────────────────────────────────────────────── */
+    #s-saving {
+      justify-content: center;
+      gap: 22px;
+      background: rgba(6,10,14,0.88);
+    }
+    #g-saving-text {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      font-size: 15px;
+      color: rgba(238,246,248,0.50);
+      letter-spacing: 0.04em;
+      text-align: center;
+      padding: 0 40px;
+    }
+
+    /* ── ERROR ────────────────────────────────────────────────────────────── */
+    #s-error {
+      justify-content: center;
+      gap: 20px;
+      background: rgba(6,10,14,0.94);
+      padding: 0 36px;
+      text-align: center;
+      pointer-events: auto;
+    }
+    #g-error-text {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      font-size: 15px;
+      color: rgba(238,246,248,0.45);
+      line-height: 1.75;
+    }
+    #g-error-retry {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      color: rgba(200,216,224,0.28);
+      background: none;
+      border: 1px solid rgba(200,216,224,0.18);
+      padding: 10px 24px;
+      cursor: pointer;
+      border-radius: 2px;
+    }
+
+    /* No-camera detected hint */
+    #g-no-body {
+      position: fixed;
+      bottom: calc(var(--nav-h) + 110px);
+      left: 0; right: 0;
+      text-align: center;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(200,216,224,0.16);
+      pointer-events: none;
+      transition: opacity 0.6s;
+    }
+
+    /* ── Bottom nav ───────────────────────────────────────────────────────── */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      background: rgba(6,10,14,0.96);
+      display: flex;
+      align-items: stretch;
+      border-top: 1px solid rgba(200,216,224,0.06);
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      text-decoration: none;
+      color: rgba(200,216,224,0.30);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.10em;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-item svg { width: 20px; height: 20px; opacity: 0.45; }
+    .nav-item.active { color: rgba(238,246,248,0.80); }
+    .nav-item.active svg { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+  <!-- Camera feed -->
+  <video id="g-video" autoplay playsinline muted></video>
+
+  <!-- Skeleton + recording trail overlay -->
+  <canvas id="g-overlay"></canvas>
+
+  <!-- No body detected hint -->
+  <div id="g-no-body">position your body in the frame</div>
+
+  <!-- ── LOADING ──────────────────────────────────────────────────────────── -->
+  <div id="s-loading" class="s-panel">
+    <div class="g-spinner"></div>
+    <div class="g-loading-text">Loading body tracking</div>
+  </div>
+
+  <!-- ── PREVIEW ──────────────────────────────────────────────────────────── -->
+  <div id="s-preview" class="s-panel hidden">
+    <div id="g-prompt-wrap">
+      <div id="g-eyebrow">Pain Archive — Body Capture</div>
+      <div id="g-prompt-text"></div>
+    </div>
+    <div id="g-body-hint">move so your whole body is visible</div>
+    <div id="g-preview-bottom">
+      <button id="g-start-btn" aria-label="Begin recording"></button>
+      <div id="g-start-label">Begin recording</div>
+    </div>
+    <button id="g-switch-btn" aria-label="Switch camera">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="rgba(200,216,224,1)">
+        <path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-5 11.5V14H9v2.5L5.5 13 9 9.5V12h6V9.5l3.5 3.5-3.5 3.5z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ── RECORDING ────────────────────────────────────────────────────────── -->
+  <div id="s-recording" class="s-panel hidden">
+    <div id="g-progress-wrap"><div id="g-progress-bar"></div></div>
+    <div id="g-rec-top">
+      <div id="g-rec-dot"></div>
+      <div id="g-countdown">20</div>
+    </div>
+    <button id="g-stop-btn" aria-label="Stop recording"></button>
+    <div id="g-recording-note">move freely — recording stops automatically</div>
+  </div>
+
+  <!-- ── REVIEW ───────────────────────────────────────────────────────────── -->
+  <div id="s-review" class="s-panel hidden">
+    <div id="g-review-header">
+      <div id="g-review-eyebrow">Your movement trace</div>
+      <div id="g-review-title">this gesture will enter the archive</div>
+    </div>
+    <canvas id="g-review-canvas"></canvas>
+    <div id="g-review-actions">
+      <button id="g-save-btn">Save this gesture</button>
+      <div id="g-review-secondary">
+        <button class="g-secondary-btn" id="g-retake-btn">Record again</button>
+        <button class="g-secondary-btn" id="g-delete-btn">Discard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SAVING ────────────────────────────────────────────────────────────── -->
+  <div id="s-saving" class="s-panel hidden">
+    <div class="g-spinner"></div>
+    <div id="g-saving-text">Your gesture is entering the archive…</div>
+  </div>
+
+  <!-- ── ERROR ─────────────────────────────────────────────────────────────── -->
+  <div id="s-error" class="s-panel hidden">
+    <div id="g-error-text">Camera access is required.<br>Please allow camera in your browser settings and reload.</div>
+    <button id="g-error-retry" onclick="location.reload()">Reload</button>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Home
+    </a>
+    <a href="gesture.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 100 10A5 5 0 0012 2zm0 12c-5.33 0-8 2.67-8 4v1h16v-1c0-1.33-2.67-4-8-4z"/></svg>
+      Record
+    </a>
+    <a href="ar.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6l3 1v7l-3.5 2L1 13l2-1V6zm3.5 8.5L9 16v-2l-2.5-1.5zM13 4l-4.5 1.5v2L13 6v10l-4.5-1.5v2L13 18l7-2V6l-7-2zm5.5 10L16 15.5v-7L18.5 7v7z"/></svg>
+      Archive
+    </a>
+  </nav>
+
+  <!-- TF.js full bundle (includes core, webgl backend, converter) + MoveNet -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <!-- Gesture logic -->
+  <script src="js/gesture.js"></script>
+
+</body>
+</html>

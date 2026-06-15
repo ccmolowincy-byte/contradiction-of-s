@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pain Archive — Contradiction of S</title>
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js" } }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Space+Grotesk:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Colour tokens: dark mode (default) and bright-room override ────────── */
+    :root {
+      --bg:           #060A0E;
+      --text-hi:      rgba(238,246,248,0.64);
+      --text-mid:     rgba(200,216,224,0.32);
+      --text-lo:      rgba(200,216,224,0.16);
+      --pulse-col:    rgba(238,246,248,0.52);
+      --ctrl-bg:      rgba(200,216,224,0.05);
+      --ctrl-border:  rgba(200,216,224,0.11);
+      --ctrl-text:    rgba(200,216,224,0.26);
+    }
+
+    /*
+     * Bright-room mode: ?bright=1 in URL, or press B.
+     * Raises all text opacity so it reads in gallery lighting.
+     * Background stays black — it's the archive's visual ground.
+     */
+    body.bright {
+      --text-hi:      rgba(238,246,248,0.95);
+      --text-mid:     rgba(200,216,224,0.82);
+      --text-lo:      rgba(200,216,224,0.60);
+      --pulse-col:    rgba(238,246,248,0.95);
+      --ctrl-bg:      rgba(200,216,224,0.12);
+      --ctrl-border:  rgba(200,216,224,0.30);
+      --ctrl-text:    rgba(200,216,224,0.65);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    /* ── Three.js canvas ───────────────────────────────────────────────────── */
+    #proj-canvas {
+      display: block;
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ── All UI overlays ───────────────────────────────────────────────────── */
+    #proj-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ── Title block — top-left (landscape) / top-center (portrait) ─────────── */
+    #proj-title {
+      position: absolute;
+      top: clamp(22px, 3.5vh, 44px);
+      left: clamp(28px, 4vw, 60px);
+      font-family: 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      font-size: clamp(14px, 1.6vw, 24px);
+      color: var(--text-hi);
+      letter-spacing: 0.03em;
+      line-height: 1.3;
+    }
+    #proj-subtitle {
+      margin-top: 5px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(8px, 0.8vw, 12px);
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--text-mid);
+      font-weight: 300;
+    }
+
+    /* ── Archive count — bottom-left (landscape) / bottom-center (portrait) ── */
+    #proj-count {
+      position: absolute;
+      bottom: clamp(26px, 4vh, 50px);
+      left: clamp(28px, 4vw, 60px);
+      font-family: 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      font-size: clamp(12px, 1.3vw, 20px);
+      color: var(--text-mid);
+      letter-spacing: 0.04em;
+      transition: color 1.0s ease;
+    }
+    #proj-count.flash { color: var(--text-hi); }
+
+    /* ── Exhibition instruction — bottom-right (landscape) / above count (portrait) */
+    #proj-cta {
+      position: absolute;
+      bottom: clamp(26px, 4vh, 50px);
+      right: clamp(28px, 4vw, 60px);
+      text-align: right;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(8px, 0.85vw, 12px);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-lo);
+      line-height: 1.8;
+      font-weight: 300;
+    }
+    #proj-cta-url {
+      display: block;
+      letter-spacing: 0.10em;
+      text-transform: none;
+      font-size: 0.9em;
+      color: var(--text-mid);
+      margin-top: 2px;
+    }
+
+    /* ── New-gesture pulse — fades in at screen centre, then out ────────────── */
+    #proj-pulse {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      max-width: min(620px, 72vw);
+      font-family: 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      font-size: clamp(15px, 2.2vw, 32px);
+      color: var(--pulse-col);
+      letter-spacing: 0.04em;
+      line-height: 1.55;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      pointer-events: none;
+    }
+    #proj-pulse.visible { opacity: 1; }
+    #proj-pulse-sub {
+      display: block;
+      font-family: 'Space Grotesk', sans-serif;
+      font-style: normal;
+      font-size: clamp(8px, 0.85vw, 12px);
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      color: var(--text-mid);
+      margin-top: 14px;
+    }
+
+    /* ── Thin separator line — decorative, very faint ─────────────────────── */
+    #proj-rule {
+      position: absolute;
+      top: 50%;
+      left: clamp(28px, 4vw, 60px);
+      right: clamp(28px, 4vw, 60px);
+      height: 1px;
+      background: rgba(200,216,224,0.04);
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    /* ── Controls — top-right, auto-hide after 5s idle ─────────────────────── */
+    #proj-controls {
+      position: absolute;
+      top: clamp(18px, 2.8vh, 40px);
+      right: clamp(20px, 3vw, 50px);
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+      opacity: 1;
+      transition: opacity 1.0s ease;
+    }
+    #proj-controls.hidden { opacity: 0; pointer-events: none; }
+
+    .ctrl-btn {
+      height: clamp(28px, 3.2vh, 40px);
+      padding: 0 clamp(10px, 1.1vw, 18px);
+      background: var(--ctrl-bg);
+      border: 1px solid var(--ctrl-border);
+      border-radius: 2px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(7px, 0.75vw, 11px);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ctrl-text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ctrl-btn:hover  {
+      border-color: rgba(200,216,224,0.22);
+      color: var(--text-mid);
+      background: rgba(200,216,224,0.09);
+    }
+    .ctrl-btn svg { flex-shrink: 0; }
+
+    /* ── Portrait orientation ────────────────────────────────────────────────
+       On a vertical screen (portrait tablet, vertical monitor, phone):
+       — title centres at top
+       — count centres at bottom
+       — cta sits just above count
+    ─────────────────────────────────────────────────────────────────────────── */
+    @media (orientation: portrait) {
+      #proj-title {
+        left: 0; right: 0;
+        text-align: center;
+      }
+      #proj-count {
+        left: 0; right: 0;
+        text-align: center;
+        bottom: clamp(56px, 8vh, 84px);
+      }
+      #proj-cta {
+        left: 0; right: 0;
+        text-align: center;
+        bottom: clamp(24px, 3.5vh, 44px);
+      }
+    }
+
+    /* ── Small screens (tablet/iPad kiosk): tighten spacing ─────────────────── */
+    @media (max-width: 768px) {
+      #proj-controls { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Three.js archive garden -->
+  <canvas id="proj-canvas"></canvas>
+
+  <!-- UI overlay — all text, non-interactive except controls -->
+  <div id="proj-overlay">
+
+    <!-- Title -->
+    <div id="proj-title">
+      Contradiction of S
+      <div id="proj-subtitle">Pain Archive</div>
+    </div>
+
+    <!-- Archive count -->
+    <div id="proj-count">—</div>
+
+    <!-- Scan instruction + optional URL -->
+    <div id="proj-cta">
+      Scan to add your gesture
+      <span id="proj-cta-url"></span>
+    </div>
+
+    <!-- New-gesture pulse -->
+    <div id="proj-pulse">
+      <span id="proj-pulse-prompt"></span>
+      <span id="proj-pulse-sub">gesture received</span>
+    </div>
+
+    <!-- Controls: contrast toggle + fullscreen -->
+    <div id="proj-controls">
+      <button class="ctrl-btn" id="btn-bright">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <span id="bright-label">Contrast</span>
+      </button>
+      <button class="ctrl-btn" id="btn-fs">
+        <svg id="fs-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+        <span id="fs-label">Fullscreen</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script type="module">
+    import { initGarden } from './js/archive-cloud.js';
+
+    const SUPA_URL = 'https://kgohdbyctcjgwnfedpkx.supabase.co';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtnb2hkYnljdGNqZ3duZmVkcGt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2Nzg0MzAsImV4cCI6MjA5NjI1NDQzMH0.Gvz6iZ0hW5VyvSGGBGnakpiyRh8dfeHyX1lmgXfn36c';
+    const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+    /* ── DOM refs ──────────────────────────────────────────────────────────── */
+    const canvas       = document.getElementById('proj-canvas');
+    const countEl      = document.getElementById('proj-count');
+    const pulseEl      = document.getElementById('proj-pulse');
+    const pulsePrompt  = document.getElementById('proj-pulse-prompt');
+    const ctrlsEl      = document.getElementById('proj-controls');
+    const btnBright    = document.getElementById('btn-bright');
+    const brightLabel  = document.getElementById('bright-label');
+    const btnFs        = document.getElementById('btn-fs');
+    const fsLabel      = document.getElementById('fs-label');
+    const ctaUrlEl     = document.getElementById('proj-cta-url');
+
+    /* ── URL parameters ───────────────────────────────────────────────────── */
+    const params = new URLSearchParams(window.location.search);
+
+    // ?bright=1  — start in bright-room mode
+    if (params.has('bright')) {
+      document.body.classList.add('bright');
+      brightLabel.textContent = 'Dark mode';
+    }
+
+    // ?gestureurl=https://...  — display URL under scan instruction
+    const gestureUrl = params.get('gestureurl');
+    if (gestureUrl) ctaUrlEl.textContent = gestureUrl;
+
+    /* ── Bright / contrast toggle (key: B) ───────────────────────────────── */
+    function toggleBright() {
+      const on = document.body.classList.toggle('bright');
+      brightLabel.textContent = on ? 'Dark mode' : 'Contrast';
+    }
+    btnBright.addEventListener('click', toggleBright);
+
+    /* ── Fullscreen (key: F) ─────────────────────────────────────────────── */
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen();
+      }
+    }
+    btnFs.addEventListener('click', toggleFullscreen);
+    document.addEventListener('fullscreenchange', () => {
+      const inFs = !!document.fullscreenElement;
+      fsLabel.textContent = inFs ? 'Exit full' : 'Fullscreen';
+    });
+
+    /* ── Keyboard shortcuts ───────────────────────────────────────────────── */
+    document.addEventListener('keydown', e => {
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+      if (e.key === 'b' || e.key === 'B') toggleBright();
+      showControls();
+    });
+
+    /* ── Controls auto-hide (5 s idle) ────────────────────────────────────── */
+    let hideTimer = null;
+    function showControls() {
+      ctrlsEl.classList.remove('hidden');
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => ctrlsEl.classList.add('hidden'), 5000);
+    }
+    document.addEventListener('mousemove', showControls, { passive: true });
+    document.addEventListener('touchstart', showControls, { passive: true });
+    hideTimer = setTimeout(() => ctrlsEl.classList.add('hidden'), 5000);
+
+    /* ── Archive count display ────────────────────────────────────────────── */
+    function updateCount(n) {
+      countEl.textContent =
+        n === 0 ? 'no gestures yet'
+        : n === 1 ? '1 gesture in the archive'
+        : `${n} gestures in the archive`;
+    }
+
+    /* ── New-gesture notification ─────────────────────────────────────────── */
+    let pulseTimer = null;
+    function onNewTrace(prompt) {
+      // Count flashes brighter
+      countEl.classList.add('flash');
+      setTimeout(() => countEl.classList.remove('flash'), 2200);
+
+      // Centre pulse: show prompt if available
+      pulsePrompt.textContent = prompt ? `"${prompt}"` : '';
+      pulseEl.classList.add('visible');
+      clearTimeout(pulseTimer);
+      pulseTimer = setTimeout(() => pulseEl.classList.remove('visible'), 4500);
+    }
+
+    /* ── Initialise garden ────────────────────────────────────────────────── */
+    const garden = initGarden(canvas, {
+      opaque: true,
+      onTraceAdded: updateCount,
+    });
+
+    /* ── Load existing traces ─────────────────────────────────────────────── */
+    try {
+      const { data } = await db
+        .from('pain_traces')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(200);
+
+      if (data?.length) {
+        garden.loadBatch(data);
+        updateCount(data.length);
+      } else {
+        updateCount(0);
+      }
+    } catch (err) {
+      console.warn('Supabase load failed:', err);
+      updateCount(0);
+    }
+
+    /* ── Realtime: new gestures appear live ────────────────────────────────── */
+    db.channel('proj-live')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'pain_traces',
+      }, payload => {
+        garden.addTrace(payload.new);
+        onNewTrace(payload.new.prompt);
+      })
+      .subscribe();
+
+    /* ── Animation loop ───────────────────────────────────────────────────── */
+    let prev = performance.now();
+    (function tick(now) {
+      const dt = Math.min((now - prev) / 1000, 0.05);
+      prev = now;
+      garden.update(dt);
+      requestAnimationFrame(tick);
+    })(performance.now());
+
+    /* ── Resize — handles orientation change, window resize, TV/monitor ────── */
+    window.addEventListener('resize', () => garden.resize());
+
+  </script>
+</body>
+</html>
