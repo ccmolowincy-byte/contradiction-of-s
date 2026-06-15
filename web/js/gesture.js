@@ -75,6 +75,24 @@
       const el = document.getElementById('s-' + id);
       if (el) el.classList.toggle('hidden', id !== s);
     });
+    // Compact debug panel when the UI needs that space; restore for error/loading
+    if (debugEl) {
+      const needsSpace = s === 'recording' || s === 'review' || s === 'saving';
+      debugEl.classList.toggle('compact', needsSpace);
+      if (needsSpace) debugEl.classList.remove('expanded');
+    }
+  }
+
+  // Tap debug panel to expand/collapse
+  if (debugEl) {
+    debugEl.addEventListener('click', () => {
+      if (debugEl.classList.contains('compact')) {
+        // In compact mode: one tap expands fully, second collapses back to compact
+        debugEl.classList.toggle('expanded');
+      } else {
+        debugEl.classList.toggle('expanded');
+      }
+    });
   }
 
   /* ── Camera ──────────────────────────────────────────────────────────────── */

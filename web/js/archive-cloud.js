@@ -97,8 +97,9 @@ export function initGarden(canvas, options = {}) {
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    alpha:     !options.opaque,
-    antialias: true,
+    alpha:                !options.opaque,
+    antialias:            true,
+    preserveDrawingBuffer: true,   // required for screenshot capture via drawImage()
   });
   renderer.setPixelRatio(dpr);
   renderer.setSize(W, H, false);
@@ -402,5 +403,7 @@ export function initGarden(canvas, options = {}) {
     renderer.dispose();
   }
 
-  return { loadBatch, addTrace, update, setOrientation, resize, destroy };
+  function renderNow() { renderer.render(scene, camera); }
+
+  return { loadBatch, addTrace, update, setOrientation, resize, destroy, renderNow };
 }

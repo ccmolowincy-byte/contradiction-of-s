@@ -278,7 +278,7 @@
     }
     #g-review-canvas {
       position: absolute;
-      top: 90px;
+      top: 100px;
       left: 20px; right: 20px;
       bottom: 180px;
       border-radius: 2px;
@@ -379,12 +379,24 @@
       font-family: 'Space Mono', 'Courier New', monospace;
       font-size: 10px;
       line-height: 1.55;
-      padding: 8px 12px;
+      padding: 6px 12px;
       z-index: 500;
-      pointer-events: none;
+      pointer-events: auto;
+      cursor: pointer;
+      max-height: 96px;        /* collapsed: ~5 lines */
+      overflow-y: hidden;
+      border-bottom: 1px solid rgba(0,255,136,0.18);
+      transition: max-height 0.22s ease;
+    }
+    #g-debug.expanded {
       max-height: 40vh;
       overflow-y: auto;
-      border-bottom: 1px solid rgba(0,255,136,0.18);
+    }
+    /* During recording/review: shrink to just the title bar */
+    #g-debug.compact {
+      max-height: 22px;
+      overflow: hidden;
+      opacity: 0.55;
     }
     #g-debug-title {
       color: rgba(0,255,136,0.45);
@@ -392,7 +404,16 @@
       letter-spacing: 0.2em;
       text-transform: uppercase;
       margin-bottom: 4px;
+      user-select: none;
     }
+    #g-debug-title::after {
+      content: '  ▾ tap to expand';
+      opacity: 0.35;
+      font-size: 7px;
+      letter-spacing: 0.1em;
+    }
+    #g-debug.expanded #g-debug-title::after { content: '  ▴ tap to collapse'; }
+    #g-debug.compact  #g-debug-title::after { content: '  ▸'; }
     .g-debug-line { opacity: 0.9; }
     .g-debug-line.err { color: #ff6060; }
     .g-debug-line.ok  { color: #60ffb0; }

@@ -630,39 +630,56 @@
 
     /* ── Composite photo capture ─────────────────────────────────────────── */
     captureBtn.addEventListener('click', () => {
+      if (captureBtn.disabled) return;
+      captureBtn.disabled = true;
+
       // Flash feedback
       flashEl.classList.add('active');
       setTimeout(() => flashEl.classList.remove('active'), 160);
 
-      const vw = videoEl.videoWidth  || 1280;
-      const vh = videoEl.videoHeight || 720;
+      // Force garden to render into the preserved buffer before we read it
+      if (garden) garden.renderNow();
+
+      // Use garden canvas's actual internal pixel dimensions (already at devicePixelRatio)
+      const pw = gardenCanvas.width  || window.innerWidth;
+      const ph = gardenCanvas.height || window.innerHeight;
       const cap = document.createElement('canvas');
-      cap.width = vw; cap.height = vh;
+      cap.width = pw; cap.height = ph;
       const ctx2d = cap.getContext('2d');
 
-      // Draw video frame (mirrored if front camera)
-      if (currentFacing === 'user') {
-        ctx2d.save();
-        ctx2d.translate(vw, 0);
-        ctx2d.scale(-1, 1);
-        ctx2d.drawImage(videoEl, 0, 0, vw, vh);
-        ctx2d.restore();
-      } else {
-        ctx2d.drawImage(videoEl, 0, 0, vw, vh);
+      // Draw video frame scaled to fill export dimensions
+      if (videoEl.readyState >= 2) {
+        if (currentFacing === 'user') {
+          ctx2d.save();
+          ctx2d.translate(pw, 0);
+          ctx2d.scale(-1, 1);
+          ctx2d.drawImage(videoEl, 0, 0, pw, ph);
+          ctx2d.restore();
+        } else {
+          ctx2d.drawImage(videoEl, 0, 0, pw, ph);
+        }
       }
 
-      // Composite garden canvas on top
-      ctx2d.drawImage(gardenCanvas, 0, 0, vw, vh);
+      // Composite garden canvas on top (1:1 — same pixel dimensions)
+      ctx2d.drawImage(gardenCanvas, 0, 0, pw, ph);
 
-      try {
+      // Download — use blob URL so iOS doesn't navigate away, re-enable when done
+      cap.toBlob(blob => {
+        const url  = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = 'pain-archive.jpg';
-        link.href = cap.toDataURL('image/jpeg', 0.92);
+        link.href     = url;
+        document.body.appendChild(link);
         link.click();
-      } catch (_) {}
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
 
-      savedMsg.classList.add('visible');
-      setTimeout(() => savedMsg.classList.remove('visible'), 2400);
+        savedMsg.classList.add('visible');
+        setTimeout(() => {
+          savedMsg.classList.remove('visible');
+          captureBtn.disabled = false;
+        }, 2400);
+      }, 'image/jpeg', 0.92);
     });
 
     /* ── Cleanup ─────────────────────────────────────────────────────────── */
