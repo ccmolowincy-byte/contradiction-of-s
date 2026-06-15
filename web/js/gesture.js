@@ -124,7 +124,8 @@
   /* ── Main init ───────────────────────────────────────────────────────────── */
   async function init() {
     setState('loading');
-    log('Initialising...');
+    const projRef = SUPA_URL.replace('https://', '').split('.')[0];
+    log('Supabase project ref: ' + projRef);
 
     currentPrompt = PROMPT;
     promptEl.textContent = PROMPT;
