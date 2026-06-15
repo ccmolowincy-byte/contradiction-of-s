@@ -415,7 +415,6 @@
   </nav>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="js/app.js"></script>
   <script type="module">
     import { initGarden } from './js/archive-cloud.js';
 
@@ -487,22 +486,73 @@
       }
     }
 
+    /* ── Debug log shown in count bar during load ────────────────────────── */
+    function arLog(msg) {
+      console.log('[ar]', msg);
+      if (countEl && !countEl.classList.contains('visible')) {
+        countEl.textContent = msg;
+        countEl.classList.add('visible');
+      }
+    }
+
     /* ── Main init ──────────────────────────────────────────────────────── */
     async function startExperience() {
       startEl.classList.add('hidden');
       loadingEl.classList.add('visible');
 
-      const camOk = await startCamera('environment');
-      if (!camOk) { loadingEl.classList.remove('visible'); return; }
-
-      // Init garden over camera feed
       const _newTraceId = new URLSearchParams(window.location.search).get('trace');
-      garden = initGarden(gardenCanvas, {
-        onTraceAdded:     (n) => updateCount(n),
-        highlightTraceId: _newTraceId || null,
-      });
+      arLog('Initialising garden...');
 
-      // If arriving from gesture capture, show welcome message
+      // ── Garden init is INDEPENDENT of camera ────────────────────────────
+      // Garden works whether or not camera permission is granted.
+      // Camera is a cosmetic AR background — optional.
+      try {
+        garden = initGarden(gardenCanvas, {
+          onTraceAdded:     (n) => updateCount(n),
+          highlightTraceId: _newTraceId || null,
+        });
+        arLog('Garden ready');
+      } catch (e) {
+        arLog('Garden error: ' + e.message);
+        console.error('initGarden failed:', e);
+      }
+
+      // ── Load traces from Supabase ────────────────────────────────────────
+      arLog('Loading archive from Supabase...');
+      try {
+        const { data, error } = await db.from('pain_traces')
+          .select('*')
+          .order('created_at', { ascending: true })
+          .limit(200);
+
+        if (error) {
+          arLog('Supabase error: ' + error.message);
+          throw error;
+        }
+
+        const n = data ? data.length : 0;
+        arLog('Loaded ' + n + ' trace' + (n === 1 ? '' : 's'));
+
+        if (n > 0) {
+          garden.loadBatch(data);
+          updateCount(n);
+        } else {
+          emptyEl.classList.add('visible');
+          countEl.classList.remove('visible');
+        }
+      } catch (err) {
+        console.warn('Load traces:', err);
+        emptyEl.classList.add('visible');
+        countEl.classList.remove('visible');
+      }
+
+      // ── Camera starts in background — non-blocking ───────────────────────
+      // If it fails the garden still renders over a dark background.
+      startCamera('environment').catch(e =>
+        console.warn('Camera unavailable (garden continues):', e.message)
+      );
+
+      // ── Arriving from gesture.html — highlight + welcome ─────────────────
       if (_newTraceId) {
         savedMsg.textContent = 'Your gesture has entered the archive';
         setTimeout(() => {
@@ -511,49 +561,24 @@
         }, 1400);
       }
 
-      // Load existing traces (oldest first → newest ends at center)
-      try {
-        const { data, error } = await db.from('pain_traces')
-          .select('*')
-          .order('created_at', { ascending: true })
-          .limit(200);
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          garden.loadBatch(data);
-          updateCount(data.length);
-        } else {
-          emptyEl.classList.add('visible');
-        }
-      } catch (err) {
-        console.warn('Load traces:', err);
-        emptyEl.classList.add('visible');
-      }
-
-      // Realtime — new traces arrive as visitors draw on other devices
+      // ── Realtime: new gestures appear live ───────────────────────────────
       db.channel('ar-archive-live')
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'pain_traces',
         }, (payload) => {
           if (!garden) return;
           garden.addTrace(payload.new);
-          // Flash "new gesture" label
           newTraceEl.classList.add('visible');
           clearTimeout(newTracePulseTimer);
           newTracePulseTimer = setTimeout(() => newTraceEl.classList.remove('visible'), 2800);
         })
         .subscribe();
 
-      // Device orientation parallax
       setupOrientation();
-
-      // Resize when viewport changes (orientation flip, etc.)
       window.addEventListener('resize', () => { if (garden) garden.resize(); });
-
       loadingEl.classList.remove('visible');
 
-      // Animation loop
+      // ── Animation loop ────────────────────────────────────────────────────
       let prev = performance.now();
       function tick(now) {
         const dt = Math.min((now - prev) / 1000, 0.05);

@@ -370,6 +370,33 @@
       border-radius: 2px;
     }
 
+    /* ── Debug panel — temporary testing overlay ─────────────────────────── */
+    #g-debug {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.82);
+      color: #00ff88;
+      font-family: 'Space Mono', 'Courier New', monospace;
+      font-size: 10px;
+      line-height: 1.55;
+      padding: 8px 12px;
+      z-index: 500;
+      pointer-events: none;
+      max-height: 40vh;
+      overflow-y: auto;
+      border-bottom: 1px solid rgba(0,255,136,0.18);
+    }
+    #g-debug-title {
+      color: rgba(0,255,136,0.45);
+      font-size: 8px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .g-debug-line { opacity: 0.9; }
+    .g-debug-line.err { color: #ff6060; }
+    .g-debug-line.ok  { color: #60ffb0; }
+
     /* No-camera detected hint */
     #g-no-body {
       position: fixed;
@@ -416,6 +443,11 @@
   </style>
 </head>
 <body>
+
+  <!-- Debug panel (remove before exhibition) -->
+  <div id="g-debug">
+    <div id="g-debug-title">debug — pain archive</div>
+  </div>
 
   <!-- Camera feed -->
   <video id="g-video" autoplay playsinline muted></video>
