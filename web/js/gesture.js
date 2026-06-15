@@ -412,7 +412,11 @@
     };
   }
 
-  /* ── Review: render smoothed 2D trace preview ────────────────────────────── */
+  /* ── Review: render smoothed 2D trace preview ────────────────────────────── *
+   * Draws segments with time-fading opacity so repeated oscillations read as   *
+   * intentional density (motion history) rather than random scribble.          *
+   * Earlier segments = faint; later segments = bright.                         *
+   * ─────────────────────────────────────────────────────────────────────────── */
   function renderReviewTrace() {
     if (!reviewCv || samples.length < 2) return;
 
@@ -424,52 +428,81 @@
     rc.fillRect(0, 0, W, H);
     if (W < 1 || H < 1) return;
 
-    // Use the smoothed version for review (what gets saved)
+    // Smoothed version (what will be saved)
     const smoothed = smoothSamples(samples);
-    const xs = smoothed.map(p => p.x), ys = smoothed.map(p => p.y);
+    const n   = smoothed.length;
+
+    // Fit bounding box to canvas with padding
+    const xs  = smoothed.map(p => p.x), ys = smoothed.map(p => p.y);
     const xMin = Math.min(...xs), xMax = Math.max(...xs);
     const yMin = Math.min(...ys), yMax = Math.max(...ys);
-    const pad  = 48;
+    const pad  = 42;
     const xR   = xMax - xMin || 0.01;
     const yR   = yMax - yMin || 0.01;
+    // Preserve aspect ratio
+    const drawW = W - pad * 2, drawH = H - pad * 2;
+    const scale = Math.min(drawW / xR, drawH / yR);
+    const offX  = pad + (drawW - xR * scale) / 2;
+    const offY  = pad + (drawH - yR * scale) / 2;
 
     function toC(p) {
       return {
-        x: pad + ((p.x - xMin) / xR) * (W - pad * 2),
-        y: pad + ((p.y - yMin) / yR) * (H - pad * 2),
+        x: offX + (p.x - xMin) * scale,
+        y: offY + (p.y - yMin) * scale,
       };
     }
 
-    // Depth glow
-    rc.shadowColor = 'rgba(138,188,218,0.18)';
-    rc.shadowBlur  = 18;
-    rc.strokeStyle = 'rgba(80,120,155,0.35)';
-    rc.lineWidth   = 8;
+    // ── Pass 1: wide soft glow (depth) ───────────────────────────────────
+    rc.save();
     rc.lineCap = rc.lineJoin = 'round';
+    rc.shadowColor = 'rgba(138,188,218,0.20)';
+    rc.shadowBlur  = 22;
+    rc.lineWidth   = 9;
+    rc.strokeStyle = 'rgba(60,100,140,0.18)';
     rc.beginPath();
-    const f0 = toC(smoothed[0]);
-    rc.moveTo(f0.x, f0.y);
+    const c0 = toC(smoothed[0]);
+    rc.moveTo(c0.x, c0.y);
     smoothed.slice(1).forEach(p => { const c = toC(p); rc.lineTo(c.x, c.y); });
     rc.stroke();
+    rc.restore();
 
-    // Main path — bone white
-    rc.shadowColor = 'rgba(188,218,235,0.30)';
-    rc.shadowBlur  = 6;
-    rc.strokeStyle = 'rgba(188,218,235,0.82)';
-    rc.lineWidth   = 1.8;
-    rc.beginPath();
-    rc.moveTo(f0.x, f0.y);
-    smoothed.slice(1).forEach(p => { const c = toC(p); rc.lineTo(c.x, c.y); });
-    rc.stroke();
-
-    // Start marker
-    rc.shadowBlur = 10;
-    rc.beginPath();
-    rc.arc(f0.x, f0.y, 4.5, 0, Math.PI * 2);
-    rc.fillStyle = 'rgba(195,222,238,0.65)';
-    rc.fill();
-
+    // ── Pass 2: time-fading segments (early = ghost, late = bright) ───────
+    // Each segment drawn independently so opacity encodes time position.
+    rc.save();
+    rc.lineCap = rc.lineJoin = 'round';
     rc.shadowBlur = 0;
+    for (let i = 1; i < n; i++) {
+      const t    = i / (n - 1);              // 0 = start, 1 = end
+      const alpha = 0.08 + t * 0.72;         // ghost at start → bright at end
+      const width = 1.2 + t * 1.8;          // thin at start → thicker at end
+      const prev  = toC(smoothed[i - 1]);
+      const curr  = toC(smoothed[i]);
+
+      rc.beginPath();
+      rc.strokeStyle = `rgba(188,218,235,${alpha.toFixed(2)})`;
+      rc.lineWidth   = width;
+      rc.moveTo(prev.x, prev.y);
+      rc.lineTo(curr.x, curr.y);
+      rc.stroke();
+    }
+    rc.restore();
+
+    // ── End-point marker: bright dot showing final position ────────────────
+    const cLast = toC(smoothed[n - 1]);
+    rc.save();
+    rc.shadowColor = 'rgba(220,240,248,0.55)';
+    rc.shadowBlur  = 12;
+    rc.beginPath();
+    rc.arc(cLast.x, cLast.y, 4.5, 0, Math.PI * 2);
+    rc.fillStyle = 'rgba(220,240,248,0.90)';
+    rc.fill();
+    rc.restore();
+
+    // ── Start-point marker: dim dot showing start position ────────────────
+    rc.beginPath();
+    rc.arc(c0.x, c0.y, 3, 0, Math.PI * 2);
+    rc.fillStyle = 'rgba(138,188,218,0.38)';
+    rc.fill();
   }
 
   /* ── Save to Supabase → redirect to ar.html?trace=<id> ──────────────────── */
