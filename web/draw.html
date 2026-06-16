@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Draw — Contradiction of S</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Three.js importmap — required by the ribbon preview module below -->
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js" } }
+  </script>
+
+  <style>
+    body { overflow: hidden; background: #080404; }
+
+    /* ── Stage fills screen above nav ───────────────────────────────── */
+    #draw-stage {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      bottom: var(--nav-h);
+      background: #080404;
+      overflow: hidden;
+    }
+
+    /* ── Drawing canvas ─────────────────────────────────────────────── */
+    #draw-canvas {
+      position: absolute;
+      inset: 0;
+      touch-action: none;
+      display: block;
+    }
+
+    /* ── Prompt card — gradient fades into canvas ───────────────────── */
+    #draw-prompt-wrap {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 10;
+      padding: 18px 20px 40px;
+      background: linear-gradient(to bottom,
+        rgba(8,4,4,0.95) 0%,
+        rgba(8,4,4,0.65) 55%,
+        rgba(8,4,4,0) 100%
+      );
+      pointer-events: none;
+    }
+    #draw-prompt-eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(240,234,224,0.32);
+      margin-bottom: 8px;
+    }
+    #draw-prompt-text {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 18px;
+      font-style: italic;
+      line-height: 1.45;
+      color: rgba(240,234,224,0.86);
+      letter-spacing: 0.01em;
+    }
+    #draw-prompt-next {
+      pointer-events: auto;
+      display: inline-block;
+      margin-top: 10px;
+      background: rgba(240,234,224,0.06);
+      border: 1px solid rgba(240,234,224,0.14);
+      color: rgba(240,234,224,0.38);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      border-radius: 2px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s;
+    }
+    #draw-prompt-next:active {
+      background: rgba(240,234,224,0.14);
+      color: rgba(240,234,224,0.7);
+    }
+
+    /* ── Stroke counter ─────────────────────────────────────────────── */
+    #draw-stroke-count {
+      position: absolute;
+      bottom: 114px; left: 0; right: 0;
+      text-align: center;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(240,234,224,0.25);
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    #draw-stroke-count.visible { opacity: 1; }
+
+    /* ── Release button ─────────────────────────────────────────────── */
+    #draw-actions {
+      position: absolute;
+      bottom: 24px; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    #draw-release-btn {
+      width: 170px;
+      padding: 15px 0;
+      background: rgba(92,26,26,0.0);
+      border: 1.5px solid rgba(240,234,224,0.16);
+      color: rgba(240,234,224,0.28);
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 16px;
+      font-style: italic;
+      letter-spacing: 0.06em;
+      border-radius: 2px;
+      cursor: not-allowed;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.35s;
+    }
+    #draw-release-btn:not(:disabled) {
+      color: rgba(240,234,224,0.84);
+      border-color: rgba(240,234,224,0.42);
+      background: rgba(92,26,26,0.22);
+      cursor: pointer;
+    }
+    #draw-release-btn:not(:disabled):active {
+      background: rgba(92,26,26,0.55);
+      border-color: rgba(240,234,224,0.65);
+    }
+
+    /* ── Three.js ribbon preview overlay ───────────────────────────── */
+    #draw-preview-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      background: rgba(8,4,4,0.86);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.55s;
+    }
+    #draw-preview-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #draw-preview-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #draw-preview-label {
+      position: absolute;
+      bottom: 56px; left: 0; right: 0;
+      text-align: center;
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(240,234,224,0.42);
+      letter-spacing: 0.06em;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* ── Success overlay ────────────────────────────────────────────── */
+    #draw-success {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: radial-gradient(ellipse at 50% 42%,
+        rgba(92,26,26,0.16) 0%,
+        rgba(8,4,4,0.96) 100%
+      );
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s;
+    }
+    #draw-success.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #draw-success-title {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 20px;
+      font-style: italic;
+      color: rgba(240,234,224,0.86);
+      text-align: center;
+      padding: 0 44px;
+      line-height: 1.4;
+    }
+    #draw-success-sub {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(240,234,224,0.36);
+      text-align: center;
+      padding: 0 48px;
+      line-height: 1.7;
+    }
+    #draw-again-btn {
+      margin-top: 18px;
+      padding: 13px 38px;
+      background: transparent;
+      border: 1.5px solid rgba(240,234,224,0.28);
+      color: rgba(240,234,224,0.62);
+      font-family: 'IM Fell English', Georgia, serif;
+      font-size: 15px;
+      font-style: italic;
+      letter-spacing: 0.05em;
+      border-radius: 2px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.15s;
+    }
+    #draw-again-btn:active {
+      background: rgba(240,234,224,0.08);
+      border-color: rgba(240,234,224,0.55);
+    }
+    #draw-view-archive {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(240,234,224,0.28);
+      text-decoration: none;
+      padding: 8px;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="draw-stage">
+
+    <!-- Drawing canvas — fills the stage -->
+    <canvas id="draw-canvas"></canvas>
+
+    <!-- Prompt card — gradient fades into the canvas below -->
+    <div id="draw-prompt-wrap">
+      <div id="draw-prompt-eyebrow">Gesture prompt</div>
+      <div id="draw-prompt-text"></div>
+      <button id="draw-prompt-next">Next prompt</button>
+    </div>
+
+    <!-- Stroke counter (appears after first mark) -->
+    <div id="draw-stroke-count"></div>
+
+    <!-- Release button -->
+    <div id="draw-actions">
+      <button id="draw-release-btn" disabled>Release</button>
+    </div>
+
+    <!-- Three.js ribbon preview (shown immediately after release) -->
+    <div id="draw-preview-overlay">
+      <canvas id="draw-preview-canvas"></canvas>
+      <div id="draw-preview-label">Your gesture, taking form —</div>
+    </div>
+
+    <!-- Success screen (shown after preview fades) -->
+    <div id="draw-success">
+      <div id="draw-success-title">Contributed to the archive.</div>
+      <div id="draw-success-sub">Your gesture joins the others.<br>It will be carried forward.</div>
+      <button id="draw-again-btn">Draw again</button>
+      <a href="ar.html" id="draw-view-archive">View the archive →</a>
+    </div>
+
+  </div><!-- /#draw-stage -->
+
+  <!-- Navigation — Draw tab active -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Home
+    </a>
+    <a href="avatar.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 110 10A5 5 0 0112 2zm0 12c5.3 0 8 2.7 8 4v2H4v-2c0-1.3 2.7-4 8-4z"/></svg>
+      Avatar
+    </a>
+    <a href="ar.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H4V7h4.05l1.83-2h4.24l1.83 2H20v12zM12 8c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/></svg>
+      AR
+    </a>
+    <a href="draw.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+      Draw
+    </a>
+    <a href="community.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      Community
+    </a>
+  </nav>
+
+  <!-- Scripts: Supabase → App → Draw logic → Three.js preview module -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/draw.js"></script>
+
+  <!-- Three.js ribbon preview — runs as ES module, listens for pain-trace-saved event -->
+  <script type="module">
+    import * as THREE from 'three';
+
+    const previewOverlay = document.getElementById('draw-preview-overlay');
+    const previewCanvas  = document.getElementById('draw-preview-canvas');
+    let   renderer       = null;
+    let   animId         = null;
+
+    document.addEventListener('pain-trace-saved', (e) => {
+      showRibbonPreview(e.detail.strokes, e.detail.colour);
+    });
+
+    function showRibbonPreview(strokes, colour) {
+      /* Flatten all strokes into one point list */
+      const allPts = strokes.flat();
+      if (allPts.length < 3) {
+        window.__drawShowSuccess && window.__drawShowSuccess();
+        return;
+      }
+
+      /* Map normalised [0,1] coords into 3D world space */
+      const pts3D = allPts.map((p, i) => new THREE.Vector3(
+        (p.x - 0.5) * 3.2,
+        -(p.y - 0.5) * 3.2,
+        Math.sin((i / allPts.length) * Math.PI * 6) * 0.12
+      ));
+
+      /* Renderer */
+      const stage = document.getElementById('draw-stage');
+      const W   = stage.offsetWidth  || window.innerWidth;
+      const H   = stage.offsetHeight || (window.innerHeight - 68);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      if (renderer) { renderer.dispose(); renderer = null; }
+      renderer = new THREE.WebGLRenderer({ canvas: previewCanvas, alpha: true, antialias: true });
+      renderer.setPixelRatio(dpr);
+      renderer.setSize(W, H);
+      renderer.setClearColor(0x000000, 0);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+      const scene  = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(50, W / H, 0.01, 100);
+      camera.position.set(0, 0, 5.5);
+
+      /* Lighting */
+      scene.add(new THREE.AmbientLight(0xffeedd, 0.7));
+      const key = new THREE.DirectionalLight(0xffffff, 1.4);
+      key.position.set(2, 3, 4);
+      scene.add(key);
+      const fill = new THREE.DirectionalLight(0x8090aa, 0.45);
+      fill.position.set(-3, -1, 2);
+      scene.add(fill);
+
+      /* Ribbon geometry */
+      const curve   = new THREE.CatmullRomCurve3(pts3D, false, 'catmullrom', 0.5);
+      const segs    = Math.min(allPts.length * 4, 400);
+      const geo     = new THREE.TubeGeometry(curve, segs, 0.045, 7, false);
+
+      const col = new THREE.Color(colour);
+      const mat = new THREE.MeshStandardMaterial({
+        color:            col,
+        emissive:         col,
+        emissiveIntensity: 0.18,
+        roughness:        0.55,
+        metalness:        0.08,
+        transparent:      true,
+        opacity:          0.92,
+        side:             THREE.DoubleSide,
+      });
+
+      /* Try to load X-ray texture — fail silently if not yet prepared */
+      new THREE.TextureLoader().load(
+        'assets/textures/xray-01.png',
+        (tex) => {
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.repeat.set(7, 1);
+          mat.map      = tex;
+          mat.alphaMap = tex;
+          mat.alphaTest = 0.05;
+          mat.needsUpdate = true;
+        },
+        undefined,
+        () => { /* no texture yet — plain material is fine */ }
+      );
+
+      const mesh = new THREE.Mesh(geo, mat);
+      scene.add(mesh);
+
+      /* Show overlay */
+      previewOverlay.classList.add('visible');
+
+      /* Animate ~4 s then fade and hand off to success screen */
+      let elapsed = 0, prev = performance.now();
+
+      function tick(now) {
+        const dt = Math.min((now - prev) / 1000, 0.05);
+        prev = now;
+        elapsed += dt;
+
+        mesh.rotation.y = elapsed * 0.44;
+        mesh.rotation.x = Math.sin(elapsed * 0.28) * 0.12;
+        renderer.render(scene, camera);
+
+        if (elapsed < 3.8) {
+          animId = requestAnimationFrame(tick);
+        } else {
+          /* Fade out */
+          previewOverlay.style.transition = 'opacity 0.7s';
+          previewOverlay.style.opacity    = '0';
+          setTimeout(() => {
+            previewOverlay.classList.remove('visible');
+            previewOverlay.style.opacity    = '';
+            previewOverlay.style.transition = '';
+            geo.dispose();
+            mat.dispose();
+            if (renderer) { renderer.dispose(); renderer = null; }
+            window.__drawShowSuccess && window.__drawShowSuccess();
+          }, 750);
+        }
+      }
+
+      animId = requestAnimationFrame(tick);
+    }
+  </script>
+
+</body>
+</html>

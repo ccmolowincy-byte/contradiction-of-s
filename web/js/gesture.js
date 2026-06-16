@@ -78,18 +78,24 @@
   function lerp(a, b, t)    { return a + (b - a) * clamp(t, 0, 1); }
 
   function setLoadingStatus(msg, sub) {
-    const el = document.getElementById('g-loading-status');
-    const subEl = document.getElementById('g-loading-sub');
+    console.log('[gesture load]', msg, sub !== undefined ? '| ' + sub : '');
+    // Support both new id and old cached class — fallback ensures text updates
+    // even if the browser has the old gesture.html without id="g-loading-status"
+    const el = document.getElementById('g-loading-status')
+            || document.querySelector('.g-loading-text');
+    const subEl = document.getElementById('g-loading-sub')
+               || document.querySelector('#g-loading-sub');
     if (el) el.textContent = msg;
     if (subEl && sub !== undefined) subEl.textContent = sub;
   }
 
-  function withTimeout(promise, ms) {
+  function withTimeout(promise, ms, label) {
+    const sec = Math.round(ms / 1000);
     return Promise.race([
       promise,
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error(
-          'Loading timed out after ' + Math.round(ms / 1000) + 's — reload to retry'
+          (label || 'Loading') + ' timed out after ' + sec + 's — reload to retry'
         )), ms)
       ),
     ]);
@@ -154,60 +160,83 @@
 
   /* â”€â”€ MoveNet init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function loadDetector() {
-    log('Loading TF.js + MoveNet...');
-    setLoadingStatus('Starting AI backend…', '');
-    await tf.ready();
-    log('TF.js ready, backend: ' + tf.getBackend());
-    setLoadingStatus('Downloading movement model…', 'cached after first visit — please wait');
-    const det = await poseDetection.createDetector(
-      poseDetection.SupportedModels.MoveNet,
-      { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
+    log('Step 3/5 — initialising TensorFlow backend…');
+    setLoadingStatus('Initialising TensorFlow…', 'setting up GPU / WebGL backend');
+    await withTimeout(tf.ready(), 20000, 'TensorFlow backend');
+    const backend = tf.getBackend();
+    log('TensorFlow ready — backend: ' + backend, 'ok');
+    setLoadingStatus('TensorFlow ready (' + backend + ')', '');
+
+    log('Step 4/5 — creating MoveNet detector…');
+    setLoadingStatus('Downloading MoveNet model…', 'cached after first visit — please wait');
+    const det = await withTimeout(
+      poseDetection.createDetector(
+        poseDetection.SupportedModels.MoveNet,
+        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
+      ),
+      90000,
+      'MoveNet model download'
     );
-    log('MoveNet loaded', 'ok');
+    log('MoveNet detector created', 'ok');
+    setLoadingStatus('MoveNet detector ready', '');
     return det;
   }
 
   /* â”€â”€ Main init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function init() {
     setState('loading');
-    const projRef = SUPA_URL.replace('https://', '').split('.')[0];
-    log('Supabase project ref: ' + projRef);
+    log('Init started');
+    setLoadingStatus('Starting up…', '');
 
-    // Guard: TF.js and pose-detection CDN scripts must have loaded successfully
+    // Step 1: verify CDN scripts loaded
+    log('Step 1/5 — checking dependencies…');
+    setLoadingStatus('Checking dependencies…', '');
     if (typeof tf === 'undefined' || typeof poseDetection === 'undefined') {
-      log('ERROR: TF.js or poseDetection script not loaded (CDN failure?)', 'err');
-      setLoadingStatus('Could not load AI tracking', 'check your connection and reload');
+      const missing = typeof tf === 'undefined' ? 'TensorFlow.js' : 'pose-detection';
+      log('ERROR: ' + missing + ' script not loaded (CDN failure?)', 'err');
+      setLoadingStatus('Could not load ' + missing, 'check your connection and reload');
       document.getElementById('g-error-text').textContent =
-        'Could not load AI body tracking. Check your connection and reload the page.';
+        missing + ' failed to load. Check your connection and reload.';
       setState('error');
       return;
     }
+    log('TF.js v' + (tf.version_core || tf.version?.tfjs || '?') + ' and poseDetection confirmed', 'ok');
+    setLoadingStatus('Dependencies loaded', '');
 
     currentPrompt = PROMPT;
     promptEl.textContent = PROMPT;
 
-    setLoadingStatus('Requesting camera access…', '');
+    // Step 2: camera
+    log('Step 2/5 — requesting camera…');
+    setLoadingStatus('Requesting camera access…', 'tap Allow if prompted');
     const camOk = await startCamera('user');
     if (!camOk) return;
+    log('Camera ready', 'ok');
+    setLoadingStatus('Camera ready', '');
 
+    // Steps 3 + 4: TF backend + MoveNet model (inside loadDetector)
     try {
-      detector = await withTimeout(loadDetector(), 90000);
+      detector = await loadDetector();
     } catch (e) {
-      log('MoveNet failed: ' + e.message, 'err');
+      log('Detector failed: ' + e.message, 'err');
       const errText = e.message.includes('timed out')
-        ? 'Loading timed out. Please reload — the model will be cached and load faster next time.'
-        : 'Failed to load body tracking: ' + e.message + '. Please reload.';
+        ? e.message + '. Reload to retry — the model caches after first successful download.'
+        : 'Body tracking failed: ' + e.message + '. Please reload.';
       document.getElementById('g-error-text').textContent = errText;
       setState('error');
       return;
     }
+
+    // Step 5: custom skeleton assets (background, non-blocking)
+    log('Step 5/5 — loading skeleton assets (background)…');
+    setLoadingStatus('Loading skeleton assets…', '');
 
     resizeOverlay();
     setState('preview');
     log('Ready — pose detection active', 'ok');
 
     // Load custom skeleton assets in background â€” overlay degrades gracefully until ready
-    import('./custom-skel-draw.js?v=5')
+    import('./custom-skel-draw.js?v=6')
       .then(m => m.loadCustomSkel('assets/skel/'))
       .then(skel => {
         customSkel = skel;
@@ -745,5 +774,6 @@
   /* â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   init();
 })();
+
 
 
