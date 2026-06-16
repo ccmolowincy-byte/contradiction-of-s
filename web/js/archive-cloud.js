@@ -126,7 +126,7 @@ export async function initGarden(canvas, options = {}) {
   /* â”€â”€ Scene & camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(50, W / H, 0.01, 100);
-  camera.position.set(0, 0.65, 5.2);
+  camera.position.set(0, 0.65, 7.8);
   camera.lookAt(0, -0.10, 0);
 
   /* â”€â”€ Lighting â€” cool X-ray palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -523,7 +523,7 @@ export async function initGarden(canvas, options = {}) {
 
   /* â”€â”€ Device orientation parallax â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   let targetCamX = 0;
-  let targetCamY = 0.30;
+  let targetCamY = 0.65;
 
   function setOrientation(gammaRad, betaRad) {
     targetCamX = Math.max(-0.22, Math.min(0.22, gammaRad * 0.20));  // tight parallax range
