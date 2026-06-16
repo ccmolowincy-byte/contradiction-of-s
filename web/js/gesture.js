@@ -269,7 +269,7 @@
           if (poses.length > 0 && poses[0].keypoints) {
             const raw = poses[0].keypoints;
             // Exponential moving average â€” smooths jitter without adding visible lag
-            const Î± = 0.60;
+            const alpha = 0.60;
             if (!smoothedKeypoints || smoothedKeypoints.length !== raw.length) {
               smoothedKeypoints = raw.map(k => ({ x: k.x, y: k.y, score: k.score, name: k.name }));
             } else {
@@ -281,8 +281,8 @@
                   return { ...sk, score: sk.score * 0.92 };
                 }
                 return {
-                  x:     sk.x     * (1 - Î±) + rk.x     * Î±,
-                  y:     sk.y     * (1 - Î±) + rk.y     * Î±,
+                  x:     sk.x     * (1 - alpha) + rk.x     * alpha,
+                  y:     sk.y     * (1 - alpha) + rk.y     * alpha,
                   score: sk.score * 0.35    + rk.score * 0.65,
                   name:  rk.name,
                 };
