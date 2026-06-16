@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { loadCustomSkel } from './custom-skel-draw.js?v=11';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
-const MAX_R    = 2.2;
+const MAX_R    = 1.7;
 const MAX_TRAC = 200;
 
 /* â”€â”€ MoveNet 17-keypoint connections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -240,7 +240,7 @@ export async function initGarden(canvas, options = {}) {
         blending:    THREE.AdditiveBlending,
       });
       const sprite = new THREE.Sprite(spriteMat);
-      sprite.scale.set(1.85, 2.30, 1.0);   // portrait proportions (â‰ˆ body scale in scene)
+      sprite.scale.set(1.45, 1.82, 1.0);   // portrait proportions — sized to stay within frustum
 
       const group = new THREE.Group();
       group.add(sprite);

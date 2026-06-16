@@ -30,12 +30,14 @@
     }
     .variation.active { display: block; }
 
-    /* Figure PNG — black in PNG blends with black stage background */
+    /* Figure PNG — constrained to bottom 62% so top zone stays clear for title/stars */
     .v-fig {
       position: absolute;
       bottom: 0; left: 0;
       width: 100%;
-      height: auto;
+      height: 62%;
+      object-fit: contain;
+      object-position: center bottom;
       display: block;
       pointer-events: none;
     }
@@ -102,8 +104,8 @@
         <img src="assets/stars/star2.png" alt="">
       </div>
 
-      <!-- Title: upper right, right-aligned — pushed down below star zone -->
-      <div class="v-title" style="right:4%; top:11%; text-align:right;">
+      <!-- Title: upper right, right-aligned -->
+      <div class="v-title" style="right:4%; top:7%; text-align:right;">
         <span class="v-t1">The</span>
         <span class="v-t2">Contradiction</span>
         <span class="v-t3">of S</span>
@@ -131,8 +133,8 @@
         <img src="assets/stars/star5.png" alt="">
       </div>
 
-      <!-- Title: upper right, right-aligned — pushed down below star zone -->
-      <div class="v-title" style="right:4%; top:11%; text-align:right;">
+      <!-- Title: upper right, right-aligned -->
+      <div class="v-title" style="right:4%; top:7%; text-align:right;">
         <span class="v-t1">The</span>
         <span class="v-t2">Contradiction</span>
         <span class="v-t3">of S</span>
@@ -160,8 +162,8 @@
         <img src="assets/stars/star1.png" alt="">
       </div>
 
-      <!-- Title: upper left, left-aligned — pushed down below star zone -->
-      <div class="v-title" style="left:3%; top:11%; text-align:left;">
+      <!-- Title: upper left, left-aligned -->
+      <div class="v-title" style="left:3%; top:8%; text-align:left;">
         <span class="v-t1">The</span>
         <span class="v-t2">Contradiction</span>
         <span class="v-t3">of S</span>
@@ -189,8 +191,8 @@
         <img src="assets/stars/star1.png" alt="">
       </div>
 
-      <!-- Title: upper right, right-aligned — pushed down below star zone -->
-      <div class="v-title" style="right:4%; top:10%; text-align:right;">
+      <!-- Title: upper right, right-aligned -->
+      <div class="v-title" style="right:4%; top:7%; text-align:right;">
         <span class="v-t1">The</span>
         <span class="v-t2">Contradiction</span>
         <span class="v-t3">of S</span>
