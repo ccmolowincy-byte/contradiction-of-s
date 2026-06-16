@@ -1,22 +1,22 @@
-/* archive-cloud.js — Pain Archive Garden
+﻿/* archive-cloud.js â€” Pain Archive Garden
  *
  * Two rendering paths:
- *   A. Skeleton stills (Approach E) — traces with `skeletons` field:
- *      Stacked ghost body poses, oldest faintest → newest brightest.
+ *   A. Skeleton stills (Approach E) â€” traces with `skeletons` field:
+ *      Stacked ghost body poses, oldest faintest â†’ newest brightest.
  *      Additive blending so dense/repeated positions glow brighter.
- *   B. Legacy vertebral tube — traces without `skeletons` field:
+ *   B. Legacy vertebral tube â€” traces without `skeletons` field:
  *      TubeGeometry with procedural bone texture, titanium rod, brace contour.
  *
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js?v=3';
+import { loadCustomSkel } from './custom-skel-draw.js?v=4';
 
-const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5°, sunflower angle
+const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
 const MAX_R    = 2.2;
 const MAX_TRAC = 200;
 
-/* ── MoveNet 17-keypoint connections ─────────────────────────────────────── */
+/* â”€â”€ MoveNet 17-keypoint connections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const SKEL_CONN = [
   [0,1],[0,2],[1,3],[2,4],
   [5,7],[7,9],[6,8],[8,10],
@@ -26,7 +26,7 @@ const SKEL_CONN = [
 const SKEL_SCORE    = 0.20;  // minimum keypoint confidence
 const RENDER_FRAMES = 12;    // ghost poses shown per trace (sampled from up to 50 stored)
 
-/* ── Procedural vertebra texture (legacy traces only) ───────────────────── */
+/* â”€â”€ Procedural vertebra texture (legacy traces only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function buildVertebraTexture(vertebraCount) {
   const W = 512, H = 64;
   const c = document.createElement('canvas');
@@ -65,10 +65,10 @@ function buildVertebraTexture(vertebraCount) {
 
 export async function initGarden(canvas, options = {}) {
 
-  /* ── Load custom skeleton assets ─────────────────────────────────────────
-   * Loaded once here — all _buildSkeletonTrace calls share this instance.
+  /* â”€â”€ Load custom skeleton assets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   * Loaded once here â€” all _buildSkeletonTrace calls share this instance.
    * Falls back gracefully to line renderer if load fails.
-   * ─────────────────────────────────────────────────────────────────────── */
+   * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   let customSkel = null;
   try {
     customSkel = await loadCustomSkel('assets/skel/');
@@ -76,7 +76,7 @@ export async function initGarden(canvas, options = {}) {
     console.warn('[archive] Custom skeleton assets failed to load, using line fallback:', e.message);
   }
 
-  /* ── X-ray texture (async; swapped into legacy tube materials when ready) ── */
+  /* â”€â”€ X-ray texture (async; swapped into legacy tube materials when ready) â”€â”€ */
   let   baseXray    = null;
   const allBoneMats = [];
 
@@ -100,7 +100,7 @@ export async function initGarden(canvas, options = {}) {
     () => {}
   );
 
-  /* ── Renderer ──────────────────────────────────────────────────────────── */
+  /* â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const W   = canvas.offsetWidth  || window.innerWidth;
   const H   = canvas.offsetHeight || window.innerHeight;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -123,13 +123,13 @@ export async function initGarden(canvas, options = {}) {
     renderer.setClearColor(0x000000, 0);
   }
 
-  /* ── Scene & camera ────────────────────────────────────────────────────── */
+  /* â”€â”€ Scene & camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(50, W / H, 0.01, 100);
   camera.position.set(0, 0.65, 5.2);
   camera.lookAt(0, -0.10, 0);
 
-  /* ── Lighting — cool X-ray palette ─────────────────────────────────────── */
+  /* â”€â”€ Lighting â€” cool X-ray palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   scene.add(new THREE.AmbientLight(0x0A1520, 0.4));
 
   const key = new THREE.DirectionalLight(0xB8CDD8, 1.0);
@@ -144,12 +144,12 @@ export async function initGarden(canvas, options = {}) {
   rim.position.set(0, -2, -2.5);
   scene.add(rim);
 
-  /* ── Garden group — lean forward so bodies appear to stand on floor ──────── */
+  /* â”€â”€ Garden group â€” lean forward so bodies appear to stand on floor â”€â”€â”€â”€â”€â”€â”€â”€ */
   const gardenGroup = new THREE.Group();
   gardenGroup.rotation.x = -0.28;
   scene.add(gardenGroup);
 
-  /* ── Ground plane — very faint circle anchoring the garden spatially ─────── */
+  /* â”€â”€ Ground plane â€” very faint circle anchoring the garden spatially â”€â”€â”€â”€â”€â”€â”€ */
   const groundGeo  = new THREE.CircleGeometry(MAX_R * 1.35, 40);
   const groundMat  = new THREE.MeshBasicMaterial({
     color:       0x0C1520,
@@ -163,23 +163,34 @@ export async function initGarden(canvas, options = {}) {
   groundMesh.position.y = -0.06;
   gardenGroup.add(groundMesh);
 
-  /* ── State ─────────────────────────────────────────────────────────────── */
+  /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const ribbons    = [];
   let   traceCount = 0;
   const highlightId = options.highlightTraceId || null;
   const _debug = { skelCount: 0, legacyCount: 0, lastSkelFrames: 0 };
 
-  /* ── Path A: skeleton — custom-drawn PNG assets, camera-facing Sprite ───
+  /* â”€â”€ Path A: skeleton â€” custom-drawn PNG assets, camera-facing Sprite â”€â”€â”€
    * Uses THREE.Sprite so the skeleton always faces the camera as the garden
-   * rotates — no perspective distortion, no foreshortening.
+   * rotates â€” no perspective distortion, no foreshortening.
    *
    * For the ANIM_SLOTS most-recent entries the canvas is redrawn each time
    * the playhead advances: current frame bright + short ghost trail.
    * Older entries settle into a single static pose, canvas updated once.
    *
    * Falls back to dark-red LineSegments if customSkel failed to load.
-   * ─────────────────────────────────────────────────────────────────────── */
+   * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const ANIM_SLOTS = 5;   // how many recent entries animate; rest settle
+
+  /* â”€â”€ Soft radial vignette â€” fades petal/edge clipping gracefully â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  function _applyVignette(ctx, CW, CH) {
+    const grad = ctx.createRadialGradient(CW / 2, CH * 0.38, 0, CW / 2, CH * 0.38, CW * 0.64);
+    grad.addColorStop(0.30, 'rgba(0,0,0,1)');   // fully opaque center
+    grad.addColorStop(1.00, 'rgba(0,0,0,0)');   // transparent at edge
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.globalCompositeOperation = 'source-over';
+  }
 
   function _buildSkeletonTrace(trace, frames) {
     const N = frames.length;
@@ -191,7 +202,29 @@ export async function initGarden(canvas, options = {}) {
       renderFrames.push(frames[Math.min(idx, N - 1)]);
     }
 
-    // Per-contributor seed — offsets petal drift so each entry looks distinct
+    // â”€â”€ Root-anchor: compute translation from first frame so body stays
+    // spatially fixed during replay â€” only limb movement is visible.
+    let anchorDX = 0, anchorDY = 0;
+    if (renderFrames.length > 0) {
+      const fk = renderFrames[0].kp;
+      const lSh = fk[5], rSh = fk[6], lHip = fk[11], rHip = fk[12];
+      const shOk  = lSh  && rSh  && (lSh.s  ?? 0) > 0.15 && (rSh.s  ?? 0) > 0.15;
+      const hipOk = lHip && rHip && (lHip.s ?? 0) > 0.15 && (rHip.s ?? 0) > 0.15;
+      const refX = shOk  ? (lSh.x + rSh.x) / 2 : 0.50;
+      const refY = hipOk ? (lHip.y + rHip.y) / 2
+                         : (shOk ? (lSh.y + rSh.y) / 2 + 0.14 : 0.60);
+      anchorDX = 0.50 - refX;         // centre body horizontally
+      anchorDY = 0.60 - refY;         // place hip/waist at 60% canvas height
+    }
+    const skelFrames = renderFrames.map(frame => ({
+      kp: frame.kp.map(kp => ({
+        ...kp,
+        x: kp.x + anchorDX,
+        y: kp.y + anchorDY,
+      })),
+    }));
+
+    // Per-contributor seed â€” offsets petal drift so each entry looks distinct
     let seed = 0;
     if (trace.id) {
       for (let i = 0; i < Math.min(trace.id.length, 8); i++) {
@@ -200,19 +233,20 @@ export async function initGarden(canvas, options = {}) {
     }
 
     if (customSkel) {
-      /* ── Sprite + CanvasTexture path ───────────────────────────────────── */
-      const CW = 256, CH = 320;   // portrait canvas — 4:5 ratio
+      /* â”€â”€ Sprite + CanvasTexture path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+      const CW = 256, CH = 320;   // portrait canvas â€” 4:5 ratio
       const oc  = document.createElement('canvas');
       oc.width  = CW; oc.height = CH;
       const octx = oc.getContext('2d');
 
       // Initial draw: middle frame as a settled pose (updated later in update())
-      const midFrame = renderFrames[Math.floor(renderFrames.length / 2)];
+      const midFrame = skelFrames[Math.floor(skelFrames.length / 2)];
       customSkel.draw(octx, midFrame.kp, CW, CH, 0.68, seed, 0);
+      _applyVignette(octx, CW, CH);
 
       const tex = new THREE.CanvasTexture(oc);
 
-      // Sprite always faces the camera — no perspective distortion as garden rotates
+      // Sprite always faces the camera â€” no perspective distortion as garden rotates
       const spriteMat = new THREE.SpriteMaterial({
         map:        tex,
         transparent: true,
@@ -221,7 +255,7 @@ export async function initGarden(canvas, options = {}) {
         blending:    THREE.AdditiveBlending,
       });
       const sprite = new THREE.Sprite(spriteMat);
-      sprite.scale.set(1.85, 2.30, 1.0);   // portrait proportions (≈ body scale in scene)
+      sprite.scale.set(1.85, 2.30, 1.0);   // portrait proportions (â‰ˆ body scale in scene)
 
       const group = new THREE.Group();
       group.add(sprite);
@@ -231,14 +265,14 @@ export async function initGarden(canvas, options = {}) {
         materials:   [{ mat: spriteMat, targetAlpha: 0.80 }],
         boneTex:     tex,
         isLegacy:    false,
-        skelFrames:  renderFrames,
+        skelFrames,
         skelCanvas:  oc,
         skelCtx:     octx,
         skelSeed:    seed,
       };
     }
 
-    /* ── Fallback: dark-red LineSegments ──────────────────────────────────── */
+    /* â”€â”€ Fallback: dark-red LineSegments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const group     = new THREE.Group();
     const materials = [];
     const zSpread   = 0.055;
@@ -276,10 +310,10 @@ export async function initGarden(canvas, options = {}) {
     return { group, materials, boneTex: null, isLegacy: false };
   }
 
-  /* ── Path B: legacy TubeGeometry trace ──────────────────────────────────
+  /* â”€â”€ Path B: legacy TubeGeometry trace â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    * Used for any row that does not have a `skeletons` field.
    * Kept intact so the existing archive remains visible.
-   * ─────────────────────────────────────────────────────────────────────── */
+   * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _buildTubeTrace(trace) {
     const allPts = (trace.strokes || []).flat();
     if (allPts.length < 4) return null;
@@ -375,7 +409,7 @@ export async function initGarden(canvas, options = {}) {
     return { group, materials, boneTex, isLegacy: true };
   }
 
-  /* ── Route to skeleton or legacy renderer based on data available ───────── */
+  /* â”€â”€ Route to skeleton or legacy renderer based on data available â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _buildTrace(trace) {
     const skel = trace.skeletons;
     if (skel && Array.isArray(skel) && skel.length >= 3) {
@@ -385,26 +419,33 @@ export async function initGarden(canvas, options = {}) {
     }
     _debug.legacyCount++;
     if (!skel) {
-      console.warn('[archive] LEGACY FALLBACK — trace', trace.id,
+      console.warn('[archive] LEGACY FALLBACK â€” trace', trace.id,
         'has no skeletons field. SQL fix: ALTER TABLE pain_traces ADD COLUMN IF NOT EXISTS skeletons jsonb;');
     } else {
-      console.warn('[archive] LEGACY FALLBACK — trace', trace.id,
-        'skeleton frames too few:', skel.length, '(need ≥ 3)');
+      console.warn('[archive] LEGACY FALLBACK â€” trace', trace.id,
+        'skeleton frames too few:', skel.length, '(need â‰¥ 3)');
     }
     return _buildTubeTrace(trace);
   }
 
-  /* ── Golden-angle phyllotaxis layout ────────────────────────────────────── */
-  function _layout() {
+  /* â”€â”€ Golden-angle phyllotaxis layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  const MIN_R = 0.55;   // minimum radius â€” no figure ever stacks at the centre
+
+  function _layout(instant = false) {
     const N = ribbons.length;
     if (N === 0) return;
     ribbons.forEach((r, i) => {
-      const frac   = N > 1 ? i / (N - 1) : 0;
-      const radius = frac * MAX_R;
+      // (i + 0.5) / N spreads N entries evenly with no entry at radius 0
+      const frac   = (i + 0.5) / N;
+      const radius = MIN_R + frac * (MAX_R - MIN_R);
       const angle  = i * GOLDEN;
       r.targetX = Math.cos(angle) * radius;
       r.targetZ = Math.sin(angle) * radius;
-      r.baseY   = 0;  // all figures at the same floor level
+      r.baseY   = 0;
+      if (instant) {
+        r.group.position.x = r.targetX;
+        r.group.position.z = r.targetZ;
+      }
     });
   }
 
@@ -452,17 +493,17 @@ export async function initGarden(canvas, options = {}) {
     ribbons.unshift(entry);
   }
 
-  /* ── Public: load initial batch ─────────────────────────────────────────── */
+  /* â”€â”€ Public: load initial batch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function loadBatch(traces) {
     traces.forEach(trace => {
       _addToGarden(trace, !!(highlightId && trace.id === highlightId));
     });
-    _layout();
+    _layout(true);   // instant positioning â€” no drift on initial load
     traceCount = ribbons.length;
     if (options.onTraceAdded) options.onTraceAdded(traceCount);
   }
 
-  /* ── Public: add single trace (realtime insert) ──────────────────────────── */
+  /* â”€â”€ Public: add single trace (realtime insert) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function addTrace(trace) {
     _addToGarden(trace, !!(highlightId && trace.id === highlightId));
     traceCount++;
@@ -495,7 +536,7 @@ export async function initGarden(canvas, options = {}) {
     requestAnimationFrame(step);
   }
 
-  /* ── Device orientation parallax ────────────────────────────────────────── */
+  /* â”€â”€ Device orientation parallax â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   let targetCamX = 0;
   let targetCamY = 0.30;
 
@@ -504,13 +545,13 @@ export async function initGarden(canvas, options = {}) {
     targetCamY = Math.max(0.45, Math.min(0.85, 0.65 - (betaRad - 0.9) * 0.10));
   }
 
-  /* ── Per-frame update ───────────────────────────────────────────────────── */
+  /* â”€â”€ Per-frame update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   let clock = 0;
 
   function update(dt) {
     clock += dt;
 
-    // rotation off — garden is static
+    // rotation off â€” garden is static
 
     camera.position.x += (targetCamX - camera.position.x) * 0.006;
     camera.position.y += (targetCamY - camera.position.y) * 0.006;
@@ -542,7 +583,7 @@ export async function initGarden(canvas, options = {}) {
           r.playhead = (r.playhead + dt * r.playRate) % N;
           const ph = Math.floor(r.playhead);
 
-          // Redraw canvas only when the frame index changes (~3.5× per second)
+          // Redraw canvas only when the frame index changes (~3.5Ã— per second)
           if (ph !== r.lastDrawnFrame) {
             r.lastDrawnFrame = ph;
             const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
@@ -556,6 +597,7 @@ export async function initGarden(canvas, options = {}) {
             }
             // Current frame: full presence, live petal drift using scene clock
             customSkel.draw(r.skelCtx, r.skelFrames[ph].kp, CW, CH, 0.86, r.skelSeed, clock);
+            _applyVignette(r.skelCtx, CW, CH);
 
             r.boneTex.needsUpdate = true;
           }
@@ -566,6 +608,7 @@ export async function initGarden(canvas, options = {}) {
           const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
           r.skelCtx.clearRect(0, 0, CW, CH);
           customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, 0);
+          _applyVignette(r.skelCtx, CW, CH);
           r.boneTex.needsUpdate = true;
         }
       } else {
@@ -584,18 +627,18 @@ export async function initGarden(canvas, options = {}) {
         });
       }
 
-      // No autonomous breathing — figures stand still
+      // No autonomous breathing â€” figures stand still
       r.group.position.y = r.baseY;
 
-      // Smooth drift toward phyllotaxis target position
-      r.group.position.x += (r.targetX - r.group.position.x) * 0.030;
-      r.group.position.z += (r.targetZ - r.group.position.z) * 0.030;
+      // Settle quickly toward phyllotaxis target (fast lerp â€” no visible drift)
+      r.group.position.x += (r.targetX - r.group.position.x) * 0.14;
+      r.group.position.z += (r.targetZ - r.group.position.z) * 0.14;
     }
 
     renderer.render(scene, camera);
   }
 
-  /* ── Resize ────────────────────────────────────────────────────────────── */
+  /* â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function resize() {
     const nW = canvas.offsetWidth  || window.innerWidth;
     const nH = canvas.offsetHeight || window.innerHeight;
@@ -604,7 +647,7 @@ export async function initGarden(canvas, options = {}) {
     camera.updateProjectionMatrix();
   }
 
-  /* ── Destroy ─────────────────────────────────────────────────────────────── */
+  /* â”€â”€ Destroy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function destroy() {
     cancelAnimationFrame(0);
     ribbons.forEach(r => {
@@ -622,3 +665,4 @@ export async function initGarden(canvas, options = {}) {
 
   return { loadBatch, addTrace, update, setOrientation, resize, destroy, renderNow, getDebugInfo };
 }
+

@@ -1,6 +1,6 @@
-/* gesture.js — Body movement capture with TF.js MoveNet
+﻿/* gesture.js â€” Body movement capture with TF.js MoveNet
  * Tracks shoulder midpoint as anatomical spine proxy.
- * Flow: loading → preview → recording (20 s) → review → saving → ar.html
+ * Flow: loading â†’ preview â†’ recording (20 s) â†’ review â†’ saving â†’ ar.html
  */
 (function () {
   'use strict';
@@ -9,10 +9,10 @@
   const SUPA_KEY = 'sb_publishable_GgYdLTverVrWPYq93O6pmA_NJ4olWQ5';
   const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-  /* ── Single exhibition prompt ────────────────────────────────────────────── */
+  /* â”€â”€ Single exhibition prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const PROMPT = 'What movement helps you negotiate with pain?';
 
-  /* ── Recording constants ─────────────────────────────────────────────────── */
+  /* â”€â”€ Recording constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const RECORD_DURATION = 20;   // seconds
   const SAMPLE_INTERVAL = 80;   // ms between pose samples
   const MAX_SAVED_PTS   = 60;   // points stored per trace (enough for smooth curve)
@@ -20,7 +20,7 @@
   const SKELETON_INTERVAL = 400;  // ms between full-body keypoint snapshots
   const SKELETON_MAX      = 50;   // max skeleton frames stored per recording
 
-  /* ── Skeleton connections for overlay drawing ────────────────────────────── */
+  /* â”€â”€ Skeleton connections for overlay drawing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const CONNECTIONS = [
     [0,1],[0,2],[1,3],[2,4],
     [5,7],[7,9],[6,8],[8,10],
@@ -28,7 +28,7 @@
     [11,13],[13,15],[12,14],[14,16],
   ];
 
-  /* ── DOM refs ────────────────────────────────────────────────────────────── */
+  /* â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const video        = document.getElementById('g-video');
   const overlay      = document.getElementById('g-overlay');
   const ctx          = overlay.getContext('2d');
@@ -39,7 +39,7 @@
   const reviewCv     = document.getElementById('g-review-canvas');
   const debugEl      = document.getElementById('g-debug');
 
-  /* ── Debug log (visible on screen + console) ─────────────────────────────── */
+  /* â”€â”€ Debug log (visible on screen + console) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function log(msg, type) {
     console.log('[archive]', msg);
     if (!debugEl) return;
@@ -51,7 +51,7 @@
     debugEl.scrollTop = debugEl.scrollHeight;
   }
 
-  /* ── State ───────────────────────────────────────────────────────────────── */
+  /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   let currentState  = 'loading';
   let detector      = null;
   let stream        = null;
@@ -73,7 +73,7 @@
   let lastFrameTime      = 0;      // for dt calculation in the animation loop
   let smoothedKeypoints  = null;   // EMA-smoothed MoveNet output (reduces jitter)
 
-  /* ── Helpers ─────────────────────────────────────────────────────────────── */
+  /* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function lerp(a, b, t)    { return a + (b - a) * clamp(t, 0, 1); }
 
@@ -103,7 +103,7 @@
     });
   }
 
-  /* ── Camera ──────────────────────────────────────────────────────────────── */
+  /* â”€â”€ Camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function startCamera(facing) {
     currentFacing = facing || 'user';
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -134,7 +134,7 @@
     }
   }
 
-  /* ── MoveNet init ────────────────────────────────────────────────────────── */
+  /* â”€â”€ MoveNet init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function loadDetector() {
     log('Loading TF.js + MoveNet...');
     await tf.ready();
@@ -147,7 +147,7 @@
     return det;
   }
 
-  /* ── Main init ───────────────────────────────────────────────────────────── */
+  /* â”€â”€ Main init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function init() {
     setState('loading');
     const projRef = SUPA_URL.replace('https://', '').split('.')[0];
@@ -169,10 +169,10 @@
 
     resizeOverlay();
     setState('preview');
-    log('Ready — pose detection active', 'ok');
+    log('Ready â€” pose detection active', 'ok');
 
-    // Load custom skeleton assets in background — overlay degrades gracefully until ready
-    import('./custom-skel-draw.js?v=3')
+    // Load custom skeleton assets in background â€” overlay degrades gracefully until ready
+    import('./custom-skel-draw.js?v=4')
       .then(m => m.loadCustomSkel('assets/skel/'))
       .then(skel => {
         customSkel = skel;
@@ -183,7 +183,7 @@
     startDetectionLoop();
   }
 
-  /* ── Detection loop ───────────────────────────────────────────────────────── */
+  /* â”€â”€ Detection loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function startDetectionLoop() {
     lastFrameTime = performance.now();
     async function loop() {
@@ -200,21 +200,21 @@
           const poses = await detector.estimatePoses(video);
           if (poses.length > 0 && poses[0].keypoints) {
             const raw = poses[0].keypoints;
-            // Exponential moving average — smooths jitter without adding visible lag
-            const α = 0.60;
+            // Exponential moving average â€” smooths jitter without adding visible lag
+            const Î± = 0.60;
             if (!smoothedKeypoints || smoothedKeypoints.length !== raw.length) {
               smoothedKeypoints = raw.map(k => ({ x: k.x, y: k.y, score: k.score, name: k.name }));
             } else {
               smoothedKeypoints = smoothedKeypoints.map((sk, i) => {
                 const rk = raw[i];
                 if (!rk || rk.score < 0.12) {
-                  // Joint briefly lost — decay score slowly so it fades out rather than snapping off.
+                  // Joint briefly lost â€” decay score slowly so it fades out rather than snapping off.
                   // Position is held from last known good frame (sk.x, sk.y).
                   return { ...sk, score: sk.score * 0.92 };
                 }
                 return {
-                  x:     sk.x     * (1 - α) + rk.x     * α,
-                  y:     sk.y     * (1 - α) + rk.y     * α,
+                  x:     sk.x     * (1 - Î±) + rk.x     * Î±,
+                  y:     sk.y     * (1 - Î±) + rk.y     * Î±,
                   score: sk.score * 0.35    + rk.score * 0.65,
                   name:  rk.name,
                 };
@@ -239,7 +239,7 @@
     rafId = requestAnimationFrame(loop);
   }
 
-  /* ── Overlay drawing ─────────────────────────────────────────────────────── */
+  /* â”€â”€ Overlay drawing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function resizeOverlay() {
     overlay.width  = overlay.offsetWidth  || window.innerWidth;
     overlay.height = overlay.offsetHeight || (window.innerHeight - 56);
@@ -265,7 +265,7 @@
     const vH = video.videoHeight || H;
 
     if (customSkel) {
-      // Normalise raw video-pixel keypoints to [0–1] for custom-skel-draw.js
+      // Normalise raw video-pixel keypoints to [0â€“1] for custom-skel-draw.js
       const normKps = kps.map(kp => ({
         x: kp.x / vW,
         y: kp.y / vH,
@@ -323,7 +323,7 @@
     ctx.restore();
   }
 
-  /* Faint full-body outline — shows when body isn't detected so user knows where to stand. */
+  /* Faint full-body outline â€” shows when body isn't detected so user knows where to stand. */
   function drawFramingGuide(W, H) {
     const cx  = W / 2;
     const sc  = H * 0.26;    // scale relative to canvas height
@@ -352,22 +352,22 @@
     ctx.beginPath();
     ctx.moveTo(cx - sc * 0.33, mid - sc * 0.49);
     ctx.lineTo(cx + sc * 0.33, mid - sc * 0.49);
-    // L arm → elbow → wrist
+    // L arm â†’ elbow â†’ wrist
     ctx.moveTo(cx - sc * 0.33, mid - sc * 0.49);
     ctx.lineTo(cx - sc * 0.27, mid - sc * 0.14);
     ctx.lineTo(cx - sc * 0.22, mid + sc * 0.12);
-    // R arm → elbow → wrist
+    // R arm â†’ elbow â†’ wrist
     ctx.moveTo(cx + sc * 0.33, mid - sc * 0.49);
     ctx.lineTo(cx + sc * 0.27, mid - sc * 0.14);
     ctx.lineTo(cx + sc * 0.22, mid + sc * 0.12);
     // Hip bar
     ctx.moveTo(cx - sc * 0.18, mid);
     ctx.lineTo(cx + sc * 0.18, mid);
-    // L leg → knee → ankle
+    // L leg â†’ knee â†’ ankle
     ctx.moveTo(cx - sc * 0.12, mid);
     ctx.lineTo(cx - sc * 0.13, mid + sc * 0.26);
     ctx.lineTo(cx - sc * 0.14, mid + sc * 0.53);
-    // R leg → knee → ankle
+    // R leg â†’ knee â†’ ankle
     ctx.moveTo(cx + sc * 0.12, mid);
     ctx.lineTo(cx + sc * 0.13, mid + sc * 0.26);
     ctx.lineTo(cx + sc * 0.14, mid + sc * 0.53);
@@ -376,7 +376,7 @@
     ctx.restore();
   }
 
-  /* ── Recording ───────────────────────────────────────────────────────────── */
+  /* â”€â”€ Recording â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function startRecording() {
     samples           = [];
     skeletonSnapshots = [];
@@ -413,7 +413,7 @@
     clearInterval(elapsedIv);
     clearInterval(skeletonIv);
     sampleIv = elapsedIv = skeletonIv = null;
-    log('Recording stopped — ' + samples.length + ' samples, ' + skeletonSnapshots.length + ' skeleton frames');
+    log('Recording stopped â€” ' + samples.length + ' samples, ' + skeletonSnapshots.length + ' skeleton frames');
 
     if (samples.length < 5) {
       log('Too few samples, returning to preview', 'err');
@@ -424,14 +424,14 @@
     renderReviewTrace();
   }
 
-  /* ── Spine-proxy sample: shoulder midpoint (T1 vertebra equivalent) ─────── *
+  /* â”€â”€ Spine-proxy sample: shoulder midpoint (T1 vertebra equivalent) â”€â”€â”€â”€â”€â”€â”€ *
    *                                                                            *
    * WHY: The composite centroid of all 17 joints barely moves during           *
-   * scoliosis exercises — bilateral symmetry cancels out. The shoulder         *
+   * scoliosis exercises â€” bilateral symmetry cancels out. The shoulder         *
    * midpoint (left[5] + right[6]) tracks the top of the functional spine       *
    * and produces clear, intentional arcs during lateral bends, rotations,      *
    * and Schroth exercises. Visually it becomes the path of the spine apex.     *
-   * ─────────────────────────────────────────────────────────────────────────── */
+   * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function sampleFrame(keypoints) {
     const now = Date.now();
     const vW  = video.videoWidth  || 1280;
@@ -446,7 +446,7 @@
       px = (ls.x + rs.x) / 2;
       py = (ls.y + rs.y) / 2;
     } else if (lh && rh && lh.score > 0.25 && rh.score > 0.25) {
-      // Floor exercise fallback — hip midpoint (L4/L5 equivalent)
+      // Floor exercise fallback â€” hip midpoint (L4/L5 equivalent)
       px = (lh.x + rh.x) / 2;
       py = (lh.y + rh.y) / 2;
     } else {
@@ -477,7 +477,7 @@
     lastKeypoints = keypoints.slice();
   }
 
-  /* ── Full-body skeleton snapshot (saved every 400 ms during recording) ────── */
+  /* â”€â”€ Full-body skeleton snapshot (saved every 400 ms during recording) â”€â”€â”€â”€â”€â”€ */
   function captureSkeletonSnapshot(keypoints) {
     const vW = video.videoWidth  || 1280;
     const vH = video.videoHeight || 720;
@@ -491,7 +491,7 @@
     });
   }
 
-  /* ── Path smoothing — moving average removes pose-detection jitter ───────── */
+  /* â”€â”€ Path smoothing â€” moving average removes pose-detection jitter â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function smoothSamples(pts) {
     return pts.map((p, i) => {
       const lo = Math.max(0, i - SMOOTH_RADIUS);
@@ -505,7 +505,7 @@
     });
   }
 
-  /* ── Visual params — 5 movement qualities → unique rendering fingerprint ─── */
+  /* â”€â”€ Visual params â€” 5 movement qualities â†’ unique rendering fingerprint â”€â”€â”€ */
   function computeVisualParams(pts) {
     const fallback = {
       vertebraCount: 12, tubeRadius: 0.034,
@@ -553,11 +553,11 @@
     };
   }
 
-  /* ── Review: render smoothed 2D trace preview ────────────────────────────── *
+  /* â”€â”€ Review: render smoothed 2D trace preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ *
    * Draws segments with time-fading opacity so repeated oscillations read as   *
    * intentional density (motion history) rather than random scribble.          *
    * Earlier segments = faint; later segments = bright.                         *
-   * ─────────────────────────────────────────────────────────────────────────── */
+   * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function renderReviewTrace() {
     if (!reviewCv || samples.length < 2) return;
 
@@ -593,7 +593,7 @@
       };
     }
 
-    // ── Pass 1: wide soft glow (depth) ───────────────────────────────────
+    // â”€â”€ Pass 1: wide soft glow (depth) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     rc.save();
     rc.lineCap = rc.lineJoin = 'round';
     rc.shadowColor = 'rgba(138,188,218,0.20)';
@@ -607,15 +607,15 @@
     rc.stroke();
     rc.restore();
 
-    // ── Pass 2: time-fading segments (early = ghost, late = bright) ───────
+    // â”€â”€ Pass 2: time-fading segments (early = ghost, late = bright) â”€â”€â”€â”€â”€â”€â”€
     // Each segment drawn independently so opacity encodes time position.
     rc.save();
     rc.lineCap = rc.lineJoin = 'round';
     rc.shadowBlur = 0;
     for (let i = 1; i < n; i++) {
       const t    = i / (n - 1);              // 0 = start, 1 = end
-      const alpha = 0.08 + t * 0.72;         // ghost at start → bright at end
-      const width = 1.2 + t * 1.8;          // thin at start → thicker at end
+      const alpha = 0.08 + t * 0.72;         // ghost at start â†’ bright at end
+      const width = 1.2 + t * 1.8;          // thin at start â†’ thicker at end
       const prev  = toC(smoothed[i - 1]);
       const curr  = toC(smoothed[i]);
 
@@ -628,7 +628,7 @@
     }
     rc.restore();
 
-    // ── End-point marker: bright dot showing final position ────────────────
+    // â”€â”€ End-point marker: bright dot showing final position â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const cLast = toC(smoothed[n - 1]);
     rc.save();
     rc.shadowColor = 'rgba(220,240,248,0.55)';
@@ -639,16 +639,16 @@
     rc.fill();
     rc.restore();
 
-    // ── Start-point marker: dim dot showing start position ────────────────
+    // â”€â”€ Start-point marker: dim dot showing start position â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     rc.beginPath();
     rc.arc(c0.x, c0.y, 3, 0, Math.PI * 2);
     rc.fillStyle = 'rgba(138,188,218,0.38)';
     rc.fill();
   }
 
-  /* ── Save to Supabase → redirect to ar.html?trace=<id> ──────────────────── */
+  /* â”€â”€ Save to Supabase â†’ redirect to ar.html?trace=<id> â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function saveTrace() {
-    log('Preparing to save — ' + samples.length + ' raw samples');
+    log('Preparing to save â€” ' + samples.length + ' raw samples');
     setState('saving');
 
     // 1. Smooth the captured path
@@ -694,7 +694,7 @@
     }
   }
 
-  /* ── Button handlers ─────────────────────────────────────────────────────── */
+  /* â”€â”€ Button handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   document.getElementById('g-start-btn') .addEventListener('click', startRecording);
   document.getElementById('g-stop-btn')  .addEventListener('click', stopRecording);
   document.getElementById('g-save-btn')  .addEventListener('click', saveTrace);
@@ -707,6 +707,7 @@
 
   window.addEventListener('resize', resizeOverlay);
 
-  /* ── Boot ────────────────────────────────────────────────────────────────── */
+  /* â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   init();
 })();
+

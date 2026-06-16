@@ -274,8 +274,8 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
       // Petal cloud is intentionally oversized — clipping at canvas edges is fine
       _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, t);
 
-      // ── Layer 2: face/void oval ───────────────────────────────────────────
-      _drawFace(ctx, hx, hy, shoulderPx, alpha, t);
+      // ── Layer 2: face/void oval — currently removed at user's request
+      // _drawFace(ctx, hx, hy, shoulderPx, alpha, t);
 
       // ── Layer 3: bone connection lines ────────────────────────────────────
       BONES.forEach(([a, b]) => {

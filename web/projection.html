@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pain Archive — Contradiction of S</title>
+  <title>Pain Archive â€” Contradiction of S</title>
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js" } }
   </script>
@@ -12,7 +12,7 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ── Colour tokens: dark mode (default) and bright-room override ────────── */
+    /* â”€â”€ Colour tokens: dark mode (default) and bright-room override â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     :root {
       --bg:           #060A0E;
       --text-hi:      rgba(238,246,248,0.64);
@@ -27,7 +27,7 @@
     /*
      * Bright-room mode: ?bright=1 in URL, or press B.
      * Raises all text opacity so it reads in gallery lighting.
-     * Background stays black — it's the archive's visual ground.
+     * Background stays black â€” it's the archive's visual ground.
      */
     body.bright {
       --text-hi:      rgba(238,246,248,0.95);
@@ -45,7 +45,7 @@
       overflow: hidden;
     }
 
-    /* ── Three.js canvas ───────────────────────────────────────────────────── */
+    /* â”€â”€ Three.js canvas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #proj-canvas {
       display: block;
       position: fixed;
@@ -54,7 +54,7 @@
       height: 100vh;
     }
 
-    /* ── All UI overlays ───────────────────────────────────────────────────── */
+    /* â”€â”€ All UI overlays â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #proj-overlay {
       position: fixed;
       inset: 0;
@@ -62,7 +62,7 @@
       z-index: 10;
     }
 
-    /* ── Title block — top-left (landscape) / top-center (portrait) ─────────── */
+    /* â”€â”€ Title block â€” top-left (landscape) / top-center (portrait) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #proj-title {
       position: absolute;
       top: clamp(22px, 3.5vh, 44px);
@@ -84,7 +84,7 @@
       font-weight: 300;
     }
 
-    /* ── Archive count — bottom-left (landscape) / bottom-center (portrait) ── */
+    /* â”€â”€ Archive count â€” bottom-left (landscape) / bottom-center (portrait) â”€â”€ */
     #proj-count {
       position: absolute;
       bottom: clamp(26px, 4vh, 50px);
@@ -98,7 +98,7 @@
     }
     #proj-count.flash { color: var(--text-hi); }
 
-    /* ── Exhibition instruction — bottom-right (landscape) / above count (portrait) */
+    /* â”€â”€ Exhibition instruction â€” bottom-right (landscape) / above count (portrait) */
     #proj-cta {
       position: absolute;
       bottom: clamp(26px, 4vh, 50px);
@@ -121,7 +121,7 @@
       margin-top: 2px;
     }
 
-    /* ── New-gesture pulse — fades in at screen centre, then out ────────────── */
+    /* â”€â”€ New-gesture pulse â€” fades in at screen centre, then out â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #proj-pulse {
       position: absolute;
       top: 50%; left: 50%;
@@ -150,7 +150,7 @@
       margin-top: 14px;
     }
 
-    /* ── Thin separator line — decorative, very faint ─────────────────────── */
+    /* â”€â”€ Thin separator line â€” decorative, very faint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #proj-rule {
       position: absolute;
       top: 50%;
@@ -162,7 +162,7 @@
       opacity: 0;
     }
 
-    /* ── Controls — top-right, auto-hide after 5s idle ─────────────────────── */
+    /* â”€â”€ Controls â€” top-right, auto-hide after 5s idle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #proj-controls {
       position: absolute;
       top: clamp(18px, 2.8vh, 40px);
@@ -201,12 +201,12 @@
     }
     .ctrl-btn svg { flex-shrink: 0; }
 
-    /* ── Portrait orientation ────────────────────────────────────────────────
+    /* â”€â”€ Portrait orientation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        On a vertical screen (portrait tablet, vertical monitor, phone):
-       — title centres at top
-       — count centres at bottom
-       — cta sits just above count
-    ─────────────────────────────────────────────────────────────────────────── */
+       â€” title centres at top
+       â€” count centres at bottom
+       â€” cta sits just above count
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     @media (orientation: portrait) {
       #proj-title {
         left: 0; right: 0;
@@ -224,7 +224,7 @@
       }
     }
 
-    /* ── Small screens (tablet/iPad kiosk): tighten spacing ─────────────────── */
+    /* â”€â”€ Small screens (tablet/iPad kiosk): tighten spacing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     @media (max-width: 768px) {
       #proj-controls { gap: 6px; }
     }
@@ -235,7 +235,7 @@
   <!-- Three.js archive garden -->
   <canvas id="proj-canvas"></canvas>
 
-  <!-- UI overlay — all text, non-interactive except controls -->
+  <!-- UI overlay â€” all text, non-interactive except controls -->
   <div id="proj-overlay">
 
     <!-- Title -->
@@ -245,7 +245,7 @@
     </div>
 
     <!-- Archive count -->
-    <div id="proj-count">—</div>
+    <div id="proj-count">â€”</div>
 
     <!-- Scan instruction + optional URL -->
     <div id="proj-cta">
@@ -280,13 +280,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script type="module">
-    import { initGarden } from './js/archive-cloud.js?v=3';
+    import { initGarden } from './js/archive-cloud.js?v=4';
 
     const SUPA_URL = 'https://oexbsffepplhhhzhyxpy.supabase.co';
     const SUPA_KEY = 'sb_publishable_GgYdLTverVrWPYq93O6pmA_NJ4olWQ5';
     const db = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-    /* ── DOM refs ──────────────────────────────────────────────────────────── */
+    /* â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const canvas       = document.getElementById('proj-canvas');
     const countEl      = document.getElementById('proj-count');
     const pulseEl      = document.getElementById('proj-pulse');
@@ -298,27 +298,27 @@
     const fsLabel      = document.getElementById('fs-label');
     const ctaUrlEl     = document.getElementById('proj-cta-url');
 
-    /* ── URL parameters ───────────────────────────────────────────────────── */
+    /* â”€â”€ URL parameters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const params = new URLSearchParams(window.location.search);
 
-    // ?bright=1  — start in bright-room mode
+    // ?bright=1  â€” start in bright-room mode
     if (params.has('bright')) {
       document.body.classList.add('bright');
       brightLabel.textContent = 'Dark mode';
     }
 
-    // ?gestureurl=https://...  — display URL under scan instruction
+    // ?gestureurl=https://...  â€” display URL under scan instruction
     const gestureUrl = params.get('gestureurl');
     if (gestureUrl) ctaUrlEl.textContent = gestureUrl;
 
-    /* ── Bright / contrast toggle (key: B) ───────────────────────────────── */
+    /* â”€â”€ Bright / contrast toggle (key: B) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     function toggleBright() {
       const on = document.body.classList.toggle('bright');
       brightLabel.textContent = on ? 'Dark mode' : 'Contrast';
     }
     btnBright.addEventListener('click', toggleBright);
 
-    /* ── Fullscreen (key: F) ─────────────────────────────────────────────── */
+    /* â”€â”€ Fullscreen (key: F) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -332,14 +332,14 @@
       fsLabel.textContent = inFs ? 'Exit full' : 'Fullscreen';
     });
 
-    /* ── Keyboard shortcuts ───────────────────────────────────────────────── */
+    /* â”€â”€ Keyboard shortcuts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     document.addEventListener('keydown', e => {
       if (e.key === 'f' || e.key === 'F') toggleFullscreen();
       if (e.key === 'b' || e.key === 'B') toggleBright();
       showControls();
     });
 
-    /* ── Controls auto-hide (5 s idle) ────────────────────────────────────── */
+    /* â”€â”€ Controls auto-hide (5 s idle) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     let hideTimer = null;
     function showControls() {
       ctrlsEl.classList.remove('hidden');
@@ -350,7 +350,7 @@
     document.addEventListener('touchstart', showControls, { passive: true });
     hideTimer = setTimeout(() => ctrlsEl.classList.add('hidden'), 5000);
 
-    /* ── Archive count display ────────────────────────────────────────────── */
+    /* â”€â”€ Archive count display â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     function updateCount(n) {
       countEl.textContent =
         n === 0 ? 'no gestures yet'
@@ -358,7 +358,7 @@
         : `${n} gestures in the archive`;
     }
 
-    /* ── New-gesture notification ─────────────────────────────────────────── */
+    /* â”€â”€ New-gesture notification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     let pulseTimer = null;
     function onNewTrace(prompt) {
       // Count flashes brighter
@@ -372,13 +372,13 @@
       pulseTimer = setTimeout(() => pulseEl.classList.remove('visible'), 4500);
     }
 
-    /* ── Initialise garden ────────────────────────────────────────────────── */
+    /* â”€â”€ Initialise garden â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const garden = await initGarden(canvas, {
       opaque: true,
       onTraceAdded: updateCount,
     });
 
-    /* ── Load existing traces ─────────────────────────────────────────────── */
+    /* â”€â”€ Load existing traces â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     try {
       const { data } = await db
         .from('pain_traces')
@@ -397,7 +397,7 @@
       updateCount(0);
     }
 
-    /* ── Realtime: new gestures appear live ────────────────────────────────── */
+    /* â”€â”€ Realtime: new gestures appear live â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     db.channel('proj-live')
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'pain_traces',
@@ -407,7 +407,7 @@
       })
       .subscribe();
 
-    /* ── Animation loop ───────────────────────────────────────────────────── */
+    /* â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     let prev = performance.now();
     (function tick(now) {
       const dt = Math.min((now - prev) / 1000, 0.05);
@@ -416,9 +416,10 @@
       requestAnimationFrame(tick);
     })(performance.now());
 
-    /* ── Resize — handles orientation change, window resize, TV/monitor ────── */
+    /* â”€â”€ Resize â€” handles orientation change, window resize, TV/monitor â”€â”€â”€â”€â”€â”€ */
     window.addEventListener('resize', () => garden.resize());
 
   </script>
 </body>
 </html>
+

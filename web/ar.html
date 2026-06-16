@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-  <title>Archive — Contradiction of S</title>
+  <title>Archive â€” Contradiction of S</title>
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js" } }
@@ -11,7 +11,7 @@
   <style>
     body { overflow: hidden; background: #000; }
 
-    /* ── AR stage ────────────────────────────────────────────────────────── */
+    /* â”€â”€ AR stage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-stage {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -20,7 +20,7 @@
       overflow: hidden;
     }
 
-    /* ── Camera feed ─────────────────────────────────────────────────────── */
+    /* â”€â”€ Camera feed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-video {
       position: absolute;
       inset: 0;
@@ -29,7 +29,7 @@
     }
     #ar-video.mirrored { transform: scaleX(-1); }
 
-    /* ── Three.js garden canvas ──────────────────────────────────────────── */
+    /* â”€â”€ Three.js garden canvas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #garden-canvas {
       position: absolute;
       inset: 0;
@@ -39,7 +39,7 @@
       pointer-events: none;
     }
 
-    /* ── Trace count ─────────────────────────────────────────────────────── */
+    /* â”€â”€ Trace count â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-trace-count {
       position: absolute;
       top: 20px; left: 0; right: 0;
@@ -56,7 +56,7 @@
     }
     #ar-trace-count.visible { opacity: 1; }
 
-    /* ── Loading ─────────────────────────────────────────────────────────── */
+    /* â”€â”€ Loading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-loading {
       position: absolute;
       inset: 0;
@@ -76,7 +76,7 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Empty state ─────────────────────────────────────────────────────── */
+    /* â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-empty {
       position: absolute;
       inset: 0;
@@ -108,7 +108,7 @@
       pointer-events: auto;
     }
 
-    /* ── New-trace pulse ─────────────────────────────────────────────────── */
+    /* â”€â”€ New-trace pulse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-new-trace {
       position: absolute;
       top: 44px; left: 0; right: 0;
@@ -125,7 +125,7 @@
     }
     #ar-new-trace.visible { opacity: 1; }
 
-    /* ── Controls ────────────────────────────────────────────────────────── */
+    /* â”€â”€ Controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-controls {
       position: absolute;
       bottom: 20px; left: 0; right: 0;
@@ -169,7 +169,7 @@
     }
     #ar-switch-btn:active { background: rgba(240,234,224,0.16); }
 
-    /* ── Draw CTA ────────────────────────────────────────────────────────── */
+    /* â”€â”€ Draw CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-draw-cta {
       position: absolute;
       bottom: 106px; left: 0; right: 0;
@@ -190,7 +190,7 @@
     }
     #ar-draw-cta a:active { color: rgba(240,234,224,0.6); }
 
-    /* ── Saved msg ───────────────────────────────────────────────────────── */
+    /* â”€â”€ Saved msg â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-saved-msg {
       position: absolute;
       bottom: 102px; left: 0; right: 0;
@@ -206,7 +206,7 @@
     }
     #ar-saved-msg.visible { opacity: 1; }
 
-    /* ── Flash ───────────────────────────────────────────────────────────── */
+    /* â”€â”€ Flash â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-flash {
       position: absolute;
       inset: 0;
@@ -218,7 +218,7 @@
     }
     #ar-flash.active { opacity: 0.55; }
 
-    /* ── iOS motion permission ───────────────────────────────────────────── */
+    /* â”€â”€ iOS motion permission â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #orientation-btn {
       display: none;
       position: absolute;
@@ -238,7 +238,7 @@
     }
     #orientation-btn.visible { display: block; }
 
-    /* ── Start screen ────────────────────────────────────────────────────── */
+    /* â”€â”€ Start screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-start {
       position: absolute;
       inset: 0;
@@ -302,7 +302,7 @@
       letter-spacing: 0.04em;
     }
 
-    /* ── Debug overlay (?debug=1 in URL) ────────────────────────────────── */
+    /* â”€â”€ Debug overlay (?debug=1 in URL) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-debug {
       display: none;
       position: absolute;
@@ -325,7 +325,7 @@
     #ar-debug .db-ok   { color: rgba(110,220,130,0.95); }
     #ar-debug .db-err  { color: rgba(255,100,80,0.95); }
 
-    /* ── Camera error ────────────────────────────────────────────────────── */
+    /* â”€â”€ Camera error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-cam-error {
       position: absolute;
       inset: 0;
@@ -367,7 +367,7 @@
     <!-- Three.js archive garden (alpha, layered over video) -->
     <canvas id="garden-canvas"></canvas>
 
-    <!-- Gesture count — top centre -->
+    <!-- Gesture count â€” top centre -->
     <div id="ar-trace-count"></div>
 
     <!-- Real-time arrival label -->
@@ -376,7 +376,7 @@
     <!-- Empty state -->
     <div id="ar-empty">
       <div id="ar-empty-text">No gestures yet.<br>Be the first.</div>
-      <a href="gesture.html" id="ar-empty-link">Record a gesture →</a>
+      <a href="gesture.html" id="ar-empty-link">Record a gesture â†’</a>
     </div>
 
     <!-- Loading -->
@@ -388,17 +388,17 @@
     <!-- Shutter flash -->
     <div id="ar-flash"></div>
 
-    <!-- Debug overlay — visible only with ?debug=1 in URL -->
+    <!-- Debug overlay â€” visible only with ?debug=1 in URL -->
     <div id="ar-debug">
-      <div id="adb-trace">trace: —</div>
-      <div id="adb-loaded">loaded: —</div>
-      <div id="adb-skel">skeleton traces: —</div>
-      <div id="adb-legacy">legacy traces: —</div>
-      <div id="adb-mode">renderer: —</div>
+      <div id="adb-trace">trace: â€”</div>
+      <div id="adb-loaded">loaded: â€”</div>
+      <div id="adb-skel">skeleton traces: â€”</div>
+      <div id="adb-legacy">legacy traces: â€”</div>
+      <div id="adb-mode">renderer: â€”</div>
     </div>
 
     <!-- Draw CTA -->
-    <div id="ar-draw-cta"><a href="gesture.html">Add your gesture →</a></div>
+    <div id="ar-draw-cta"><a href="gesture.html">Add your gesture â†’</a></div>
 
     <!-- Controls -->
     <div id="ar-controls">
@@ -420,13 +420,13 @@
       <div id="ar-start-title">A growing garden<br>of gesture</div>
       <div id="ar-start-sub">Every trace is a body.<br>Every movement, remembered.</div>
       <button id="ar-start-btn">Open Archive</button>
-      <a href="gesture.html" id="ar-start-draw-link">or record a gesture →</a>
+      <a href="gesture.html" id="ar-start-draw-link">or record a gesture â†’</a>
     </div>
 
     <!-- Camera error -->
     <div id="ar-cam-error">
       <p>Camera not available.<br>Allow camera access in your browser settings.</p>
-      <a href="draw.html">← contribute a gesture instead</a>
+      <a href="draw.html">â† contribute a gesture instead</a>
     </div>
 
   </div><!-- /#ar-stage -->
@@ -448,7 +448,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script type="module">
-    import { initGarden } from './js/archive-cloud.js?v=3';
+    import { initGarden } from './js/archive-cloud.js?v=4';
 
     const SUPA_URL = 'https://oexbsffepplhhhzhyxpy.supabase.co';
     const SUPA_KEY = 'sb_publishable_GgYdLTverVrWPYq93O6pmA_NJ4olWQ5';
@@ -478,7 +478,7 @@
     let traceCount = 0;
     let newTracePulseTimer = null;
 
-    /* ── Debug overlay ──────────────────────────────────────────────────── */
+    /* â”€â”€ Debug overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const _debugMode  = new URLSearchParams(window.location.search).has('debug');
     const _debugEl    = document.getElementById('ar-debug');
     const _adbTrace   = document.getElementById('adb-trace');
@@ -503,7 +503,7 @@
       _adbMode.className   = hasAny ? 'db-ok' : 'db-err';
     }
 
-    /* ── Count display ──────────────────────────────────────────────────── */
+    /* â”€â”€ Count display â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     function updateCount(n) {
       traceCount = n;
       if (n > 0) {
@@ -516,7 +516,7 @@
       }
     }
 
-    /* ── Camera ─────────────────────────────────────────────────────────── */
+    /* â”€â”€ Camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function startCamera(facing) {
       currentFacing = facing || 'environment';
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -543,7 +543,7 @@
       }
     }
 
-    /* ── Debug log shown in count bar during load ────────────────────────── */
+    /* â”€â”€ Debug log shown in count bar during load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     function arLog(msg) {
       console.log('[ar]', msg);
       if (countEl && !countEl.classList.contains('visible')) {
@@ -552,7 +552,7 @@
       }
     }
 
-    /* ── Main init ──────────────────────────────────────────────────────── */
+    /* â”€â”€ Main init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     async function startExperience() {
       startEl.classList.add('hidden');
       loadingEl.classList.add('visible');
@@ -561,9 +561,9 @@
       if (_debugMode) _adbTrace.textContent = 'trace: ' + (_newTraceId || '(none)');
       arLog('Initialising garden...');
 
-      // ── Garden init is INDEPENDENT of camera ────────────────────────────
+      // â”€â”€ Garden init is INDEPENDENT of camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // Garden works whether or not camera permission is granted.
-      // Camera is a cosmetic AR background — optional.
+      // Camera is a cosmetic AR background â€” optional.
       try {
         garden = await initGarden(gardenCanvas, {
           onTraceAdded:     (n) => updateCount(n),
@@ -575,7 +575,7 @@
         console.error('initGarden failed:', e);
       }
 
-      // ── Load traces from Supabase ────────────────────────────────────────
+      // â”€â”€ Load traces from Supabase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       arLog('Loading archive from Supabase...');
       try {
         const { data, error } = await db.from('pain_traces')
@@ -606,13 +606,13 @@
         countEl.classList.remove('visible');
       }
 
-      // ── Camera starts in background — non-blocking ───────────────────────
+      // â”€â”€ Camera starts in background â€” non-blocking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // If it fails the garden still renders over a dark background.
       startCamera('environment').catch(e =>
         console.warn('Camera unavailable (garden continues):', e.message)
       );
 
-      // ── Arriving from gesture.html — highlight + welcome ─────────────────
+      // â”€â”€ Arriving from gesture.html â€” highlight + welcome â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (_newTraceId) {
         savedMsg.textContent = 'Your gesture has entered the archive';
         setTimeout(() => {
@@ -621,7 +621,7 @@
         }, 1400);
       }
 
-      // ── Realtime: new gestures appear live ───────────────────────────────
+      // â”€â”€ Realtime: new gestures appear live â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       db.channel('ar-archive-live')
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'pain_traces',
@@ -639,7 +639,7 @@
       window.addEventListener('resize', () => { if (garden) garden.resize(); });
       loadingEl.classList.remove('visible');
 
-      // ── Animation loop ────────────────────────────────────────────────────
+      // â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       let prev = performance.now();
       function tick(now) {
         const dt = Math.min((now - prev) / 1000, 0.05);
@@ -652,16 +652,16 @@
 
     startBtn.addEventListener('click', startExperience);
 
-    // Auto-start if arriving from gesture capture (gesture.html → ar.html?trace=id)
+    // Auto-start if arriving from gesture capture (gesture.html â†’ ar.html?trace=id)
     const _urlTrace = new URLSearchParams(window.location.search).get('trace');
     if (_urlTrace) startExperience();
 
-    /* ── Camera switch ───────────────────────────────────────────────────── */
+    /* â”€â”€ Camera switch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     switchBtn.addEventListener('click', () => {
       startCamera(currentFacing === 'environment' ? 'user' : 'environment');
     });
 
-    /* ── Device orientation (parallax effect) ───────────────────────────── */
+    /* â”€â”€ Device orientation (parallax effect) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     function setupOrientation() {
       if (!window.DeviceOrientationEvent) return;
 
@@ -689,7 +689,7 @@
       }
     }
 
-    /* ── Composite photo capture ─────────────────────────────────────────── */
+    /* â”€â”€ Composite photo capture â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     captureBtn.addEventListener('click', () => {
       if (captureBtn.disabled) return;
       captureBtn.disabled = true;
@@ -721,10 +721,10 @@
         }
       }
 
-      // Composite garden canvas on top (1:1 — same pixel dimensions)
+      // Composite garden canvas on top (1:1 â€” same pixel dimensions)
       ctx2d.drawImage(gardenCanvas, 0, 0, pw, ph);
 
-      // Download — use blob URL so iOS doesn't navigate away, re-enable when done
+      // Download â€” use blob URL so iOS doesn't navigate away, re-enable when done
       cap.toBlob(blob => {
         const url  = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -743,7 +743,7 @@
       }, 'image/jpeg', 0.92);
     });
 
-    /* ── Cleanup ─────────────────────────────────────────────────────────── */
+    /* â”€â”€ Cleanup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && stream) {
         stream.getTracks().forEach(t => t.stop());
@@ -752,3 +752,4 @@
   </script>
 </body>
 </html>
+
