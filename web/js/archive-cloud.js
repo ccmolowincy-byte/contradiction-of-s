@@ -10,7 +10,7 @@
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js?v=12';
+import { loadCustomSkel } from './custom-skel-draw.js?v=13';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
 const MAX_R    = 2.0;
@@ -201,7 +201,7 @@ export async function initGarden(canvas, options = {}) {
       const refY = hipOk ? (lHip.y + rHip.y) / 2
                          : (shOk ? (lSh.y + rSh.y) / 2 + 0.14 : 0.60);
       anchorDX = 0.50 - refX;         // centre body horizontally
-      anchorDY = 0.60 - refY;         // place hip/waist at 60% canvas height
+      anchorDY = 0.82 - refY;         // place hip/waist at 82% canvas height — head gets room for petals above
     }
     const skelFrames = renderFrames.map(frame => ({
       kp: frame.kp.map(kp => ({
@@ -425,7 +425,7 @@ export async function initGarden(canvas, options = {}) {
       const frac   = (i + 0.5) / N;
       const radius = MIN_R + frac * (MAX_R - MIN_R);
       const angle  = i * GOLDEN;
-      r.targetX = Math.max(-1.0, Math.min(1.0, Math.cos(angle) * radius));
+      r.targetX = Math.max(-0.85, Math.min(0.85, Math.cos(angle) * radius));
       r.targetZ = Math.sin(angle) * radius;
       r.baseY   = (1 - (i + 0.5) / N) * 0.8;
       if (instant) {

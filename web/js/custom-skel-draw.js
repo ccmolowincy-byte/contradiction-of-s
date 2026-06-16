@@ -181,7 +181,7 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
   function _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, time) {
     if (alpha < 0.005) return;
 
-    const R   = shoulderPx * 1.6;
+    const R   = shoulderPx * 1.2;
     const rot = Math.sin(time * 0.35 + seed * 1.8) * 0.12;
 
     ctx.save();
