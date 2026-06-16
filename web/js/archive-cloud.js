@@ -10,7 +10,7 @@
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js?v=2';
+import { loadCustomSkel } from './custom-skel-draw.js?v=3';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5°, sunflower angle
 const MAX_R    = 2.2;
@@ -510,11 +510,11 @@ export async function initGarden(canvas, options = {}) {
   function update(dt) {
     clock += dt;
 
-    gardenGroup.rotation.y += 0.000085;  // very slow rotation — one full turn ~20 min
+    // rotation off — garden is static
 
-    camera.position.x += (targetCamX - camera.position.x) * 0.018;
-    camera.position.y += (targetCamY - camera.position.y) * 0.018;
-    camera.lookAt(0, 0, 0);
+    camera.position.x += (targetCamX - camera.position.x) * 0.006;
+    camera.position.y += (targetCamY - camera.position.y) * 0.006;
+    camera.lookAt(0, -0.10, 0);
 
     const n = ribbons.length;
     for (let i = 0; i < n; i++) {
@@ -584,9 +584,8 @@ export async function initGarden(canvas, options = {}) {
         });
       }
 
-      // Shared breathing — slow, subtle; 0.12 Hz (~8-second cycle), very small amplitude
-      const breathY = Math.sin(clock * 0.12 * Math.PI * 2 + r.phaseOffset) * 0.009;
-      r.group.position.y = r.baseY + breathY;
+      // No autonomous breathing — figures stand still
+      r.group.position.y = r.baseY;
 
       // Smooth drift toward phyllotaxis target position
       r.group.position.x += (r.targetX - r.group.position.x) * 0.030;

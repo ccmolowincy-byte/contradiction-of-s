@@ -172,7 +172,7 @@
     log('Ready — pose detection active', 'ok');
 
     // Load custom skeleton assets in background — overlay degrades gracefully until ready
-    import('./custom-skel-draw.js?v=2')
+    import('./custom-skel-draw.js?v=3')
       .then(m => m.loadCustomSkel('assets/skel/'))
       .then(skel => {
         customSkel = skel;
@@ -232,8 +232,6 @@
         }
       }
       if (customSkel) customSkel.update(dt);
-      // Framing hint and guide only shown in preview — not during active recording
-      const showGuide = currentState === 'preview' && noBodyFrames > 20;
       noBodyEl.style.opacity = (currentState === 'preview' && noBodyFrames > 60) ? '1' : '0';
       drawOverlay();
       rafId = requestAnimationFrame(loop);
@@ -256,6 +254,7 @@
       ctx.fillRect(0, 0, W, H);
     }
 
+    const showGuide = currentState === 'preview' && noBodyFrames > 20;
     if (showGuide && !currentKeypoints?.length) drawFramingGuide(W, H);
     if (currentKeypoints?.length) drawSkeleton(currentKeypoints, W, H);
     if (currentState === 'recording' && samples.length > 1) drawTrail(samples, W, H);
