@@ -10,7 +10,7 @@
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js?v=11';
+import { loadCustomSkel } from './custom-skel-draw.js?v=12';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
 const MAX_R    = 2.0;
@@ -241,7 +241,7 @@ export async function initGarden(canvas, options = {}) {
         blending:    THREE.AdditiveBlending,
       });
       const sprite = new THREE.Sprite(spriteMat);
-      sprite.scale.set(1.45, 1.82, 1.0);   // portrait proportions — sized to stay within frustum
+      sprite.scale.set(1.10, 1.38, 1.0);   // portrait proportions — sized to stay within frustum
 
       const group = new THREE.Group();
       group.add(sprite);
