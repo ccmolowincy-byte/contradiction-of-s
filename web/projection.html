@@ -373,7 +373,7 @@
     }
 
     /* ── Initialise garden ────────────────────────────────────────────────── */
-    const garden = initGarden(canvas, {
+    const garden = await initGarden(canvas, {
       opaque: true,
       onTraceAdded: updateCount,
     });

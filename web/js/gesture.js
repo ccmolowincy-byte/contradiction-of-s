@@ -16,7 +16,9 @@
   const RECORD_DURATION = 20;   // seconds
   const SAMPLE_INTERVAL = 80;   // ms between pose samples
   const MAX_SAVED_PTS   = 60;   // points stored per trace (enough for smooth curve)
-  const SMOOTH_RADIUS   = 4;    // moving-average half-window for path smoothing
+  const SMOOTH_RADIUS     = 4;    // moving-average half-window for path smoothing
+  const SKELETON_INTERVAL = 400;  // ms between full-body keypoint snapshots
+  const SKELETON_MAX      = 50;   // max skeleton frames stored per recording
 
   /* ── Skeleton connections for overlay drawing ────────────────────────────── */
   const CONNECTIONS = [
@@ -64,6 +66,11 @@
   let lastKeypoints    = null;
   let recordingStart   = null;
   let currentPrompt    = '';
+
+  let skeletonSnapshots = [];
+  let skeletonIv        = null;
+  let customSkel        = null;   // loaded async after MoveNet; used by drawSkeleton
+  let lastFrameTime     = 0;      // for dt calculation in the animation loop
 
   /* ── Helpers ─────────────────────────────────────────────────────────────── */
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -162,12 +169,27 @@
     resizeOverlay();
     setState('preview');
     log('Ready — pose detection active', 'ok');
+
+    // Load custom skeleton assets in background — overlay degrades gracefully until ready
+    import('./custom-skel-draw.js')
+      .then(m => m.loadCustomSkel('assets/skel/'))
+      .then(skel => {
+        customSkel = skel;
+        log('Custom skeleton loaded', 'ok');
+      })
+      .catch(err => log('Custom skeleton load failed: ' + err.message, 'err'));
+
     startDetectionLoop();
   }
 
   /* ── Detection loop ───────────────────────────────────────────────────────── */
   function startDetectionLoop() {
+    lastFrameTime = performance.now();
     async function loop() {
+      const now = performance.now();
+      const dt  = Math.min((now - lastFrameTime) / 1000, 0.05);
+      lastFrameTime = now;
+
       if (currentState === 'saving' || currentState === 'error' || currentState === 'loading') {
         rafId = requestAnimationFrame(loop);
         return;
@@ -186,6 +208,7 @@
           currentKeypoints = null;
         }
       }
+      if (customSkel) customSkel.update(dt);
       noBodyEl.style.opacity = noBodyFrames > 60 ? '1' : '0';
       drawOverlay();
       rafId = requestAnimationFrame(loop);
@@ -215,8 +238,20 @@
   function drawSkeleton(kps, W, H) {
     const vW = video.videoWidth  || W;
     const vH = video.videoHeight || H;
-    const sx = W / vW, sy = H / vH;
 
+    if (customSkel) {
+      // Normalise raw video-pixel keypoints to [0–1] for custom-skel-draw.js
+      const normKps = kps.map(kp => ({
+        x: kp.x / vW,
+        y: kp.y / vH,
+        s: kp.score,
+      }));
+      customSkel.draw(ctx, normKps, W, H, 1.0, 0, null);
+      return;
+    }
+
+    // Fallback: faint blue-line skeleton while custom assets are loading
+    const sx = W / vW, sy = H / vH;
     ctx.save();
     ctx.strokeStyle = 'rgba(138,188,218,0.20)';
     ctx.lineWidth   = 1;
@@ -228,27 +263,13 @@
       ctx.lineTo(kb.x * sx, kb.y * sy);
     });
     ctx.stroke();
-
-    kps.forEach((kp, i) => {
-      if (!kp || kp.score < 0.20) return;
-      const isUpper = i >= 5 && i <= 12;
-      ctx.beginPath();
-      ctx.arc(kp.x * sx, kp.y * sy, isUpper ? 3 : 1.8, 0, Math.PI * 2);
-      ctx.fillStyle = isUpper ? 'rgba(195,222,238,0.55)' : 'rgba(138,188,218,0.28)';
-      ctx.fill();
-    });
-
-    // Highlight the shoulder midpoint (the point being tracked)
     const ls = kps[5], rs = kps[6];
     if (ls && rs && ls.score > 0.25 && rs.score > 0.25) {
-      const mx = ((ls.x + rs.x) / 2) * sx;
-      const my = ((ls.y + rs.y) / 2) * sy;
       ctx.beginPath();
-      ctx.arc(mx, my, 5, 0, Math.PI * 2);
+      ctx.arc(((ls.x + rs.x) / 2) * sx, ((ls.y + rs.y) / 2) * sy, 5, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(238,246,248,0.70)';
       ctx.fill();
     }
-
     ctx.restore();
   }
 
@@ -256,13 +277,13 @@
     if (pts.length < 2) return;
     ctx.save();
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.shadowColor = 'rgba(188,218,235,0.35)';
+    ctx.shadowColor = 'rgba(180,40,40,0.30)';
     ctx.shadowBlur  = 5;
     const n = pts.length;
     for (let i = 1; i < n; i++) {
-      const alpha = 0.22 + 0.78 * (i / n);
+      const alpha = 0.18 + 0.72 * (i / n);
       ctx.beginPath();
-      ctx.strokeStyle = `rgba(188,218,235,${alpha.toFixed(2)})`;
+      ctx.strokeStyle = `rgba(180,30,30,${alpha.toFixed(2)})`;
       ctx.lineWidth   = 2.2;
       ctx.moveTo(pts[i-1].x * W, pts[i-1].y * H);
       ctx.lineTo(pts[i].x   * W, pts[i].y   * H);
@@ -271,7 +292,7 @@
     const last = pts[n - 1];
     ctx.beginPath();
     ctx.arc(last.x * W, last.y * H, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(220,240,248,0.85)';
+    ctx.fillStyle = 'rgba(220,60,60,0.82)';
     ctx.shadowBlur = 9;
     ctx.fill();
     ctx.restore();
@@ -279,15 +300,23 @@
 
   /* ── Recording ───────────────────────────────────────────────────────────── */
   function startRecording() {
-    samples       = [];
-    lastKeypoints = null;
-    recordingStart = Date.now();
+    samples           = [];
+    skeletonSnapshots = [];
+    lastKeypoints     = null;
+    recordingStart    = Date.now();
     setState('recording');
     log('Recording started');
 
     sampleIv = setInterval(() => {
       if (currentKeypoints) sampleFrame(currentKeypoints);
     }, SAMPLE_INTERVAL);
+
+    // Full skeleton snapshot every 400 ms (50 snapshots over 20 s)
+    skeletonIv = setInterval(() => {
+      if (currentKeypoints && skeletonSnapshots.length < SKELETON_MAX) {
+        captureSkeletonSnapshot(currentKeypoints);
+      }
+    }, SKELETON_INTERVAL);
 
     // Countdown + auto-stop
     countdownEl.textContent = RECORD_DURATION;
@@ -304,8 +333,9 @@
   function stopRecording() {
     clearInterval(sampleIv);
     clearInterval(elapsedIv);
-    sampleIv = elapsedIv = null;
-    log('Recording stopped — ' + samples.length + ' samples captured');
+    clearInterval(skeletonIv);
+    sampleIv = elapsedIv = skeletonIv = null;
+    log('Recording stopped — ' + samples.length + ' samples, ' + skeletonSnapshots.length + ' skeleton frames');
 
     if (samples.length < 5) {
       log('Too few samples, returning to preview', 'err');
@@ -367,6 +397,20 @@
     });
 
     lastKeypoints = keypoints.slice();
+  }
+
+  /* ── Full-body skeleton snapshot (saved every 400 ms during recording) ────── */
+  function captureSkeletonSnapshot(keypoints) {
+    const vW = video.videoWidth  || 1280;
+    const vH = video.videoHeight || 720;
+    skeletonSnapshots.push({
+      t:  Date.now() - recordingStart,
+      kp: keypoints.map(kpt => ({
+        x: kpt.x / vW,
+        y: kpt.y / vH,
+        s: kpt.score,
+      })),
+    });
   }
 
   /* ── Path smoothing — moving average removes pose-detection jitter ───────── */
@@ -552,6 +596,7 @@
           strokes:      [strokeData],
           prompt:       currentPrompt,
           visual_params,
+          skeletons:    skeletonSnapshots.length >= 3 ? skeletonSnapshots : null,
         })
         .select()
         .single();

@@ -302,6 +302,29 @@
       letter-spacing: 0.04em;
     }
 
+    /* ── Debug overlay (?debug=1 in URL) ────────────────────────────────── */
+    #ar-debug {
+      display: none;
+      position: absolute;
+      bottom: 110px; left: 12px;
+      z-index: 50;
+      background: rgba(0,0,0,0.78);
+      border: 1px solid rgba(168,210,232,0.20);
+      border-radius: 3px;
+      padding: 8px 12px;
+      font-family: monospace;
+      font-size: 9px;
+      line-height: 1.9;
+      letter-spacing: 0.04em;
+      color: rgba(168,210,232,0.80);
+      pointer-events: none;
+      min-width: 210px;
+    }
+    #ar-debug.visible { display: block; }
+    #ar-debug .db-warn { color: rgba(255,185,80,0.95); }
+    #ar-debug .db-ok   { color: rgba(110,220,130,0.95); }
+    #ar-debug .db-err  { color: rgba(255,100,80,0.95); }
+
     /* ── Camera error ────────────────────────────────────────────────────── */
     #ar-cam-error {
       position: absolute;
@@ -364,6 +387,15 @@
 
     <!-- Shutter flash -->
     <div id="ar-flash"></div>
+
+    <!-- Debug overlay — visible only with ?debug=1 in URL -->
+    <div id="ar-debug">
+      <div id="adb-trace">trace: —</div>
+      <div id="adb-loaded">loaded: —</div>
+      <div id="adb-skel">skeleton traces: —</div>
+      <div id="adb-legacy">legacy traces: —</div>
+      <div id="adb-mode">renderer: —</div>
+    </div>
 
     <!-- Draw CTA -->
     <div id="ar-draw-cta"><a href="gesture.html">Add your gesture →</a></div>
@@ -446,6 +478,31 @@
     let traceCount = 0;
     let newTracePulseTimer = null;
 
+    /* ── Debug overlay ──────────────────────────────────────────────────── */
+    const _debugMode  = new URLSearchParams(window.location.search).has('debug');
+    const _debugEl    = document.getElementById('ar-debug');
+    const _adbTrace   = document.getElementById('adb-trace');
+    const _adbLoaded  = document.getElementById('adb-loaded');
+    const _adbSkel    = document.getElementById('adb-skel');
+    const _adbLegacy  = document.getElementById('adb-legacy');
+    const _adbMode    = document.getElementById('adb-mode');
+    if (_debugMode) _debugEl.classList.add('visible');
+
+    function updateDebugOverlay(nLoaded) {
+      if (!_debugMode || !garden) return;
+      const info = garden.getDebugInfo();
+      if (nLoaded !== undefined) _adbLoaded.textContent = 'loaded: ' + nLoaded + ' traces';
+      _adbSkel.textContent   = 'skeleton traces: ' + info.skelCount;
+      _adbSkel.className     = info.skelCount > 0 ? 'db-ok' : 'db-warn';
+      _adbLegacy.textContent = 'legacy traces: '  + info.legacyCount;
+      _adbLegacy.className   = info.legacyCount > 0 ? 'db-warn' : 'db-ok';
+      const hasAny = info.skelCount > 0;
+      _adbMode.textContent = hasAny
+        ? 'renderer: skeleton (' + info.lastSkelFrames + ' frames)'
+        : 'renderer: LEGACY FALLBACK';
+      _adbMode.className   = hasAny ? 'db-ok' : 'db-err';
+    }
+
     /* ── Count display ──────────────────────────────────────────────────── */
     function updateCount(n) {
       traceCount = n;
@@ -501,13 +558,14 @@
       loadingEl.classList.add('visible');
 
       const _newTraceId = new URLSearchParams(window.location.search).get('trace');
+      if (_debugMode) _adbTrace.textContent = 'trace: ' + (_newTraceId || '(none)');
       arLog('Initialising garden...');
 
       // ── Garden init is INDEPENDENT of camera ────────────────────────────
       // Garden works whether or not camera permission is granted.
       // Camera is a cosmetic AR background — optional.
       try {
-        garden = initGarden(gardenCanvas, {
+        garden = await initGarden(gardenCanvas, {
           onTraceAdded:     (n) => updateCount(n),
           highlightTraceId: _newTraceId || null,
         });
@@ -536,9 +594,11 @@
         if (n > 0) {
           garden.loadBatch(data);
           updateCount(n);
+          updateDebugOverlay(n);
         } else {
           emptyEl.classList.add('visible');
           countEl.classList.remove('visible');
+          updateDebugOverlay(0);
         }
       } catch (err) {
         console.warn('Load traces:', err);
@@ -568,6 +628,7 @@
         }, (payload) => {
           if (!garden) return;
           garden.addTrace(payload.new);
+          updateDebugOverlay();
           newTraceEl.classList.add('visible');
           clearTimeout(newTracePulseTimer);
           newTracePulseTimer = setTimeout(() => newTraceEl.classList.remove('visible'), 2800);

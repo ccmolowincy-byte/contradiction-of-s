@@ -1,40 +1,41 @@
 /* archive-cloud.js — Pain Archive Garden
  *
- * Renders gesture traces as vertebral chain forms arranged in a
- * golden-angle phyllotaxis garden. Three material layers per trace:
- *   1. Vertebral tube  — procedural bone texture, X-ray tonal palette
- *   2. Titanium rod    — thin metallic thread through centre
- *   3. Brace contour   — wide ghost-plastic outer shell (when movement was smooth)
+ * Two rendering paths:
+ *   A. Skeleton stills (Approach E) — traces with `skeletons` field:
+ *      Stacked ghost body poses, oldest faintest → newest brightest.
+ *      Additive blending so dense/repeated positions glow brighter.
+ *   B. Legacy vertebral tube — traces without `skeletons` field:
+ *      TubeGeometry with procedural bone texture, titanium rod, brace contour.
  *
- * visual_params stored in each Supabase row controls how each trace renders:
- *   vertebraCount   → texture repeat (density of vertebra-disc pattern)
- *   tubeRadius      → tube radius (movement amplitude)
- *   titaniumOpacity → rod opacity (repetition / load-bearing use)
- *   braceOpacity    → contour opacity (smoothness of the gesture)
- *   orientation     → chain axis (vertical for standing, horizontal for floor)
+ * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
+import { loadCustomSkel } from './custom-skel-draw.js';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5°, sunflower angle
 const MAX_R    = 2.2;
 const MAX_TRAC = 200;
 
-/* ── One procedural vertebra texture per trace (CanvasTexture) ─────────────
- * U axis: dark disc gap → bright vertebral body → dark disc gap
- * V axis: bright at centre V (front face), dark at V edges (side)
- * Setting texture.repeat.set(vertebraCount, 1) produces N vertebrae along tube.
- */
+/* ── MoveNet 17-keypoint connections ─────────────────────────────────────── */
+const SKEL_CONN = [
+  [0,1],[0,2],[1,3],[2,4],
+  [5,7],[7,9],[6,8],[8,10],
+  [5,6],[5,11],[6,12],[11,12],
+  [11,13],[13,15],[12,14],[14,16],
+];
+const SKEL_SCORE    = 0.20;  // minimum keypoint confidence
+const RENDER_FRAMES = 12;    // ghost poses shown per trace (sampled from up to 50 stored)
+
+/* ── Procedural vertebra texture (legacy traces only) ───────────────────── */
 function buildVertebraTexture(vertebraCount) {
   const W = 512, H = 64;
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const ctx = c.getContext('2d');
 
-  // Black base
   ctx.fillStyle = 'rgb(4,9,16)';
   ctx.fillRect(0, 0, W, H);
 
-  // Horizontal gradient: disc gap (dark) → vertebral body (bright) → disc gap (dark)
   const hg = ctx.createLinearGradient(0, 0, W, 0);
   hg.addColorStop(0,    'rgba(4,9,16,1)');
   hg.addColorStop(0.13, 'rgba(55,92,122,0.68)');
@@ -46,7 +47,6 @@ function buildVertebraTexture(vertebraCount) {
   ctx.fillStyle = hg;
   ctx.fillRect(0, 0, W, H);
 
-  // Vertical darkening: brighter at centre V (front of tube), darker at edges
   const vg = ctx.createLinearGradient(0, 0, 0, H);
   vg.addColorStop(0,    'rgba(0,0,0,0.78)');
   vg.addColorStop(0.26, 'rgba(0,0,0,0.16)');
@@ -63,11 +63,22 @@ function buildVertebraTexture(vertebraCount) {
   return tex;
 }
 
-export function initGarden(canvas, options = {}) {
+export async function initGarden(canvas, options = {}) {
 
-  /* ── X-ray texture (async load; procedural fallback while loading) ──────── */
-  let   baseXray    = null;          // set when TextureLoader finishes
-  const allBoneMats = [];            // { mat, vertebraCount } — for retroactive swap
+  /* ── Load custom skeleton assets ─────────────────────────────────────────
+   * Loaded once here — all _buildSkeletonTrace calls share this instance.
+   * Falls back gracefully to line renderer if load fails.
+   * ─────────────────────────────────────────────────────────────────────── */
+  let customSkel = null;
+  try {
+    customSkel = await loadCustomSkel('assets/skel/');
+  } catch (e) {
+    console.warn('[archive] Custom skeleton assets failed to load, using line fallback:', e.message);
+  }
+
+  /* ── X-ray texture (async; swapped into legacy tube materials when ready) ── */
+  let   baseXray    = null;
+  const allBoneMats = [];
 
   new THREE.TextureLoader().load(
     'assets/textures/xray-01.png',
@@ -75,19 +86,18 @@ export function initGarden(canvas, options = {}) {
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
       baseXray = tex;
-      // Swap procedural placeholder for real X-ray in every existing bone material
       allBoneMats.forEach(({ mat, vertebraCount }) => {
         const t = baseXray.clone();
         t.wrapS = THREE.RepeatWrapping;
         t.repeat.set(vertebraCount, 1);
         t.needsUpdate = true;
-        mat.map     = t;
+        mat.map      = t;
         mat.alphaMap = t;
         mat.needsUpdate = true;
       });
     },
     undefined,
-    () => { /* texture load failed — procedural fallback remains */ }
+    () => {}
   );
 
   /* ── Renderer ──────────────────────────────────────────────────────────── */
@@ -97,9 +107,9 @@ export function initGarden(canvas, options = {}) {
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    alpha:                !options.opaque,
-    antialias:            true,
-    preserveDrawingBuffer: true,   // required for screenshot capture via drawImage()
+    alpha:                 !options.opaque,
+    antialias:             true,
+    preserveDrawingBuffer: true,   // required for screenshot capture
   });
   renderer.setPixelRatio(dpr);
   renderer.setSize(W, H, false);
@@ -120,70 +130,164 @@ export function initGarden(canvas, options = {}) {
   camera.lookAt(0, 0, 0);
 
   /* ── Lighting — cool X-ray palette ─────────────────────────────────────── */
-  // Very low ambient so the emissive material glow is the primary light source
   scene.add(new THREE.AmbientLight(0x0A1520, 0.4));
 
-  // Cool blue-grey key — like clinical fluorescent
   const key = new THREE.DirectionalLight(0xB8CDD8, 1.0);
   key.position.set(1.5, 3, 2.5);
   scene.add(key);
 
-  // Cold fill from left-low — film shadow fill
   const fill = new THREE.DirectionalLight(0x6080A0, 0.28);
   fill.position.set(-2.5, -1, 1.5);
   scene.add(fill);
 
-  // Faint warm rim — aged archive warmth from behind
   const rim = new THREE.DirectionalLight(0xD4C8AA, 0.14);
   rim.position.set(0, -2, -2.5);
   scene.add(rim);
 
-  /* ── Garden group — slight forward lean, like a standing spine ──────────── */
+  /* ── Garden group — slight forward lean ─────────────────────────────────── */
   const gardenGroup = new THREE.Group();
   gardenGroup.rotation.x = -0.18;
   scene.add(gardenGroup);
 
   /* ── State ─────────────────────────────────────────────────────────────── */
-  const ribbons    = [];  // see _addToGarden for structure
+  const ribbons    = [];
   let   traceCount = 0;
-
-  // Optionally highlight a specific trace (from gesture → ar.html?trace=id)
   const highlightId = options.highlightTraceId || null;
+  const _debug = { skelCount: 0, legacyCount: 0, lastSkelFrames: 0 };
 
-  /* ── Build one trace group from a Supabase row ─────────────────────────── */
-  function _buildTrace(trace) {
+  /* ── Path A: skeleton — custom drawn PNG assets via CanvasTexture ───────
+   * Draws all RENDER_FRAMES ghost poses into one offscreen canvas using the
+   * hand-made assets (stars, bone line, petals, face).
+   * Oldest frames are faintest, newest brightest — accumulated on one canvas.
+   * The canvas becomes a Three.js CanvasTexture on a PlaneGeometry so it
+   * sits in the 3D garden like a translucent drawing floating in space.
+   *
+   * Falls back to dark-red LineSegments if customSkel failed to load.
+   * ─────────────────────────────────────────────────────────────────────── */
+  function _buildSkeletonTrace(trace, frames) {
+    const N = frames.length;
+
+    // Evenly sample RENDER_FRAMES from the recorded snapshots
+    const renderFrames = [];
+    for (let i = 0; i < RENDER_FRAMES; i++) {
+      const idx = Math.round(i * (N - 1) / (RENDER_FRAMES - 1));
+      renderFrames.push(frames[Math.min(idx, N - 1)]);
+    }
+
+    // Per-contributor seed — offsets petal drift so each archive entry looks distinct
+    let seed = 0;
+    if (trace.id) {
+      for (let i = 0; i < Math.min(trace.id.length, 8); i++) {
+        seed = seed * 31 + trace.id.charCodeAt(i);
+      }
+    }
+
+    if (customSkel) {
+      /* ── Canvas + PlaneGeometry path ───────────────────────────────────── */
+      const CW = 192, CH = 240;   // portrait offscreen canvas (4:5 ratio)
+      const oc  = document.createElement('canvas');
+      oc.width  = CW; oc.height = CH;
+      const octx = oc.getContext('2d');
+
+      // Draw accumulated ghost frames — progressively higher alpha oldest→newest
+      renderFrames.forEach((frame, i) => {
+        const t = i / (RENDER_FRAMES - 1);
+        const a = 0.06 + t * 0.68;
+        customSkel.draw(octx, frame.kp, CW, CH, a, seed, 0);
+      });
+
+      const tex = new THREE.CanvasTexture(oc);
+
+      const geo = new THREE.PlaneGeometry(2.0, 2.5);
+      const mat = new THREE.MeshBasicMaterial({
+        map:        tex,
+        transparent: true,
+        opacity:     0,
+        depthWrite:  false,
+        side:        THREE.DoubleSide,
+        blending:    THREE.AdditiveBlending,
+      });
+      const mesh  = new THREE.Mesh(geo, mat);
+      const group = new THREE.Group();
+      group.add(mesh);
+
+      return {
+        group,
+        materials: [{ mat, targetAlpha: 0.82 }],
+        boneTex:   tex,
+        isLegacy:  false,
+      };
+    }
+
+    /* ── Fallback: dark-red LineSegments ──────────────────────────────────── */
+    const group     = new THREE.Group();
+    const materials = [];
+    const zSpread   = 0.055;
+
+    renderFrames.forEach((frame, i) => {
+      const t           = i / (RENDER_FRAMES - 1);
+      const targetAlpha = 0.04 + t * 0.70;
+      const zOffset     = (i - RENDER_FRAMES / 2) * zSpread;
+      const positions   = [];
+
+      SKEL_CONN.forEach(([a, b]) => {
+        const ka = frame.kp[a], kb = frame.kp[b];
+        if (!ka || !kb || ka.s < SKEL_SCORE || kb.s < SKEL_SCORE) return;
+        positions.push(
+          (ka.x - 0.5) * 2.6, -(ka.y - 0.5) * 2.6, zOffset,
+          (kb.x - 0.5) * 2.6, -(kb.y - 0.5) * 2.6, zOffset,
+        );
+      });
+      if (positions.length < 6) return;
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      const mat = new THREE.LineBasicMaterial({
+        color:       new THREE.Color(0x8B1212),
+        transparent: true,
+        opacity:     0,
+        blending:    THREE.AdditiveBlending,
+        depthWrite:  false,
+      });
+      group.add(new THREE.LineSegments(geo, mat));
+      materials.push({ mat, targetAlpha, frameIdx: i });
+    });
+
+    if (materials.length === 0) return null;
+    return { group, materials, boneTex: null, isLegacy: false };
+  }
+
+  /* ── Path B: legacy TubeGeometry trace ──────────────────────────────────
+   * Used for any row that does not have a `skeletons` field.
+   * Kept intact so the existing archive remains visible.
+   * ─────────────────────────────────────────────────────────────────────── */
+  function _buildTubeTrace(trace) {
     const allPts = (trace.strokes || []).flat();
     if (allPts.length < 4) return null;
 
-    // Downsample to ≤ 120 pts for GPU efficiency
     const step    = Math.max(1, Math.floor(allPts.length / 120));
     const sampled = allPts.filter((_, i) => i % step === 0);
     if (sampled.length < 4) return null;
 
-    // Read per-trace visual params (or defaults for legacy traces)
-    const vp = trace.visual_params || {};
+    const vp            = trace.visual_params || {};
     const vertebraCount  = vp.vertebraCount  || 12;
     const tubeRadius     = vp.tubeRadius     || 0.034;
     const titaniumOp     = vp.titaniumOpacity || 0.40;
     const braceOp        = vp.braceOpacity   || 0.055;
     const orientation    = vp.orientation    || 'vertical';
 
-    // Map normalised [0–1] coords to 3D space.
-    // Horizontal traces (lying-down exercises) rotate the primary axis.
     const pts3D = sampled.map((p, i) => {
       const u = (p.x - 0.5) * 2.6;
       const v = -(p.y - 0.5) * 2.6;
-      // Subtle Z sine wave gives depth, not just a flat silhouette
       const z = Math.sin((i / sampled.length) * Math.PI * 3.5) * 0.10;
       return orientation === 'horizontal'
-        ? new THREE.Vector3(u, z, v)    // horizontal chain: Y stays shallow
+        ? new THREE.Vector3(u, z, v)
         : new THREE.Vector3(u, v, z);
     });
 
     const curve = new THREE.CatmullRomCurve3(pts3D, false, 'catmullrom', 0.5);
     const segs  = Math.min(sampled.length * 3, 280);
 
-    /* ── Layer 1: Vertebral tube — X-ray texture if loaded, else procedural ── */
     let boneTex;
     if (baseXray) {
       boneTex = baseXray.clone();
@@ -193,61 +297,82 @@ export function initGarden(canvas, options = {}) {
     } else {
       boneTex = buildVertebraTexture(vertebraCount);
     }
+
     const boneGeo = new THREE.TubeGeometry(curve, segs, tubeRadius, 10, false);
     const boneMat = new THREE.MeshStandardMaterial({
-      map:              boneTex,
-      alphaMap:         boneTex,
-      alphaTest:        0.04,
-      transparent:      true,
-      opacity:          0,              // fades in via update()
-      roughness:        0.55,
-      metalness:        0.06,
-      emissive:         new THREE.Color(0x4A7A9A),
+      map:               boneTex,
+      alphaMap:          boneTex,
+      alphaTest:         0.04,
+      transparent:       true,
+      opacity:           0,
+      roughness:         0.55,
+      metalness:         0.06,
+      emissive:          new THREE.Color(0x4A7A9A),
       emissiveIntensity: 0.22,
-      side:             THREE.DoubleSide,
-      depthWrite:       false,
+      side:              THREE.DoubleSide,
+      depthWrite:        false,
     });
     const boneMesh = new THREE.Mesh(boneGeo, boneMat);
 
-    /* ── Layer 2: Titanium rod (thin metallic thread through centre) ────── */
     const rodRadius = Math.max(tubeRadius * 0.18, 0.006);
     const rodGeo    = new THREE.TubeGeometry(curve, segs, rodRadius, 4, false);
     const rodMat    = new THREE.MeshStandardMaterial({
-      color:    new THREE.Color(0xB2BED0),
-      metalness: 0.92,
-      roughness: 0.08,
-      emissive:  new THREE.Color(0x7090AA),
+      color:             new THREE.Color(0xB2BED0),
+      metalness:         0.92,
+      roughness:         0.08,
+      emissive:          new THREE.Color(0x7090AA),
       emissiveIntensity: 0.35,
-      transparent: true,
-      opacity:   titaniumOp,
-      depthWrite: false,
+      transparent:       true,
+      opacity:           titaniumOp,
+      depthWrite:        false,
     });
     const rodMesh = new THREE.Mesh(rodGeo, rodMat);
 
-    /* ── Layer 3: Brace contour (wide ghost-plastic outer shell) ────────── */
-    // Only rendered at meaningful opacity if movement was smooth
     const braceGeo = new THREE.TubeGeometry(curve, segs, tubeRadius * 2.1, 8, false);
     const braceMat = new THREE.MeshStandardMaterial({
-      color:     new THREE.Color(0xEEEAE6),
-      roughness: 0.88,
-      metalness: 0.02,
+      color:       new THREE.Color(0xEEEAE6),
+      roughness:   0.88,
+      metalness:   0.02,
       transparent: true,
-      opacity:   braceOp,
-      side:      THREE.DoubleSide,
-      depthWrite: false,
+      opacity:     braceOp,
+      side:        THREE.DoubleSide,
+      depthWrite:  false,
     });
     const braceMesh = new THREE.Mesh(braceGeo, braceMat);
 
-    // Register for retroactive X-ray texture swap (if texture hasn't loaded yet)
     if (!baseXray) allBoneMats.push({ mat: boneMat, vertebraCount });
 
-    // Group all three layers
     const group = new THREE.Group();
-    group.add(braceMesh);   // widest first (back)
-    group.add(boneMesh);    // bone middle
-    group.add(rodMesh);     // rod on top (front)
+    group.add(braceMesh);
+    group.add(boneMesh);
+    group.add(rodMesh);
 
-    return { group, boneMat, rodMat, braceMat, boneTex };
+    const materials = [
+      { mat: boneMat,  targetAlpha: 0.90 },
+      { mat: rodMat,   targetAlpha: titaniumOp },
+      { mat: braceMat, targetAlpha: braceOp },
+    ];
+
+    return { group, materials, boneTex, isLegacy: true };
+  }
+
+  /* ── Route to skeleton or legacy renderer based on data available ───────── */
+  function _buildTrace(trace) {
+    const skel = trace.skeletons;
+    if (skel && Array.isArray(skel) && skel.length >= 3) {
+      _debug.skelCount++;
+      _debug.lastSkelFrames = skel.length;
+      return _buildSkeletonTrace(trace, skel);
+    }
+    _debug.legacyCount++;
+    if (!skel) {
+      console.warn('[archive] LEGACY FALLBACK — trace', trace.id,
+        'has no skeletons field. SQL fix: ALTER TABLE pain_traces ADD COLUMN IF NOT EXISTS skeletons jsonb;');
+    } else {
+      console.warn('[archive] LEGACY FALLBACK — trace', trace.id,
+        'skeleton frames too few:', skel.length, '(need ≥ 3)');
+    }
+    return _buildTubeTrace(trace);
   }
 
   /* ── Golden-angle phyllotaxis layout ────────────────────────────────────── */
@@ -255,13 +380,12 @@ export function initGarden(canvas, options = {}) {
     const N = ribbons.length;
     if (N === 0) return;
     ribbons.forEach((r, i) => {
-      // i=0 is newest (center), i=N-1 is oldest (outer edge)
       const frac   = N > 1 ? i / (N - 1) : 0;
       const radius = frac * MAX_R;
       const angle  = i * GOLDEN;
       r.targetX = Math.cos(angle) * radius;
       r.targetZ = Math.sin(angle) * radius;
-      r.baseY   = -frac * 0.38;   // older traces sink slightly
+      r.baseY   = -frac * 0.38;
     });
   }
 
@@ -269,28 +393,34 @@ export function initGarden(canvas, options = {}) {
     const result = _buildTrace(trace);
     if (!result) return;
 
-    const { group, boneMat, rodMat, braceMat, boneTex } = result;
+    const { group, materials, boneTex, isLegacy } = result;
     gardenGroup.add(group);
     group.position.set(0, 0, 0);
 
     const entry = {
       group,
-      boneMat, rodMat, braceMat, boneTex,
+      materials,
+      boneTex,
+      isLegacy,
       baseY:       0,
       targetX:     0,
       targetZ:     0,
       phaseOffset: ribbons.length * 0.53,
       opacity:     0,
       isHighlighted,
+      playhead:    0,
+      playRate:    4.0,
     };
 
-    // Highlighted trace (visitor's own just-saved gesture) starts fully visible
     if (isHighlighted) {
-      entry.opacity  = 1;
-      boneMat.opacity  = 1;
-      // Give it a brief emissive pulse — tiny extra glow
-      boneMat.emissiveIntensity = 0.45;
-      setTimeout(() => { boneMat.emissiveIntensity = 0.22; }, 3000);
+      entry.opacity = 1.0;
+      materials.forEach(({ mat, targetAlpha }) => { mat.opacity = targetAlpha; });
+      // Legacy-only: brief emissive pulse on the bone tube
+      if (isLegacy && materials[0]) {
+        const boneMat = materials[0].mat;
+        boneMat.emissiveIntensity = 0.45;
+        setTimeout(() => { boneMat.emissiveIntensity = 0.22; }, 3000);
+      }
     }
 
     ribbons.unshift(entry);
@@ -299,8 +429,7 @@ export function initGarden(canvas, options = {}) {
   /* ── Public: load initial batch ─────────────────────────────────────────── */
   function loadBatch(traces) {
     traces.forEach(trace => {
-      const isHighlighted = highlightId && trace.id === highlightId;
-      _addToGarden(trace, isHighlighted);
+      _addToGarden(trace, !!(highlightId && trace.id === highlightId));
     });
     _layout();
     traceCount = ribbons.length;
@@ -309,8 +438,7 @@ export function initGarden(canvas, options = {}) {
 
   /* ── Public: add single trace (realtime insert) ──────────────────────────── */
   function addTrace(trace) {
-    const isHighlighted = highlightId && trace.id === highlightId;
-    _addToGarden(trace, isHighlighted);
+    _addToGarden(trace, !!(highlightId && trace.id === highlightId));
     traceCount++;
 
     if (ribbons.length > MAX_TRAC) {
@@ -327,11 +455,14 @@ export function initGarden(canvas, options = {}) {
     function step() {
       op -= 0.016;
       if (op > 0) {
-        r.boneMat.opacity = Math.max(0, op);
+        r.materials.forEach(({ mat, targetAlpha }) => {
+          mat.opacity = Math.max(0, op) * targetAlpha;
+        });
         requestAnimationFrame(step);
       } else {
         gardenGroup.remove(r.group);
-        [r.boneMat, r.rodMat, r.braceMat, r.boneTex].forEach(x => { if (x) x.dispose(); });
+        r.materials.forEach(({ mat }) => mat.dispose());
+        if (r.boneTex) r.boneTex.dispose();
         r.group.traverse(c => { if (c.geometry) c.geometry.dispose(); });
       }
     }
@@ -353,10 +484,8 @@ export function initGarden(canvas, options = {}) {
   function update(dt) {
     clock += dt;
 
-    // Slow auto-rotation of whole garden
     gardenGroup.rotation.y += 0.00042;
 
-    // Smooth camera parallax toward device orientation target
     camera.position.x += (targetCamX - camera.position.x) * 0.038;
     camera.position.y += (targetCamY - camera.position.y) * 0.038;
     camera.lookAt(0, 0, 0);
@@ -365,13 +494,37 @@ export function initGarden(canvas, options = {}) {
     for (let i = 0; i < n; i++) {
       const r = ribbons[i];
 
-      // Fade in bone layer (rod + brace have fixed opacity from visual_params)
-      if (r.opacity < 0.90) {
-        r.opacity = Math.min(0.90, r.opacity + 0.011);
-        r.boneMat.opacity = r.opacity;
+      // Fade in
+      if (r.opacity < 1.0) {
+        r.opacity = Math.min(1.0, r.opacity + 0.011);
       }
 
-      // Shared breathing — 0.32 Hz sine, staggered phase per ribbon
+      // Apply opacity to all material types
+      if (r.isLegacy) {
+        r.materials.forEach(({ mat, targetAlpha }) => {
+          mat.opacity = r.opacity * targetAlpha;
+        });
+      } else if (r.materials[0]?.frameIdx !== undefined) {
+        // Line-segment fallback path (per-frame frameIdx exists): animated playhead
+        r.playhead = (r.playhead + dt * r.playRate) % RENDER_FRAMES;
+        const ph = r.playhead;
+        r.materials.forEach(({ mat, targetAlpha, frameIdx }) => {
+          const dist = ((ph - frameIdx + RENDER_FRAMES) % RENDER_FRAMES);
+          const factor =
+            dist < 1 ? 1.00 :
+            dist < 2 ? 0.52 :
+            dist < 3 ? 0.22 :
+            dist < 4 ? 0.07 : 0.03;
+          mat.opacity = r.opacity * targetAlpha * factor;
+        });
+      } else {
+        // Canvas-texture path: single material, just apply global opacity
+        r.materials.forEach(({ mat, targetAlpha }) => {
+          mat.opacity = r.opacity * targetAlpha;
+        });
+      }
+
+      // Shared breathing — 0.32 Hz sine wave, staggered phase per trace
       const breathY = Math.sin(clock * 0.32 * Math.PI * 2 + r.phaseOffset) * 0.036;
       r.group.position.y = r.baseY + breathY;
 
@@ -397,7 +550,8 @@ export function initGarden(canvas, options = {}) {
     cancelAnimationFrame(0);
     ribbons.forEach(r => {
       gardenGroup.remove(r.group);
-      [r.boneMat, r.rodMat, r.braceMat, r.boneTex].forEach(x => { if (x) x.dispose(); });
+      r.materials.forEach(({ mat }) => mat.dispose());
+      if (r.boneTex) r.boneTex.dispose();
       r.group.traverse(c => { if (c.geometry) c.geometry.dispose(); });
     });
     renderer.dispose();
@@ -405,5 +559,7 @@ export function initGarden(canvas, options = {}) {
 
   function renderNow() { renderer.render(scene, camera); }
 
-  return { loadBatch, addTrace, update, setOrientation, resize, destroy, renderNow };
+  function getDebugInfo() { return { ..._debug }; }
+
+  return { loadBatch, addTrace, update, setOrientation, resize, destroy, renderNow, getDebugInfo };
 }
