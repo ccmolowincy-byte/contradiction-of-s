@@ -77,6 +77,24 @@
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function lerp(a, b, t)    { return a + (b - a) * clamp(t, 0, 1); }
 
+  function setLoadingStatus(msg, sub) {
+    const el = document.getElementById('g-loading-status');
+    const subEl = document.getElementById('g-loading-sub');
+    if (el) el.textContent = msg;
+    if (subEl && sub !== undefined) subEl.textContent = sub;
+  }
+
+  function withTimeout(promise, ms) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(
+          'Loading timed out after ' + Math.round(ms / 1000) + 's — reload to retry'
+        )), ms)
+      ),
+    ]);
+  }
+
   function setState(s) {
     currentState = s;
     ['loading','preview','recording','review','saving','error'].forEach(id => {
@@ -137,8 +155,10 @@
   /* â”€â”€ MoveNet init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function loadDetector() {
     log('Loading TF.js + MoveNet...');
+    setLoadingStatus('Starting AI backend…', '');
     await tf.ready();
     log('TF.js ready, backend: ' + tf.getBackend());
+    setLoadingStatus('Downloading movement model…', 'cached after first visit — please wait');
     const det = await poseDetection.createDetector(
       poseDetection.SupportedModels.MoveNet,
       { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
@@ -153,26 +173,41 @@
     const projRef = SUPA_URL.replace('https://', '').split('.')[0];
     log('Supabase project ref: ' + projRef);
 
+    // Guard: TF.js and pose-detection CDN scripts must have loaded successfully
+    if (typeof tf === 'undefined' || typeof poseDetection === 'undefined') {
+      log('ERROR: TF.js or poseDetection script not loaded (CDN failure?)', 'err');
+      setLoadingStatus('Could not load AI tracking', 'check your connection and reload');
+      document.getElementById('g-error-text').textContent =
+        'Could not load AI body tracking. Check your connection and reload the page.';
+      setState('error');
+      return;
+    }
+
     currentPrompt = PROMPT;
     promptEl.textContent = PROMPT;
 
+    setLoadingStatus('Requesting camera access…', '');
     const camOk = await startCamera('user');
     if (!camOk) return;
 
     try {
-      detector = await loadDetector();
+      detector = await withTimeout(loadDetector(), 90000);
     } catch (e) {
       log('MoveNet failed: ' + e.message, 'err');
+      const errText = e.message.includes('timed out')
+        ? 'Loading timed out. Please reload — the model will be cached and load faster next time.'
+        : 'Failed to load body tracking: ' + e.message + '. Please reload.';
+      document.getElementById('g-error-text').textContent = errText;
       setState('error');
       return;
     }
 
     resizeOverlay();
     setState('preview');
-    log('Ready â€” pose detection active', 'ok');
+    log('Ready — pose detection active', 'ok');
 
     // Load custom skeleton assets in background â€” overlay degrades gracefully until ready
-    import('./custom-skel-draw.js?v=4')
+    import('./custom-skel-draw.js?v=5')
       .then(m => m.loadCustomSkel('assets/skel/'))
       .then(skel => {
         customSkel = skel;
@@ -710,4 +745,5 @@
   /* â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   init();
 })();
+
 

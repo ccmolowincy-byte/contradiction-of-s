@@ -78,6 +78,15 @@
       text-transform: uppercase;
       color: rgba(200,216,224,0.28);
     }
+    #g-loading-sub {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      color: rgba(200,216,224,0.14);
+      margin-top: 8px;
+      text-align: center;
+      padding: 0 32px;
+    }
 
     /* â”€â”€ PREVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #s-preview {
@@ -483,7 +492,8 @@
   <!-- â”€â”€ LOADING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div id="s-loading" class="s-panel">
     <div class="g-spinner"></div>
-    <div class="g-loading-text">Loading body tracking</div>
+    <div class="g-loading-text" id="g-loading-status">Loading body tracking</div>
+    <div id="g-loading-sub">first visit downloads the AI model — may take a minute</div>
   </div>
 
   <!-- â”€â”€ PREVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
@@ -572,8 +582,9 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <!-- Gesture logic -->
-  <script type="module" src="js/gesture.js?v=4"></script>
+  <script type="module" src="js/gesture.js?v=5"></script>
 
 </body>
 </html>
+
 
