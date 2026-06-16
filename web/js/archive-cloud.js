@@ -10,7 +10,7 @@
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js?v=8';
+import { loadCustomSkel } from './custom-skel-draw.js?v=9';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
 const MAX_R    = 2.2;
@@ -228,7 +228,6 @@ export async function initGarden(canvas, options = {}) {
       // Initial draw: middle frame as a settled pose (updated later in update())
       const midFrame = skelFrames[Math.floor(skelFrames.length / 2)];
       customSkel.draw(octx, midFrame.kp, CW, CH, 0.68, seed, 0);
-      _applyVignette(octx, CW, CH);
 
       const tex = new THREE.CanvasTexture(oc);
 
@@ -238,7 +237,7 @@ export async function initGarden(canvas, options = {}) {
         transparent: true,
         opacity:     0,
         depthWrite:  false,
-        blending:    THREE.NormalBlending,
+        blending:    THREE.AdditiveBlending,
       });
       const sprite = new THREE.Sprite(spriteMat);
       sprite.scale.set(1.85, 2.30, 1.0);   // portrait proportions (â‰ˆ body scale in scene)
@@ -285,7 +284,7 @@ export async function initGarden(canvas, options = {}) {
         color:       new THREE.Color(0x8B1212),
         transparent: true,
         opacity:     0,
-        blending:    THREE.NormalBlending,
+        blending:    THREE.AdditiveBlending,
         depthWrite:  false,
       });
       group.add(new THREE.LineSegments(geo, mat));
@@ -583,7 +582,6 @@ export async function initGarden(canvas, options = {}) {
             }
             // Current frame: full presence, live petal drift using scene clock
             customSkel.draw(r.skelCtx, r.skelFrames[ph].kp, CW, CH, 0.86, r.skelSeed, clock);
-            _applyVignette(r.skelCtx, CW, CH);
 
             r.boneTex.needsUpdate = true;
           }
@@ -594,7 +592,6 @@ export async function initGarden(canvas, options = {}) {
           const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
           r.skelCtx.clearRect(0, 0, CW, CH);
           customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, 0);
-          _applyVignette(r.skelCtx, CW, CH);
           r.boneTex.needsUpdate = true;
         }
       } else {

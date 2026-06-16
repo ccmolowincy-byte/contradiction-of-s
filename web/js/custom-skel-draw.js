@@ -152,33 +152,38 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
     return { x: midX, y: midY - shoulderPx * 0.55 };
   }
 
-  /* Draw the petal cloud layer — drifts, breathes, and occasionally flutters. */
+  /* Draw the petal cloud layer as a soft radial gradient oval.
+   * Uses direct canvas drawing rather than petals.png so the cloud
+   * silhouette is always correct regardless of image alpha channel. */
   function _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, time) {
-    if (!petalsCv || alpha < 0.005) return;
+    if (alpha < 0.005) return;
 
-    // Lissajous drift — two sine waves at different frequencies
     const driftX = Math.sin(time * 0.11 + seed * 2.3) * shoulderPx * 0.026;
     const driftY = Math.cos(time * 0.08 + seed * 1.7) * shoulderPx * 0.016;
-    // Breathing scale
     const breathe = 1.0 + Math.sin(time * 0.22 + seed * 0.9) * 0.016;
-    // Very slow rotation
-    const rot = Math.sin(time * 0.07 + seed * 3.1) * 0.015;
-    // Flutter impulse every ~7.2 s: brief fast quiver
     const fl = (time % 7.2) / 7.2;
     const flutter = fl > 0.88
       ? Math.cos(time * 9.5) * Math.sin(Math.PI * (fl - 0.88) / 0.12) * shoulderPx * 0.011
       : 0;
 
-    const w = shoulderPx * 4.4 * breathe;
-    const h = shoulderPx * 3.6 * breathe;
-    const px = hx + driftX + flutter;
-    const py = hy + driftY;
+    const cx = hx + driftX + flutter;
+    const cy = hy + driftY;
+    // Ellipse axes — wider than tall, centred on head
+    const rx = shoulderPx * 2.2 * breathe;
+    const ry = shoulderPx * 1.8 * breathe;
+
+    // Bright crimson gradient — visible under AdditiveBlending
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+    grad.addColorStop(0,    `rgba(215, 55, 55, ${(alpha * 0.90).toFixed(3)})`);
+    grad.addColorStop(0.35, `rgba(195, 38, 38, ${(alpha * 0.72).toFixed(3)})`);
+    grad.addColorStop(0.65, `rgba(168, 24, 24, ${(alpha * 0.42).toFixed(3)})`);
+    grad.addColorStop(1.0,  `rgba(130, 10, 10, 0)`);
 
     ctx.save();
-    ctx.globalAlpha = alpha * 0.65;  // petal layer — dominant flower head
-    ctx.translate(px, py);
-    ctx.rotate(rot);
-    ctx.drawImage(petalsCv, -w / 2, -h / 2, w, h);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
