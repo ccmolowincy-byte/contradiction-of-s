@@ -67,10 +67,11 @@
   let recordingStart   = null;
   let currentPrompt    = '';
 
-  let skeletonSnapshots = [];
-  let skeletonIv        = null;
-  let customSkel        = null;   // loaded async after MoveNet; used by drawSkeleton
-  let lastFrameTime     = 0;      // for dt calculation in the animation loop
+  let skeletonSnapshots  = [];
+  let skeletonIv         = null;
+  let customSkel         = null;   // loaded async after MoveNet; used by drawSkeleton
+  let lastFrameTime      = 0;      // for dt calculation in the animation loop
+  let smoothedKeypoints  = null;   // EMA-smoothed MoveNet output (reduces jitter)
 
   /* ── Helpers ─────────────────────────────────────────────────────────────── */
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -171,7 +172,7 @@
     log('Ready — pose detection active', 'ok');
 
     // Load custom skeleton assets in background — overlay degrades gracefully until ready
-    import('./custom-skel-draw.js')
+    import('./custom-skel-draw.js?v=1')
       .then(m => m.loadCustomSkel('assets/skel/'))
       .then(skel => {
         customSkel = skel;
@@ -198,11 +199,29 @@
         try {
           const poses = await detector.estimatePoses(video);
           if (poses.length > 0 && poses[0].keypoints) {
-            currentKeypoints = poses[0].keypoints;
+            const raw = poses[0].keypoints;
+            // Exponential moving average — smooths jitter without adding visible lag
+            const α = 0.60;
+            if (!smoothedKeypoints || smoothedKeypoints.length !== raw.length) {
+              smoothedKeypoints = raw.map(k => ({ x: k.x, y: k.y, score: k.score, name: k.name }));
+            } else {
+              smoothedKeypoints = smoothedKeypoints.map((sk, i) => {
+                const rk = raw[i];
+                if (!rk || rk.score < 0.12) return { ...sk, score: rk?.score ?? 0 };
+                return {
+                  x:     sk.x     * (1 - α) + rk.x     * α,
+                  y:     sk.y     * (1 - α) + rk.y     * α,
+                  score: sk.score * 0.35    + rk.score * 0.65,
+                  name:  rk.name,
+                };
+              });
+            }
+            currentKeypoints = smoothedKeypoints;
             noBodyFrames = 0;
           } else {
             currentKeypoints = null;
             noBodyFrames++;
+            if (noBodyFrames > 30) smoothedKeypoints = null;  // reset on body loss
           }
         } catch (_) {
           currentKeypoints = null;

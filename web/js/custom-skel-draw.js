@@ -70,7 +70,7 @@ const STAR_ROT = {
 };
 
 /* Minimum keypoint confidence score to draw that joint / bone */
-const MIN_SCORE = 0.18;
+const MIN_SCORE = 0.22;
 
 /* ── Red color family: saturated → deep ────────────────────────────────────
  * Priority hierarchy (highest opacity = most prominent visual):
@@ -268,13 +268,17 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
         ? Math.hypot(rSh.x - lSh.x, rSh.y - lSh.y)
         : W * 0.28;   // sensible fallback if shoulders not visible
 
+      // Cap the scale used for petals/face so they fit when the body
+      // fills the entire canvas (e.g. archive thumbnail).
+      const headShoulderPx = Math.min(shoulderPx, W * 0.20);
+
       const { x: hx, y: hy } = _headCenter(pts, shoulderPx);
 
       // ── Layer 1 (back): petal aura ────────────────────────────────────────
-      _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, t);
+      _drawPetals(ctx, hx, hy, headShoulderPx, alpha, seed, t);
 
       // ── Layer 2: face/void oval ───────────────────────────────────────────
-      _drawFace(ctx, hx, hy, shoulderPx, alpha, t);
+      _drawFace(ctx, hx, hy, headShoulderPx, alpha, t);
 
       // ── Layer 3: bone connection lines ────────────────────────────────────
       BONES.forEach(([a, b]) => {

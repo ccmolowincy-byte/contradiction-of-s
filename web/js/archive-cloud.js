@@ -10,7 +10,7 @@
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js';
+import { loadCustomSkel } from './custom-skel-draw.js?v=1';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5°, sunflower angle
 const MAX_R    = 2.2;
@@ -155,15 +155,18 @@ export async function initGarden(canvas, options = {}) {
   const highlightId = options.highlightTraceId || null;
   const _debug = { skelCount: 0, legacyCount: 0, lastSkelFrames: 0 };
 
-  /* ── Path A: skeleton — custom drawn PNG assets via CanvasTexture ───────
-   * Draws all RENDER_FRAMES ghost poses into one offscreen canvas using the
-   * hand-made assets (stars, bone line, petals, face).
-   * Oldest frames are faintest, newest brightest — accumulated on one canvas.
-   * The canvas becomes a Three.js CanvasTexture on a PlaneGeometry so it
-   * sits in the 3D garden like a translucent drawing floating in space.
+  /* ── Path A: skeleton — custom-drawn PNG assets, camera-facing Sprite ───
+   * Uses THREE.Sprite so the skeleton always faces the camera as the garden
+   * rotates — no perspective distortion, no foreshortening.
+   *
+   * For the ANIM_SLOTS most-recent entries the canvas is redrawn each time
+   * the playhead advances: current frame bright + short ghost trail.
+   * Older entries settle into a single static pose, canvas updated once.
    *
    * Falls back to dark-red LineSegments if customSkel failed to load.
    * ─────────────────────────────────────────────────────────────────────── */
+  const ANIM_SLOTS = 5;   // how many recent entries animate; rest settle
+
   function _buildSkeletonTrace(trace, frames) {
     const N = frames.length;
 
@@ -174,7 +177,7 @@ export async function initGarden(canvas, options = {}) {
       renderFrames.push(frames[Math.min(idx, N - 1)]);
     }
 
-    // Per-contributor seed — offsets petal drift so each archive entry looks distinct
+    // Per-contributor seed — offsets petal drift so each entry looks distinct
     let seed = 0;
     if (trace.id) {
       for (let i = 0; i < Math.min(trace.id.length, 8); i++) {
@@ -183,39 +186,41 @@ export async function initGarden(canvas, options = {}) {
     }
 
     if (customSkel) {
-      /* ── Canvas + PlaneGeometry path ───────────────────────────────────── */
-      const CW = 192, CH = 240;   // portrait offscreen canvas (4:5 ratio)
+      /* ── Sprite + CanvasTexture path ───────────────────────────────────── */
+      const CW = 256, CH = 320;   // portrait canvas — 4:5 ratio
       const oc  = document.createElement('canvas');
       oc.width  = CW; oc.height = CH;
       const octx = oc.getContext('2d');
 
-      // Draw accumulated ghost frames — progressively higher alpha oldest→newest
-      renderFrames.forEach((frame, i) => {
-        const t = i / (RENDER_FRAMES - 1);
-        const a = 0.06 + t * 0.68;
-        customSkel.draw(octx, frame.kp, CW, CH, a, seed, 0);
-      });
+      // Initial draw: middle frame as a settled pose (updated later in update())
+      const midFrame = renderFrames[Math.floor(renderFrames.length / 2)];
+      customSkel.draw(octx, midFrame.kp, CW, CH, 0.68, seed, 0);
 
       const tex = new THREE.CanvasTexture(oc);
 
-      const geo = new THREE.PlaneGeometry(2.0, 2.5);
-      const mat = new THREE.MeshBasicMaterial({
+      // Sprite always faces the camera — no perspective distortion as garden rotates
+      const spriteMat = new THREE.SpriteMaterial({
         map:        tex,
         transparent: true,
         opacity:     0,
         depthWrite:  false,
-        side:        THREE.DoubleSide,
         blending:    THREE.AdditiveBlending,
       });
-      const mesh  = new THREE.Mesh(geo, mat);
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(1.85, 2.30, 1.0);   // portrait proportions (≈ body scale in scene)
+
       const group = new THREE.Group();
-      group.add(mesh);
+      group.add(sprite);
 
       return {
         group,
-        materials: [{ mat, targetAlpha: 0.82 }],
-        boneTex:   tex,
-        isLegacy:  false,
+        materials:   [{ mat: spriteMat, targetAlpha: 0.80 }],
+        boneTex:     tex,
+        isLegacy:    false,
+        skelFrames:  renderFrames,
+        skelCanvas:  oc,
+        skelCtx:     octx,
+        skelSeed:    seed,
       };
     }
 
@@ -393,7 +398,8 @@ export async function initGarden(canvas, options = {}) {
     const result = _buildTrace(trace);
     if (!result) return;
 
-    const { group, materials, boneTex, isLegacy } = result;
+    const { group, materials, boneTex, isLegacy,
+            skelFrames, skelCanvas, skelCtx, skelSeed } = result;
     gardenGroup.add(group);
     group.position.set(0, 0, 0);
 
@@ -402,14 +408,20 @@ export async function initGarden(canvas, options = {}) {
       materials,
       boneTex,
       isLegacy,
-      baseY:       0,
-      targetX:     0,
-      targetZ:     0,
-      phaseOffset: ribbons.length * 0.53,
-      opacity:     0,
+      baseY:          0,
+      targetX:        0,
+      targetZ:        0,
+      phaseOffset:    ribbons.length * 0.53,
+      opacity:        0,
       isHighlighted,
-      playhead:    0,
-      playRate:    4.0,
+      playhead:       0,
+      playRate:       3.5,
+      skelFrames:     skelFrames  ?? null,
+      skelCanvas:     skelCanvas  ?? null,
+      skelCtx:        skelCtx     ?? null,
+      skelSeed:       skelSeed    ?? 0,
+      lastDrawnFrame: -1,
+      skelSettled:    false,
     };
 
     if (isHighlighted) {
@@ -499,16 +511,55 @@ export async function initGarden(canvas, options = {}) {
         r.opacity = Math.min(1.0, r.opacity + 0.011);
       }
 
-      // Apply opacity to all material types
+      // Apply opacity and animation per material type
       if (r.isLegacy) {
+        // Legacy TubeGeometry: straight opacity scale
         r.materials.forEach(({ mat, targetAlpha }) => {
           mat.opacity = r.opacity * targetAlpha;
         });
-      } else if (r.materials[0]?.frameIdx !== undefined) {
-        // Line-segment fallback path (per-frame frameIdx exists): animated playhead
+      } else if (r.skelCanvas) {
+        // Sprite + CanvasTexture path: animate canvas for recent entries
+        r.materials[0].mat.opacity = r.opacity * r.materials[0].targetAlpha;
+
+        const shouldAnimate = i < ANIM_SLOTS || r.isHighlighted;
+
+        if (shouldAnimate && r.skelFrames) {
+          const N = r.skelFrames.length;
+          r.playhead = (r.playhead + dt * r.playRate) % N;
+          const ph = Math.floor(r.playhead);
+
+          // Redraw canvas only when the frame index changes (~3.5× per second)
+          if (ph !== r.lastDrawnFrame) {
+            r.lastDrawnFrame = ph;
+            const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
+            r.skelCtx.clearRect(0, 0, CW, CH);
+
+            // Short ghost trail: 3 frames fading behind the current one
+            for (let t = 3; t >= 1; t--) {
+              const idx = ((ph - t) + N * 3) % N;
+              const a = 0.06 * Math.pow(0.52, t - 1);
+              customSkel.draw(r.skelCtx, r.skelFrames[idx].kp, CW, CH, a, r.skelSeed, 0);
+            }
+            // Current frame: full presence, live petal drift using scene clock
+            customSkel.draw(r.skelCtx, r.skelFrames[ph].kp, CW, CH, 0.86, r.skelSeed, clock);
+
+            r.boneTex.needsUpdate = true;
+          }
+        } else if (!r.skelSettled && r.skelFrames) {
+          // Settle: draw the middle frame once, then never touch the canvas again
+          r.skelSettled = true;
+          const midIdx = Math.floor(r.skelFrames.length / 2);
+          const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
+          r.skelCtx.clearRect(0, 0, CW, CH);
+          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, 0);
+          r.boneTex.needsUpdate = true;
+        }
+      } else {
+        // Line-segment fallback (when customSkel failed to load): animated playhead
         r.playhead = (r.playhead + dt * r.playRate) % RENDER_FRAMES;
         const ph = r.playhead;
         r.materials.forEach(({ mat, targetAlpha, frameIdx }) => {
+          if (frameIdx === undefined) return;
           const dist = ((ph - frameIdx + RENDER_FRAMES) % RENDER_FRAMES);
           const factor =
             dist < 1 ? 1.00 :
@@ -516,11 +567,6 @@ export async function initGarden(canvas, options = {}) {
             dist < 3 ? 0.22 :
             dist < 4 ? 0.07 : 0.03;
           mat.opacity = r.opacity * targetAlpha * factor;
-        });
-      } else {
-        // Canvas-texture path: single material, just apply global opacity
-        r.materials.forEach(({ mat, targetAlpha }) => {
-          mat.opacity = r.opacity * targetAlpha;
         });
       }
 
