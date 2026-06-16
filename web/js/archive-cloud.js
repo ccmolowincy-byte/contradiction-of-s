@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { loadCustomSkel } from './custom-skel-draw.js?v=11';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
-const MAX_R    = 1.7;
+const MAX_R    = 2.0;
 const MAX_TRAC = 200;
 
 /* â”€â”€ MoveNet 17-keypoint connections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -125,9 +125,9 @@ export async function initGarden(canvas, options = {}) {
 
   /* â”€â”€ Scene & camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(50, W / H, 0.01, 100);
-  camera.position.set(0, 0.65, 7.8);
-  camera.lookAt(0, -0.10, 0);
+  const camera = new THREE.PerspectiveCamera(65, W / H, 0.01, 100);
+  camera.position.set(0, 1.5, 7.0);
+  camera.lookAt(0, -0.3, 0);
 
   /* â”€â”€ Lighting â€” cool X-ray palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   scene.add(new THREE.AmbientLight(0x0A1520, 0.4));
@@ -146,7 +146,8 @@ export async function initGarden(canvas, options = {}) {
 
   /* â”€â”€ Garden group â€” lean forward so bodies appear to stand on floor â”€â”€â”€â”€â”€â”€â”€â”€ */
   const gardenGroup = new THREE.Group();
-  gardenGroup.rotation.x = -0.28;
+  gardenGroup.rotation.x = -0.50;
+  gardenGroup.position.y = -1.0;
   scene.add(gardenGroup);
 
   /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -165,7 +166,7 @@ export async function initGarden(canvas, options = {}) {
    *
    * Falls back to dark-red LineSegments if customSkel failed to load.
    * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const ANIM_SLOTS = 5;   // how many recent entries animate; rest settle
+  const ANIM_SLOTS = 10;  // how many recent entries animate; rest settle
 
   /* â”€â”€ Soft radial vignette â€” fades petal/edge clipping gracefully â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _applyVignette(ctx, CW, CH) {
@@ -414,7 +415,7 @@ export async function initGarden(canvas, options = {}) {
   }
 
   /* â”€â”€ Golden-angle phyllotaxis layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const MIN_R = 0.55;   // minimum radius â€” no figure ever stacks at the centre
+  const MIN_R = 0.90;   // minimum radius — no figure ever stacks at the centre
 
   function _layout(instant = false) {
     const N = ribbons.length;
@@ -424,7 +425,7 @@ export async function initGarden(canvas, options = {}) {
       const frac   = (i + 0.5) / N;
       const radius = MIN_R + frac * (MAX_R - MIN_R);
       const angle  = i * GOLDEN;
-      r.targetX = Math.cos(angle) * radius;
+      r.targetX = Math.max(-1.0, Math.min(1.0, Math.cos(angle) * radius));
       r.targetZ = Math.sin(angle) * radius;
       r.baseY   = 0;
       if (instant) {
@@ -523,11 +524,11 @@ export async function initGarden(canvas, options = {}) {
 
   /* â”€â”€ Device orientation parallax â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   let targetCamX = 0;
-  let targetCamY = 0.65;
+  let targetCamY = 1.5;
 
   function setOrientation(gammaRad, betaRad) {
-    targetCamX = Math.max(-0.22, Math.min(0.22, gammaRad * 0.20));  // tight parallax range
-    targetCamY = Math.max(0.45, Math.min(0.85, 0.65 - (betaRad - 0.9) * 0.10));
+    targetCamX = Math.max(-0.25, Math.min(0.25, gammaRad * 0.20));
+    targetCamY = Math.max(1.2, Math.min(1.8, 1.5 - (betaRad - 0.9) * 0.15));
   }
 
   /* â”€â”€ Per-frame update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
