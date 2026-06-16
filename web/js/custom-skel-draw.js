@@ -317,5 +317,37 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
         if (a > 0.004) this.draw(ctx, frame.kp, W, H, a, seed, 0);
       });
     },
+
+    /* Body-only draw — bones + star joints, no flower head or face.
+     * Used by the recording page so the live tracking overlay shows
+     * only the skeletal body without the archive head treatment. */
+    drawBody(ctx, kp, W, H, alpha = 1.0) {
+      if (!kp || kp.length < 17 || alpha < 0.005) return;
+
+      const pts = kp.map(k => ({
+        x: (k.x ?? 0) * W,
+        y: (k.y ?? 0) * H,
+        s: k.s ?? k.score ?? 0,
+      }));
+
+      const lSh = pts[5], rSh = pts[6];
+      const shoulderPx = (lSh.s > MIN_SCORE && rSh.s > MIN_SCORE)
+        ? Math.hypot(rSh.x - lSh.x, rSh.y - lSh.y)
+        : W * 0.28;
+
+      BONES.forEach(([a, b]) => {
+        if (pts[a].s < MIN_SCORE || pts[b].s < MIN_SCORE) return;
+        _drawBone(ctx, pts[a].x, pts[a].y, pts[b].x, pts[b].y, shoulderPx, alpha);
+      });
+
+      if (lSh.s > MIN_SCORE && rSh.s > MIN_SCORE) {
+        _drawStar(ctx, (lSh.x + rSh.x) / 2, (lSh.y + rSh.y) / 2, shoulderPx, 'mid', alpha);
+      }
+      [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].forEach(i => {
+        if (pts[i].s >= MIN_SCORE) {
+          _drawStar(ctx, pts[i].x, pts[i].y, shoulderPx, i, alpha);
+        }
+      });
+    },
   };
 }
