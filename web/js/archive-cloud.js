@@ -10,7 +10,7 @@
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js?v=1';
+import { loadCustomSkel } from './custom-skel-draw.js?v=2';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5°, sunflower angle
 const MAX_R    = 2.2;
@@ -126,8 +126,8 @@ export async function initGarden(canvas, options = {}) {
   /* ── Scene & camera ────────────────────────────────────────────────────── */
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(50, W / H, 0.01, 100);
-  camera.position.set(0, 0.30, 5.6);
-  camera.lookAt(0, 0, 0);
+  camera.position.set(0, 0.65, 5.2);
+  camera.lookAt(0, -0.10, 0);
 
   /* ── Lighting — cool X-ray palette ─────────────────────────────────────── */
   scene.add(new THREE.AmbientLight(0x0A1520, 0.4));
@@ -144,10 +144,24 @@ export async function initGarden(canvas, options = {}) {
   rim.position.set(0, -2, -2.5);
   scene.add(rim);
 
-  /* ── Garden group — slight forward lean ─────────────────────────────────── */
+  /* ── Garden group — lean forward so bodies appear to stand on floor ──────── */
   const gardenGroup = new THREE.Group();
-  gardenGroup.rotation.x = -0.18;
+  gardenGroup.rotation.x = -0.28;
   scene.add(gardenGroup);
+
+  /* ── Ground plane — very faint circle anchoring the garden spatially ─────── */
+  const groundGeo  = new THREE.CircleGeometry(MAX_R * 1.35, 40);
+  const groundMat  = new THREE.MeshBasicMaterial({
+    color:       0x0C1520,
+    transparent: true,
+    opacity:     0.22,
+    side:        THREE.DoubleSide,
+    depthWrite:  false,
+  });
+  const groundMesh = new THREE.Mesh(groundGeo, groundMat);
+  groundMesh.rotation.x = -Math.PI / 2;
+  groundMesh.position.y = -0.06;
+  gardenGroup.add(groundMesh);
 
   /* ── State ─────────────────────────────────────────────────────────────── */
   const ribbons    = [];
@@ -390,7 +404,7 @@ export async function initGarden(canvas, options = {}) {
       const angle  = i * GOLDEN;
       r.targetX = Math.cos(angle) * radius;
       r.targetZ = Math.sin(angle) * radius;
-      r.baseY   = -frac * 0.38;
+      r.baseY   = 0;  // all figures at the same floor level
     });
   }
 
@@ -486,8 +500,8 @@ export async function initGarden(canvas, options = {}) {
   let targetCamY = 0.30;
 
   function setOrientation(gammaRad, betaRad) {
-    targetCamX = Math.max(-0.75, Math.min(0.75, gammaRad * 0.65));
-    targetCamY = Math.max(-0.12, Math.min(0.85, 0.30 - (betaRad - 0.9) * 0.20));
+    targetCamX = Math.max(-0.22, Math.min(0.22, gammaRad * 0.20));  // tight parallax range
+    targetCamY = Math.max(0.45, Math.min(0.85, 0.65 - (betaRad - 0.9) * 0.10));
   }
 
   /* ── Per-frame update ───────────────────────────────────────────────────── */
@@ -496,10 +510,10 @@ export async function initGarden(canvas, options = {}) {
   function update(dt) {
     clock += dt;
 
-    gardenGroup.rotation.y += 0.00042;
+    gardenGroup.rotation.y += 0.000085;  // very slow rotation — one full turn ~20 min
 
-    camera.position.x += (targetCamX - camera.position.x) * 0.038;
-    camera.position.y += (targetCamY - camera.position.y) * 0.038;
+    camera.position.x += (targetCamX - camera.position.x) * 0.018;
+    camera.position.y += (targetCamY - camera.position.y) * 0.018;
     camera.lookAt(0, 0, 0);
 
     const n = ribbons.length;
@@ -570,8 +584,8 @@ export async function initGarden(canvas, options = {}) {
         });
       }
 
-      // Shared breathing — 0.32 Hz sine wave, staggered phase per trace
-      const breathY = Math.sin(clock * 0.32 * Math.PI * 2 + r.phaseOffset) * 0.036;
+      // Shared breathing — slow, subtle; 0.12 Hz (~8-second cycle), very small amplitude
+      const breathY = Math.sin(clock * 0.12 * Math.PI * 2 + r.phaseOffset) * 0.009;
       r.group.position.y = r.baseY + breathY;
 
       // Smooth drift toward phyllotaxis target position

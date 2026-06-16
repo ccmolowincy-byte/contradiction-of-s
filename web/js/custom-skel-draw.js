@@ -146,10 +146,10 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
       // Blend nose position with shoulder-midpoint projection
       return {
         x: nose.x * 0.60 + midX * 0.40,
-        y: nose.y - shoulderPx * 0.46,
+        y: nose.y - shoulderPx * 0.35,
       };
     }
-    return { x: midX, y: midY - shoulderPx * 0.72 };
+    return { x: midX, y: midY - shoulderPx * 0.55 };
   }
 
   /* Draw the petal cloud layer — drifts, breathes, and occasionally flutters. */
@@ -169,13 +169,13 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
       ? Math.cos(time * 9.5) * Math.sin(Math.PI * (fl - 0.88) / 0.12) * shoulderPx * 0.011
       : 0;
 
-    const w = shoulderPx * 2.85 * breathe;
-    const h = shoulderPx * 2.30 * breathe;
+    const w = shoulderPx * 4.4 * breathe;
+    const h = shoulderPx * 3.6 * breathe;
     const px = hx + driftX + flutter;
     const py = hy + driftY;
 
     ctx.save();
-    ctx.globalAlpha = alpha * 0.14;  // petal layer is faintest — an aura, not solid
+    ctx.globalAlpha = alpha * 0.22;  // petal layer — dominant aura
     ctx.translate(px, py);
     ctx.rotate(rot);
     ctx.drawImage(petalsCv, -w / 2, -h / 2, w, h);
@@ -186,10 +186,10 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
   function _drawFace(ctx, hx, hy, shoulderPx, alpha, time) {
     if (!faceCv || alpha < 0.005) return;
     const breathe = 1.0 + Math.sin(time * 0.22) * 0.006;
-    const w = shoulderPx * 2.20 * breathe;
-    const h = shoulderPx * 1.75 * breathe;
+    const w = shoulderPx * 3.2 * breathe;
+    const h = shoulderPx * 2.6 * breathe;
     ctx.save();
-    ctx.globalAlpha = alpha * 0.30;  // medium-low — present but not dominant
+    ctx.globalAlpha = alpha * 0.42;  // prominent — face/void visible within petal cloud
     ctx.drawImage(faceCv, hx - w / 2, hy - h / 2, w, h);
     ctx.restore();
   }
@@ -268,17 +268,14 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
         ? Math.hypot(rSh.x - lSh.x, rSh.y - lSh.y)
         : W * 0.28;   // sensible fallback if shoulders not visible
 
-      // Cap the scale used for petals/face so they fit when the body
-      // fills the entire canvas (e.g. archive thumbnail).
-      const headShoulderPx = Math.min(shoulderPx, W * 0.20);
-
       const { x: hx, y: hy } = _headCenter(pts, shoulderPx);
 
       // ── Layer 1 (back): petal aura ────────────────────────────────────────
-      _drawPetals(ctx, hx, hy, headShoulderPx, alpha, seed, t);
+      // Petal cloud is intentionally oversized — clipping at canvas edges is fine
+      _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, t);
 
       // ── Layer 2: face/void oval ───────────────────────────────────────────
-      _drawFace(ctx, hx, hy, headShoulderPx, alpha, t);
+      _drawFace(ctx, hx, hy, shoulderPx, alpha, t);
 
       // ── Layer 3: bone connection lines ────────────────────────────────────
       BONES.forEach(([a, b]) => {

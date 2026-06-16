@@ -172,7 +172,7 @@
     log('Ready — pose detection active', 'ok');
 
     // Load custom skeleton assets in background — overlay degrades gracefully until ready
-    import('./custom-skel-draw.js?v=1')
+    import('./custom-skel-draw.js?v=2')
       .then(m => m.loadCustomSkel('assets/skel/'))
       .then(skel => {
         customSkel = skel;
@@ -207,7 +207,11 @@
             } else {
               smoothedKeypoints = smoothedKeypoints.map((sk, i) => {
                 const rk = raw[i];
-                if (!rk || rk.score < 0.12) return { ...sk, score: rk?.score ?? 0 };
+                if (!rk || rk.score < 0.12) {
+                  // Joint briefly lost — decay score slowly so it fades out rather than snapping off.
+                  // Position is held from last known good frame (sk.x, sk.y).
+                  return { ...sk, score: sk.score * 0.92 };
+                }
                 return {
                   x:     sk.x     * (1 - α) + rk.x     * α,
                   y:     sk.y     * (1 - α) + rk.y     * α,
@@ -221,14 +225,16 @@
           } else {
             currentKeypoints = null;
             noBodyFrames++;
-            if (noBodyFrames > 30) smoothedKeypoints = null;  // reset on body loss
+            if (noBodyFrames > 90) smoothedKeypoints = null;  // reset only after sustained absence
           }
         } catch (_) {
           currentKeypoints = null;
         }
       }
       if (customSkel) customSkel.update(dt);
-      noBodyEl.style.opacity = noBodyFrames > 60 ? '1' : '0';
+      // Framing hint and guide only shown in preview — not during active recording
+      const showGuide = currentState === 'preview' && noBodyFrames > 20;
+      noBodyEl.style.opacity = (currentState === 'preview' && noBodyFrames > 60) ? '1' : '0';
       drawOverlay();
       rafId = requestAnimationFrame(loop);
     }
@@ -250,6 +256,7 @@
       ctx.fillRect(0, 0, W, H);
     }
 
+    if (showGuide && !currentKeypoints?.length) drawFramingGuide(W, H);
     if (currentKeypoints?.length) drawSkeleton(currentKeypoints, W, H);
     if (currentState === 'recording' && samples.length > 1) drawTrail(samples, W, H);
   }
@@ -314,6 +321,59 @@
     ctx.fillStyle = 'rgba(220,60,60,0.82)';
     ctx.shadowBlur = 9;
     ctx.fill();
+    ctx.restore();
+  }
+
+  /* Faint full-body outline — shows when body isn't detected so user knows where to stand. */
+  function drawFramingGuide(W, H) {
+    const cx  = W / 2;
+    const sc  = H * 0.26;    // scale relative to canvas height
+    const mid = H * 0.44;    // vertical centre of guide figure
+
+    ctx.save();
+    ctx.globalAlpha = 0.10;
+    ctx.strokeStyle = 'rgba(200,216,224,1)';
+    ctx.lineWidth   = 1.5;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.setLineDash([3, 6]);
+
+    // Head circle
+    ctx.beginPath();
+    ctx.arc(cx, mid - sc * 0.74, sc * 0.13, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Spine
+    ctx.beginPath();
+    ctx.moveTo(cx, mid - sc * 0.60);
+    ctx.lineTo(cx, mid);
+    ctx.stroke();
+
+    // Shoulders
+    ctx.beginPath();
+    ctx.moveTo(cx - sc * 0.33, mid - sc * 0.49);
+    ctx.lineTo(cx + sc * 0.33, mid - sc * 0.49);
+    // L arm → elbow → wrist
+    ctx.moveTo(cx - sc * 0.33, mid - sc * 0.49);
+    ctx.lineTo(cx - sc * 0.27, mid - sc * 0.14);
+    ctx.lineTo(cx - sc * 0.22, mid + sc * 0.12);
+    // R arm → elbow → wrist
+    ctx.moveTo(cx + sc * 0.33, mid - sc * 0.49);
+    ctx.lineTo(cx + sc * 0.27, mid - sc * 0.14);
+    ctx.lineTo(cx + sc * 0.22, mid + sc * 0.12);
+    // Hip bar
+    ctx.moveTo(cx - sc * 0.18, mid);
+    ctx.lineTo(cx + sc * 0.18, mid);
+    // L leg → knee → ankle
+    ctx.moveTo(cx - sc * 0.12, mid);
+    ctx.lineTo(cx - sc * 0.13, mid + sc * 0.26);
+    ctx.lineTo(cx - sc * 0.14, mid + sc * 0.53);
+    // R leg → knee → ankle
+    ctx.moveTo(cx + sc * 0.12, mid);
+    ctx.lineTo(cx + sc * 0.13, mid + sc * 0.26);
+    ctx.lineTo(cx + sc * 0.14, mid + sc * 0.53);
+    ctx.stroke();
+
     ctx.restore();
   }
 
