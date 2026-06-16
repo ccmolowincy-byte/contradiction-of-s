@@ -10,7 +10,7 @@
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js?v=9';
+import { loadCustomSkel } from './custom-skel-draw.js?v=11';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
 const MAX_R    = 2.2;

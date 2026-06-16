@@ -152,50 +152,83 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
     return { x: midX, y: midY - shoulderPx * 0.55 };
   }
 
-  /* Draw the petal cloud layer as a soft radial gradient oval.
-   * Uses direct canvas drawing rather than petals.png so the cloud
-   * silhouette is always correct regardless of image alpha channel. */
+  /* Shape F — 6 ruffled petals, big and asymmetric, irregular angles */
+  const PETAL_F = [
+    { a: 0.10, l: 1.30, w: 0.52, lean:  3 },
+    { a: 1.18, l: 1.18, w: 0.56, lean: -5 },
+    { a: 2.28, l: 1.42, w: 0.48, lean:  2 },
+    { a: 3.42, l: 1.22, w: 0.54, lean: -4 },
+    { a: 4.62, l: 1.38, w: 0.50, lean:  6 },
+    { a: 5.52, l: 1.28, w: 0.52, lean: -3 },
+  ];
+
+  /* Per-petal breathing frequencies (rad/s) — prime-ish ratios keep phases from syncing. */
+  const PETAL_FREQ = [0.13, 0.17, 0.11, 0.19, 0.15, 0.21];
+
+  /* Ruffled petal bezier path only — no save/rotate/fill/stroke. */
+  function _ruffPath(o, length, width, lean) {
+    const hw = width / 2;
+    o.beginPath(); o.moveTo(0, 0);
+    o.bezierCurveTo( hw*1.35, -length*.10,  hw*1.55, -length*.32,  hw*1.05, -length*.46);
+    o.bezierCurveTo( hw*0.58, -length*.60,  hw*0.52+lean, -length*.84, lean, -length);
+    o.bezierCurveTo(-hw*0.52+lean, -length*.84, -hw*0.58, -length*.60, -hw*1.05, -length*.46);
+    o.bezierCurveTo(-hw*1.55, -length*.32, -hw*1.35, -length*.10, 0, 0);
+    o.closePath();
+  }
+
+  /* Draw shape F flower — option C: fill + stroke directly on ctx, per-petal breathing.
+   * No offscreen canvas — eliminates the rectangle artifact under AdditiveBlending. */
   function _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, time) {
     if (alpha < 0.005) return;
 
-    const driftX = Math.sin(time * 0.11 + seed * 2.3) * shoulderPx * 0.026;
-    const driftY = Math.cos(time * 0.08 + seed * 1.7) * shoulderPx * 0.016;
-    const breathe = 1.0 + Math.sin(time * 0.22 + seed * 0.9) * 0.016;
-    const fl = (time % 7.2) / 7.2;
-    const flutter = fl > 0.88
-      ? Math.cos(time * 9.5) * Math.sin(Math.PI * (fl - 0.88) / 0.12) * shoulderPx * 0.011
-      : 0;
-
-    const cx = hx + driftX + flutter;
-    const cy = hy + driftY;
-    // Ellipse axes — wider than tall, centred on head
-    const rx = shoulderPx * 2.2 * breathe;
-    const ry = shoulderPx * 1.8 * breathe;
-
-    // Bright crimson gradient — visible under AdditiveBlending
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
-    grad.addColorStop(0,    `rgba(215, 55, 55, ${(alpha * 0.90).toFixed(3)})`);
-    grad.addColorStop(0.35, `rgba(195, 38, 38, ${(alpha * 0.72).toFixed(3)})`);
-    grad.addColorStop(0.65, `rgba(168, 24, 24, ${(alpha * 0.42).toFixed(3)})`);
-    grad.addColorStop(1.0,  `rgba(130, 10, 10, 0)`);
+    const R   = shoulderPx * 1.6;
+    const rot = Math.sin(time * 0.35 + seed * 1.8) * 0.12;
 
     ctx.save();
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.translate(hx, hy);
+    ctx.rotate(rot);
+
+    // ── Fill pass: semi-transparent body ────────────────────────────────────
+    ctx.globalAlpha = alpha * 0.38;
+    PETAL_F.forEach((p, i) => {
+      const s = 1 + 0.18 * Math.sin(time * PETAL_FREQ[i] + p.a + seed * 0.65);
+      ctx.save(); ctx.rotate(p.a);
+      _ruffPath(ctx, R * p.l * s, R * p.w * s, p.lean);
+      ctx.fillStyle = 'rgba(172, 18, 18, 1)';
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // ── Stroke pass: bright petal silhouette ─────────────────────────────────
+    ctx.globalAlpha = alpha * 0.88;
+    const sw = Math.max(1, R * 0.028);
+    PETAL_F.forEach((p, i) => {
+      const s = 1 + 0.18 * Math.sin(time * PETAL_FREQ[i] + p.a + seed * 0.65);
+      ctx.save(); ctx.rotate(p.a);
+      _ruffPath(ctx, R * p.l * s, R * p.w * s, p.lean);
+      ctx.strokeStyle = 'rgba(218, 36, 36, 0.88)';
+      ctx.lineWidth   = sw;
+      ctx.stroke();
+      ctx.restore();
+    });
+
     ctx.restore();
   }
 
-  /* Draw the face/void oval — stable; only very slight breathing, no drift. */
-  function _drawFace(ctx, hx, hy, shoulderPx, alpha, time) {
-    if (!faceCv || alpha < 0.005) return;
+  /* Dark crimson face oval — sits inside petals, sways with them. */
+  function _drawFace(ctx, hx, hy, shoulderPx, alpha, time, seed) {
+    if (alpha < 0.005) return;
+    const R       = shoulderPx * 1.6;
+    const rot     = Math.sin(time * 0.35 + seed * 1.8) * 0.12;
     const breathe = 1.0 + Math.sin(time * 0.22) * 0.006;
-    const w = shoulderPx * 3.2 * breathe;
-    const h = shoulderPx * 2.6 * breathe;
     ctx.save();
-    ctx.globalAlpha = alpha * 0.42;  // prominent — face/void visible within petal cloud
-    ctx.drawImage(faceCv, hx - w / 2, hy - h / 2, w, h);
+    ctx.translate(hx, hy + R * 0.04);
+    ctx.rotate(rot);
+    ctx.globalAlpha = alpha * 0.88;
+    ctx.fillStyle = 'rgba(48, 7, 7, 1)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, R * 0.76 * breathe, R * 0.31 * breathe, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -279,8 +312,8 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
       // Petal cloud is intentionally oversized — clipping at canvas edges is fine
       _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, t);
 
-      // ── Layer 2: face/void oval — currently removed at user's request
-      // _drawFace(ctx, hx, hy, shoulderPx, alpha, t);
+      // ── Layer 2: face/void oval — dark crimson, sways with petals
+      _drawFace(ctx, hx, hy, shoulderPx, alpha, t, seed);
 
       // ── Layer 3: bone connection lines ────────────────────────────────────
       BONES.forEach(([a, b]) => {

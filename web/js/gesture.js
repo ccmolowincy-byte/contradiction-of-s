@@ -240,7 +240,7 @@
     log('Ready — pose detection active', 'ok');
 
     // Load custom skeleton assets in background â€” overlay degrades gracefully until ready
-    import('./custom-skel-draw.js?v=9')
+    import('./custom-skel-draw.js?v=11')
       .then(m => m.loadCustomSkel('assets/skel/'))
       .then(skel => {
         customSkel = skel;
