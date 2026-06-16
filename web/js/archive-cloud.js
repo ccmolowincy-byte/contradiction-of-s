@@ -126,8 +126,8 @@ export async function initGarden(canvas, options = {}) {
   /* â”€â”€ Scene & camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(65, W / H, 0.01, 100);
-  camera.position.set(0, 1.5, 7.0);
-  camera.lookAt(0, -0.3, 0);
+  camera.position.set(0, 2.0, 6.0);
+  camera.lookAt(0, -0.5, 0);
 
   /* â”€â”€ Lighting â€” cool X-ray palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   scene.add(new THREE.AmbientLight(0x0A1520, 0.4));
@@ -147,7 +147,7 @@ export async function initGarden(canvas, options = {}) {
   /* â”€â”€ Garden group â€” lean forward so bodies appear to stand on floor â”€â”€â”€â”€â”€â”€â”€â”€ */
   const gardenGroup = new THREE.Group();
   gardenGroup.rotation.x = -0.50;
-  gardenGroup.position.y = -1.0;
+  gardenGroup.position.y = -2.5;
   scene.add(gardenGroup);
 
   /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -427,7 +427,7 @@ export async function initGarden(canvas, options = {}) {
       const angle  = i * GOLDEN;
       r.targetX = Math.max(-1.0, Math.min(1.0, Math.cos(angle) * radius));
       r.targetZ = Math.sin(angle) * radius;
-      r.baseY   = 0;
+      r.baseY   = (1 - (i + 0.5) / N) * 0.8;
       if (instant) {
         r.group.position.x = r.targetX;
         r.group.position.z = r.targetZ;
@@ -524,11 +524,11 @@ export async function initGarden(canvas, options = {}) {
 
   /* â”€â”€ Device orientation parallax â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   let targetCamX = 0;
-  let targetCamY = 1.5;
+  let targetCamY = 2.0;
 
   function setOrientation(gammaRad, betaRad) {
     targetCamX = Math.max(-0.25, Math.min(0.25, gammaRad * 0.20));
-    targetCamY = Math.max(1.2, Math.min(1.8, 1.5 - (betaRad - 0.9) * 0.15));
+    targetCamY = Math.max(1.7, Math.min(2.3, 2.0 - (betaRad - 0.9) * 0.20));
   }
 
   /* â”€â”€ Per-frame update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -541,7 +541,7 @@ export async function initGarden(canvas, options = {}) {
 
     camera.position.x += (targetCamX - camera.position.x) * 0.006;
     camera.position.y += (targetCamY - camera.position.y) * 0.006;
-    camera.lookAt(0, -0.10, 0);
+    camera.lookAt(0, -0.5, 0);
 
     const n = ribbons.length;
     for (let i = 0; i < n; i++) {
