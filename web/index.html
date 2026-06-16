@@ -4,160 +4,235 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
   <title>Contradiction of S</title>
+
+  <!-- Calligraphic title font — closest web match to the handwritten examples -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css">
   <style>
-    /* ── Immersive homepage — no scroll ──────────────────────────────────────── */
     body { overflow: hidden; }
 
-    /* Stage fills the screen above the fixed bottom nav */
     #home-stage {
       position: fixed;
       top: 0; left: 0; right: 0;
-      bottom: var(--nav-h);
-      background: var(--bg);
+      bottom: var(--nav-h, 60px);
+      background: #000;
       overflow: hidden;
     }
 
-    /* ── Star sticker layer ───────────────────────────────────────────────── */
-    #star-layer {
+    /* Only one variation shown at a time */
+    .variation {
       position: absolute;
       inset: 0;
-      pointer-events: none;
-      z-index: 1;
+      display: none;
     }
-    .star-sticker {
+    .variation.active { display: block; }
+
+    /* Figure PNG — black in PNG blends with black stage background */
+    .v-fig {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%;
+      height: auto;
+      display: block;
+      pointer-events: none;
+    }
+
+    /* Handwritten title — Pinyon Script, dark crimson */
+    .v-title {
+      position: absolute;
+      font-family: 'Pinyon Script', Georgia, cursive;
+      color: #891818;
+      line-height: 1.08;
+      pointer-events: none;
+      user-select: none;
+    }
+    .v-t1 { display: block; font-size: 7.5vw; }
+    .v-t2 { display: block; font-size: 11vw; }
+    .v-t3 { display: block; font-size: 13.5vw; }
+
+    /* Enter button — dark red star PNG, fully tappable */
+    .v-enter {
+      position: absolute;
+      display: block;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .v-enter img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Hand-drawn star stickers */
+    .v-star {
       position: absolute;
       pointer-events: none;
       user-select: none;
     }
-
-    /* ── Three.js canvas — transparent so warm bg shows through ─────────── */
-    #title-canvas {
-      position: absolute;
-      inset: 0;
-      width: 100% !important;
-      height: 100% !important;
-      z-index: 2;
-    }
-
-    /* ── Loading indicator ────────────────────────────────────────────────── */
-    #model-loading {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 3;
-      opacity: 1;
-      transition: opacity 0.8s ease;
-      pointer-events: none;
-    }
-    #model-loading.hidden { opacity: 0; }
-    .loading-dots { display: flex; gap: 8px; }
-    .loading-dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--burgundy);
-      animation: ldPulse 1.4s ease-in-out infinite;
-    }
-    .loading-dot:nth-child(2) { animation-delay: 0.2s; }
-    .loading-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes ldPulse {
-      0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
-      40%            { opacity: 0.65; transform: scale(1.1); }
-    }
-
-    /* ── CTA overlay — fades up from bottom of stage ──────────────────────── */
-    #home-cta {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 32px 32px;
-      gap: 11px;
-      z-index: 10;
-      background: linear-gradient(to top, var(--bg) 38%, transparent 100%);
-    }
-    .enter-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 13px 36px;
-      background: var(--burgundy);
-      color: #f5ede0;
-      font-family: 'IM Fell English', Georgia, serif;
-      font-size: 15px;
-      font-style: italic;
-      letter-spacing: 0.09em;
-      text-decoration: none;
-      border-radius: 2px;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.15s;
-    }
-    .enter-btn:active { background: var(--red); }
-    .enter-btn-icon {
-      width: 14px; height: 14px;
-      border: 1.5px solid currentColor;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .enter-btn-icon::after {
-      content: '';
+    .v-star img {
+      width: 100%;
+      height: auto;
       display: block;
-      width: 0; height: 0;
-      border-top: 4px solid transparent;
-      border-bottom: 4px solid transparent;
-      border-left: 6px solid currentColor;
-      margin-left: 1px;
     }
-    .avatar-cta-link {
-      font-family: 'IM Fell English', Georgia, serif;
-      font-size: 12px;
-      font-style: italic;
-      color: var(--warm-gray);
-      letter-spacing: 0.06em;
-      text-decoration: none;
-      opacity: 0.75;
-      transition: opacity 0.15s;
-    }
-    .avatar-cta-link:active { opacity: 1; }
   </style>
 </head>
 <body>
 
-  <!-- ── Immersive stage ─────────────────────────────────────────────────── -->
   <div id="home-stage">
 
-    <!-- Hand-drawn star stickers — scattered across the composition -->
-    <div id="star-layer" aria-hidden="true"></div>
+    <!-- ── Variation 1 ── three-figure group, lower centre ──────────────── -->
+    <div class="variation" id="v1">
+      <img class="v-fig" src="assets/home/figure1.png" alt="">
 
-    <!-- Three.js canvas for the floating 3D title model -->
-    <canvas id="title-canvas"></canvas>
+      <!-- Stars -->
+      <div class="v-star" style="left:2%;  top:2%;  width:26%; transform:rotate(-12deg);">
+        <img src="assets/stars/star1.png" alt="">
+      </div>
+      <div class="v-star" style="right:14%; top:1%;  width:13%; transform:rotate(22deg);">
+        <img src="assets/stars/star5.png" alt="">
+      </div>
+      <div class="v-star" style="left:0%;  top:34%; width:12%; transform:rotate(38deg);">
+        <img src="assets/stars/star2.png" alt="">
+      </div>
 
-    <!-- Loading pulse while GLB downloads -->
-    <div id="model-loading" role="status" aria-label="Loading">
-      <div class="loading-dots">
-        <div class="loading-dot"></div>
-        <div class="loading-dot"></div>
-        <div class="loading-dot"></div>
+      <!-- Title: upper right, right-aligned -->
+      <div class="v-title" style="right:5%; top:6%; text-align:right;">
+        <span class="v-t1">The</span>
+        <span class="v-t2">Contradiction</span>
+        <span class="v-t3">of S</span>
+      </div>
+
+      <!-- Enter star: right of title, beside "of S" -->
+      <a class="v-enter" href="gesture.html" style="right:2%; top:28%; width:16%;">
+        <img src="assets/home/enter.png" alt="Enter">
+      </a>
+    </div>
+
+
+    <!-- ── Variation 2 ── single seated profile, left ────────────────────── -->
+    <div class="variation" id="v2">
+      <img class="v-fig" src="assets/home/figure2.png" alt="">
+
+      <!-- Stars -->
+      <div class="v-star" style="left:4%;  top:3%;  width:20%; transform:rotate(-35deg);">
+        <img src="assets/stars/star2.png" alt="">
+      </div>
+      <div class="v-star" style="left:3%;  top:22%; width:11%; transform:rotate(15deg);">
+        <img src="assets/stars/star1.png" alt="">
+      </div>
+      <div class="v-star" style="left:-2%; top:40%; width:21%; transform:rotate(28deg);">
+        <img src="assets/stars/star5.png" alt="">
+      </div>
+
+      <!-- Title: upper right, right-aligned -->
+      <div class="v-title" style="right:4%; top:5%; text-align:right;">
+        <span class="v-t1">The</span>
+        <span class="v-t2">Contradiction</span>
+        <span class="v-t3">of S</span>
+      </div>
+
+      <!-- Enter star -->
+      <a class="v-enter" href="gesture.html" style="right:2%; top:27%; width:15%;">
+        <img src="assets/home/enter.png" alt="Enter">
+      </a>
+    </div>
+
+
+    <!-- ── Variation 3 ── leaping figure, centre-right ───────────────────── -->
+    <div class="variation" id="v3">
+      <img class="v-fig" src="assets/home/figure3.png" alt="">
+
+      <!-- Stars -->
+      <div class="v-star" style="left:0%;  top:1%;  width:9%;  transform:rotate(-45deg);">
+        <img src="assets/stars/star4.png" alt="">
+      </div>
+      <div class="v-star" style="right:1%; top:0%;  width:26%; transform:rotate(14deg);">
+        <img src="assets/stars/star3.png" alt="">
+      </div>
+      <div class="v-star" style="right:5%; top:15%; width:12%; transform:rotate(-8deg);">
+        <img src="assets/stars/star1.png" alt="">
+      </div>
+
+      <!-- Title: upper left, left-aligned -->
+      <div class="v-title" style="left:3%; top:4%; text-align:left;">
+        <span class="v-t1">The</span>
+        <span class="v-t2">Contradiction</span>
+        <span class="v-t3">of S</span>
+      </div>
+
+      <!-- Enter star: beside "of S" -->
+      <a class="v-enter" href="gesture.html" style="left:40%; top:27%; width:16%;">
+        <img src="assets/home/enter.png" alt="Enter">
+      </a>
+    </div>
+
+
+    <!-- ── Variation 4 ── floating figure, centre ────────────────────────── -->
+    <div class="variation" id="v4">
+      <img class="v-fig" src="assets/home/figure4.png" alt="">
+
+      <!-- Stars -->
+      <div class="v-star" style="left:-2%; top:7%;  width:20%; transform:rotate(20deg);">
+        <img src="assets/stars/star4.png" alt="">
+      </div>
+      <div class="v-star" style="right:8%; top:1%;  width:11%; transform:rotate(-15deg);">
+        <img src="assets/stars/star5.png" alt="">
+      </div>
+      <div class="v-star" style="right:2%; top:51%; width:14%; transform:rotate(10deg);">
+        <img src="assets/stars/star1.png" alt="">
+      </div>
+
+      <!-- Title: upper right, right-aligned -->
+      <div class="v-title" style="right:4%; top:5%; text-align:right;">
+        <span class="v-t1">The</span>
+        <span class="v-t2">Contradiction</span>
+        <span class="v-t3">of S</span>
+      </div>
+
+      <!-- Enter star -->
+      <a class="v-enter" href="gesture.html" style="right:1%; top:26%; width:16%;">
+        <img src="assets/home/enter.png" alt="Enter">
+      </a>
+    </div>
+
+
+    <!-- ── Variation 5 ── flower-head standing figure ─────────────────────── -->
+    <div class="variation" id="v5">
+      <img class="v-fig" src="assets/home/figure5.png" alt="">
+
+      <!-- Stars -->
+      <div class="v-star" style="left:1%;  top:2%;  width:13%; transform:rotate(-5deg);">
+        <img src="assets/stars/star1.png" alt="">
+      </div>
+      <div class="v-star" style="right:2%; top:3%;  width:13%; transform:rotate(10deg);">
+        <img src="assets/stars/star5.png" alt="">
+      </div>
+      <div class="v-star" style="left:1%;  top:56%; width:15%; transform:rotate(22deg);">
+        <img src="assets/stars/star2.png" alt="">
+      </div>
+      <div class="v-star" style="right:2%; top:63%; width:12%; transform:rotate(-8deg);">
+        <img src="assets/stars/star3.png" alt="">
+      </div>
+
+      <!-- Enter star: LEFT of title (before "The"), matching Example 5 -->
+      <a class="v-enter" href="gesture.html" style="left:6%; top:3%; width:14%;">
+        <img src="assets/home/enter.png" alt="Enter">
+      </a>
+
+      <!-- Title: upper centre, left-aligned starting after enter star -->
+      <div class="v-title" style="left:22%; top:2%; text-align:left;">
+        <span class="v-t1">The</span>
+        <span class="v-t2">Contradiction</span>
+        <span class="v-t3">of S</span>
       </div>
     </div>
 
-    <!-- Entry points -->
-    <div id="home-cta">
-      <a href="gesture.html" class="enter-btn">
-        <span class="enter-btn-icon" aria-hidden="true"></span>
-        Enter Experience
-      </a>
-      <a href="ar.html" class="avatar-cta-link">or explore the archive →</a>
-    </div>
+  </div><!-- /#home-stage -->
 
-  </div>
 
-  <!-- ── Bottom navigation ──────────────────────────────────────────────── -->
+  <!-- ── Bottom navigation ────────────────────────────────────────────────── -->
   <nav class="bottom-nav" aria-label="Main navigation">
     <a href="index.html" class="nav-item active" aria-label="Home">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -173,170 +248,13 @@
     </a>
   </nav>
 
-  <!-- ── Star sticker placement ────────────────────────────────────────────── -->
+
+  <!-- ── Sequential variation rotation via localStorage ───────────────────── -->
   <script>
-    /* Hardcoded positions for a balanced, non-random composition.
-     * { f: filename, x: left%, y: top%, w: width in vw, r: rotation deg, o: opacity }
-     * Kept away from the vertical centre so they frame the 3D title, not obscure it. */
-    const STARS = [
-      { f: 'star1', x:  5, y:  6, w: 28, r: -13, o: 0.55 }, // top-left,  large
-      { f: 'star3', x: 71, y:  4, w: 18, r:  24, o: 0.50 }, // top-right
-      { f: 'star2', x: 83, y: 44, w: 15, r:  -7, o: 0.58 }, // right side
-      { f: 'star5', x:  2, y: 58, w: 20, r:  31, o: 0.48 }, // left lower
-      { f: 'star4', x: 57, y: 78, w: 16, r: -19, o: 0.42 }, // bottom centre
-    ];
-    const layer = document.getElementById('star-layer');
-    STARS.forEach(s => {
-      const img = document.createElement('img');
-      img.className  = 'star-sticker';
-      img.src        = `assets/stars/${s.f}.png`;
-      img.alt        = '';
-      img.loading    = 'lazy';
-      img.style.left     = s.x + '%';
-      img.style.top      = s.y + '%';
-      img.style.width    = s.w + 'vw';
-      img.style.maxWidth = '170px';
-      img.style.opacity  = s.o;
-      img.style.transform = `rotate(${s.r}deg)`;
-      layer.appendChild(img);
-    });
-  </script>
-
-  <!-- ── Three.js 3D title model ──────────────────────────────────────────── -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three":          "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
-        "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
-      }
-    }
-  </script>
-  <script type="module">
-    import * as THREE       from 'three';
-    import { GLTFLoader }   from 'three/addons/loaders/GLTFLoader.js';
-
-    const canvas     = document.getElementById('title-canvas');
-    const loadingEl  = document.getElementById('model-loading');
-    const stage      = document.getElementById('home-stage');
-
-    /* ── Renderer ──────────────────────────────────────────────────────────── */
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      alpha:           true,   // transparent: warm bg colour shows through
-      antialias:       true,
-      powerPreference: 'default',
-    });
-    renderer.setClearColor(0x000000, 0);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.outputColorSpace  = THREE.SRGBColorSpace;
-    renderer.toneMapping       = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
-
-    /* ── Scene & camera ────────────────────────────────────────────────────── */
-    const scene  = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 200);
-    camera.position.set(0, 0, 9);
-
-    /* ── Lighting — warm, sculptural, gentle ──────────────────────────────── */
-    scene.add(new THREE.AmbientLight(0xfff6e8, 0.85));
-
-    const keyLight = new THREE.DirectionalLight(0xffeedd, 1.5);
-    keyLight.position.set(3, 4, 4);
-    scene.add(keyLight);
-
-    const fillLight = new THREE.DirectionalLight(0xd8e4ff, 0.3);
-    fillLight.position.set(-3, -1, 2);
-    scene.add(fillLight);
-
-    const rimLight = new THREE.DirectionalLight(0xffddb8, 0.45);
-    rimLight.position.set(-1, 3, -4);
-    scene.add(rimLight);
-
-    /* ── Model fit — reusable, always uses current camera.aspect ─────────── */
-    let model    = null;
-    let basePos  = new THREE.Vector3();
-    let modelBox = null;   // cached un-scaled bounding box (before fitModel scales it)
-
-    function fitModel() {
-      if (!model || !modelBox) return;
-      const size   = modelBox.getSize(new THREE.Vector3());
-      const centre = modelBox.getCenter(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-
-      const fovRad   = THREE.MathUtils.degToRad(camera.fov);
-      const dist     = camera.position.z;
-      const visH     = 2 * Math.tan(fovRad / 2) * dist;
-      const visW     = visH * camera.aspect;   // uses live camera.aspect
-      // Fill 72% of the shorter viewport dimension (portrait → width)
-      const fitScale = (Math.min(visW, visH) * 0.72) / maxDim;
-
-      model.scale.setScalar(fitScale);
-      model.position.set(
-        -centre.x * fitScale,
-        -centre.y * fitScale + 0.14,  // nudge up slightly to clear CTAs
-        -centre.z * fitScale
-      );
-      basePos.copy(model.position);
-    }
-
-    /* ── Load GLB ─────────────────────────────────────────────────────────── */
-    const loader = new GLTFLoader();
-    loader.load(
-      'assets/title.glb',
-      gltf => {
-        model = gltf.scene;
-        // Build bounding box from mesh geometry only (skip cameras/empties from FBX import)
-        modelBox = new THREE.Box3();
-        model.traverse(child => { if (child.isMesh) modelBox.expandByObject(child); });
-        if (modelBox.isEmpty()) modelBox.setFromObject(model); // fallback
-        scene.add(model);
-        fitModel();              // fit using the already-correct camera.aspect
-        loadingEl.classList.add('hidden');
-        animate();
-      },
-      undefined,
-      err => {
-        console.warn('GLB load failed:', err);
-        loadingEl.classList.add('hidden');
-      }
-    );
-
-    /* ── Animation — dreamlike float, slow rotation, gentle sway ─────────── */
-    let t = 0;
-    function animate() {
-      requestAnimationFrame(animate);
-      t += 0.007;                                    // ~0.007 rad per frame at 60fps
-
-      if (model) {
-        // Slow Y-axis rotation — one full turn every ~15 minutes
-        model.rotation.y  = t * 0.15;
-
-        // Gentle float — sine period ~9 seconds
-        model.position.y  = basePos.y + Math.sin(t * 0.45) * 0.22;
-
-        // Subtle horizontal drift — barely perceptible
-        model.position.x  = basePos.x + Math.sin(t * 0.27) * 0.06;
-
-        // Dreamy tilt sway — period ~11 seconds, ±1.5 degrees
-        model.rotation.z  = Math.sin(t * 0.36) * 0.026;
-      }
-
-      renderer.render(scene, camera);
-    }
-
-    /* ── Resize — update camera + refit model ─────────────────────────────── */
-    function onResize() {
-      const w = stage.clientWidth;
-      const h = stage.clientHeight;
-      if (!w || !h) return;
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      fitModel();   // refit whenever viewport changes
-    }
-    window.addEventListener('resize', () => requestAnimationFrame(onResize));
-    // Run immediately (synchronous) so camera.aspect is correct before GLB loads
-    onResize();
+    var key  = 'home-var';
+    var next = (parseInt(localStorage.getItem(key) || '0') % 5) + 1;
+    localStorage.setItem(key, next);
+    document.getElementById('v' + next).classList.add('active');
   </script>
 
   <script src="js/app.js"></script>
