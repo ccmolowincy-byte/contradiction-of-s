@@ -10,7 +10,7 @@
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js?v=7';
+import { loadCustomSkel } from './custom-skel-draw.js?v=8';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
 const MAX_R    = 2.2;
@@ -149,20 +149,6 @@ export async function initGarden(canvas, options = {}) {
   gardenGroup.rotation.x = -0.28;
   scene.add(gardenGroup);
 
-  /* â”€â”€ Ground plane â€” very faint circle anchoring the garden spatially â”€â”€â”€â”€â”€â”€â”€ */
-  const groundGeo  = new THREE.CircleGeometry(MAX_R * 1.35, 40);
-  const groundMat  = new THREE.MeshBasicMaterial({
-    color:       0x0C1520,
-    transparent: true,
-    opacity:     0.22,
-    side:        THREE.DoubleSide,
-    depthWrite:  false,
-  });
-  const groundMesh = new THREE.Mesh(groundGeo, groundMat);
-  groundMesh.rotation.x = -Math.PI / 2;
-  groundMesh.position.y = -0.06;
-  gardenGroup.add(groundMesh);
-
   /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const ribbons    = [];
   let   traceCount = 0;
@@ -252,7 +238,7 @@ export async function initGarden(canvas, options = {}) {
         transparent: true,
         opacity:     0,
         depthWrite:  false,
-        blending:    THREE.AdditiveBlending,
+        blending:    THREE.NormalBlending,
       });
       const sprite = new THREE.Sprite(spriteMat);
       sprite.scale.set(1.85, 2.30, 1.0);   // portrait proportions (â‰ˆ body scale in scene)
@@ -299,7 +285,7 @@ export async function initGarden(canvas, options = {}) {
         color:       new THREE.Color(0x8B1212),
         transparent: true,
         opacity:     0,
-        blending:    THREE.AdditiveBlending,
+        blending:    THREE.NormalBlending,
         depthWrite:  false,
       });
       group.add(new THREE.LineSegments(geo, mat));

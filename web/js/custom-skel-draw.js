@@ -79,7 +79,7 @@ const MIN_SCORE = 0.22;
 const RED_BONE  = '#8B1212';  // saturated blood red  — bone connections
 const RED_STAR  = '#7A1010';  // dark crimson          — joint stars
 const RED_FACE  = '#8B1414';  // anatomical red        — face/void
-const RED_PETAL = '#5E0D0D';  // deep maroon           — petal aura (very faint)
+const RED_PETAL = '#A01818';  // bright crimson         — petal aura (dominant flower head)
 
 /* ── Asset loading ──────────────────────────────────────────────────────── */
 
@@ -175,7 +175,7 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
     const py = hy + driftY;
 
     ctx.save();
-    ctx.globalAlpha = alpha * 0.22;  // petal layer — dominant aura
+    ctx.globalAlpha = alpha * 0.65;  // petal layer — dominant flower head
     ctx.translate(px, py);
     ctx.rotate(rot);
     ctx.drawImage(petalsCv, -w / 2, -h / 2, w, h);
