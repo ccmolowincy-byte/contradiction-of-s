@@ -7,7 +7,7 @@
 
   const SUPA_URL = 'https://oexbsffepplhhhzhyxpy.supabase.co';
   const SUPA_KEY = 'sb_publishable_GgYdLTverVrWPYq93O6pmA_NJ4olWQ5';
-  const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+  let db; // assigned inside init() after CDN guard — avoids top-level throw if supabase CDN fails
 
   /* â”€â”€ Single exhibition prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const PROMPT = 'What movement helps you negotiate with pain?';
@@ -188,19 +188,23 @@
     log('Init started');
     setLoadingStatus('Starting up…', '');
 
-    // Step 1: verify CDN scripts loaded
+    // Step 1: verify CDN scripts loaded (tf, poseDetection, supabase)
     log('Step 1/5 — checking dependencies…');
     setLoadingStatus('Checking dependencies…', '');
-    if (typeof tf === 'undefined' || typeof poseDetection === 'undefined') {
-      const missing = typeof tf === 'undefined' ? 'TensorFlow.js' : 'pose-detection';
-      log('ERROR: ' + missing + ' script not loaded (CDN failure?)', 'err');
-      setLoadingStatus('Could not load ' + missing, 'check your connection and reload');
+    const missingLib = typeof tf === 'undefined' ? 'TensorFlow.js'
+                     : typeof poseDetection === 'undefined' ? 'pose-detection'
+                     : typeof supabase === 'undefined' ? 'Supabase'
+                     : null;
+    if (missingLib) {
+      log('ERROR: ' + missingLib + ' script not loaded (CDN failure?)', 'err');
+      setLoadingStatus('Could not load ' + missingLib, 'check your connection and reload');
       document.getElementById('g-error-text').textContent =
-        missing + ' failed to load. Check your connection and reload.';
+        missingLib + ' failed to load. Check your connection and reload.';
       setState('error');
       return;
     }
-    log('TF.js v' + (tf.version_core || tf.version?.tfjs || '?') + ' and poseDetection confirmed', 'ok');
+    db = supabase.createClient(SUPA_URL, SUPA_KEY);
+    log('TF.js v' + (tf.version_core || tf.version?.tfjs || '?') + ', poseDetection, supabase confirmed', 'ok');
     setLoadingStatus('Dependencies loaded', '');
 
     currentPrompt = PROMPT;
@@ -236,7 +240,7 @@
     log('Ready — pose detection active', 'ok');
 
     // Load custom skeleton assets in background â€” overlay degrades gracefully until ready
-    import('./custom-skel-draw.js?v=6')
+    import('./custom-skel-draw.js?v=7')
       .then(m => m.loadCustomSkel('assets/skel/'))
       .then(skel => {
         customSkel = skel;
@@ -772,7 +776,14 @@
   window.addEventListener('resize', resizeOverlay);
 
   /* â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  init();
+  init().catch(e => {
+    console.error('[gesture] Unhandled init error:', e);
+    const el = document.getElementById('g-loading-status') || document.querySelector('.g-loading-text');
+    if (el) el.textContent = 'Startup error: ' + e.message;
+    const errEl = document.getElementById('g-error-text');
+    if (errEl) errEl.textContent = 'Startup error: ' + e.message + '. Please reload.';
+    setState('error');
+  });
 })();
 
 

@@ -574,6 +574,19 @@
     if (new URLSearchParams(location.search).has('debug')) {
       document.getElementById('g-debug').style.display = 'block';
     }
+    // Catch any uncaught error from the gesture module and display it in the loading text
+    // so the user sees a readable message rather than a frozen "Loading body tracking" screen.
+    window.addEventListener('error', function(e) {
+      var el = document.getElementById('g-loading-status') || document.querySelector('.g-loading-text');
+      if (el) el.textContent = 'Error: ' + (e.message || 'unknown');
+      console.error('[gesture html] caught error:', e.message, e.filename, e.lineno);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      var el = document.getElementById('g-loading-status') || document.querySelector('.g-loading-text');
+      var msg = e.reason && e.reason.message ? e.reason.message : String(e.reason);
+      if (el) el.textContent = 'Error: ' + msg;
+      console.error('[gesture html] unhandled rejection:', msg);
+    });
   </script>
 
   <!-- TF.js full bundle (includes core, webgl backend, converter) + MoveNet -->
@@ -582,7 +595,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <!-- Gesture logic -->
-  <script type="module" src="js/gesture.js?v=6"></script>
+  <script type="module" src="js/gesture.js?v=7"></script>
 
 </body>
 </html>
