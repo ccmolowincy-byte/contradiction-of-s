@@ -331,6 +331,7 @@ export async function initGarden(canvas, options = {}) {
         materials:   [{ mat: spriteMat, targetAlpha: 0.80 }],
         boneTex:     tex,
         isLegacy:    false,
+        sprite,
         skelFrames,
         skelCanvas:  oc,
         skelCtx:     octx,
@@ -500,15 +501,27 @@ export async function initGarden(canvas, options = {}) {
   function _layout(instant = false) {
     const N = ribbons.length;
     if (N === 0) return;
+
+    // ── Adaptive garden scale ────────────────────────────────────────────
+    // Sprite scale: √(10/N) keeps baseline at N=10 and grows for fewer entries.
+    // Clamped: 0.70× (large archives) to 1.75× (1–3 entries).
+    const spriteScaleMult = Math.max(0.70, Math.min(1.75, Math.sqrt(10 / Math.max(1, N))));
+    // Radius range: wider spread for few entries, settles for large archives.
+    const adaptMaxR = Math.max(2.4, Math.min(3.5, 3.5 - N * 0.05));
+
     ribbons.forEach((r, i) => {
       // Full radius range always used: 2 entries = min vs max, N entries fill evenly.
       // This spreads few entries wide; many entries pack naturally via the golden angle.
       const frac   = N <= 1 ? 0.5 : i / (N - 1);
-      const radius = MIN_R + frac * (MAX_R - MIN_R);
+      const radius = MIN_R + frac * (adaptMaxR - MIN_R);
       const angle  = i * GOLDEN;
       r.targetX = Math.max(-1.0, Math.min(1.0, Math.cos(angle) * radius));
       r.targetZ = Math.sin(angle) * radius;
       r.baseY   = (1 - frac) * 0.8;
+      // Scale the sprite to match current archive density
+      if (r.skelSprite) {
+        r.skelSprite.scale.set(1.10 * spriteScaleMult, 2.75 * spriteScaleMult, 1.0);
+      }
       if (instant) {
         r.group.position.x = r.targetX;
         r.group.position.z = r.targetZ;
@@ -520,7 +533,7 @@ export async function initGarden(canvas, options = {}) {
     const result = _buildTrace(trace);
     if (!result) return;
 
-    const { group, materials, boneTex, isLegacy,
+    const { group, materials, boneTex, isLegacy, sprite,
             skelFrames, skelCanvas, skelCtx, skelSeed } = result;
     gardenGroup.add(group);
     group.position.set(0, 0, 0);
@@ -542,6 +555,7 @@ export async function initGarden(canvas, options = {}) {
       skelCanvas:     skelCanvas  ?? null,
       skelCtx:        skelCtx     ?? null,
       skelSeed:       skelSeed    ?? 0,
+      skelSprite:     sprite      ?? null,
       lastDrawnFrame: -1,
       skelSettled:    false,
     };
