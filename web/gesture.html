@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
   <title>Record â€” Pain Archive</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&family=IM+Fell+English:ital@0;1&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -463,9 +463,11 @@
       gap: 4px;
       text-decoration: none;
       color: rgba(200,216,224,0.30);
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 9px;
-      letter-spacing: 0.10em;
+      font-family: 'Cormorant Garamond', 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.04em;
       -webkit-tap-highlight-color: transparent;
     }
     .nav-item svg { width: 20px; height: 20px; opacity: 0.45; }
@@ -560,11 +562,24 @@
       Home
     </a>
     <a href="gesture.html" class="nav-item active">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 100 10A5 5 0 0012 2zm0 12c-5.33 0-8 2.67-8 4v1h16v-1c0-1.33-2.67-4-8-4z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path d="M13,2 C17.5,2 17.5,8 13,11 C8.5,14 8.5,20 13,22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <polygon points="4.5,0.5 6.2,3.5 9,3 6.8,5.5 7.5,8.5 4.5,7.2 1.5,8.5 2.2,5.5 0,3 2.8,3.5" fill="currentColor"/>
+        <polygon points="20,15.5 21,17.5 23,17.2 21.5,18.8 22.2,21 20,19.8 17.8,21 18.5,18.8 17,17.2 19,17.5" fill="currentColor"/>
+      </svg>
       Record
     </a>
     <a href="ar.html" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6l3 1v7l-3.5 2L1 13l2-1V6zm3.5 8.5L9 16v-2l-2.5-1.5zM13 4l-4.5 1.5v2L13 6v10l-4.5-1.5v2L13 18l7-2V6l-7-2zm5.5 10L16 15.5v-7L18.5 7v7z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <g transform="translate(12,12)">
+          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(0)"/>
+          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(72)"/>
+          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(144)"/>
+          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(216)"/>
+          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(288)"/>
+          <circle cx="0" cy="0" r="1.8" fill="currentColor" stroke="none"/>
+        </g>
+      </svg>
       Archive
     </a>
   </nav>

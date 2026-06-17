@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Space+Grotesk:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&family=IM+Fell+English:ital@0;1&family=Space+Grotesk:wght@300;400;500;600&display=swap');
 
 /* ── Design tokens ── */
 :root {
@@ -109,11 +109,11 @@ body::before {
   background: none;
   border: none;
   color: rgba(255,255,255,0.45);
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family: 'Cormorant Garamond', 'IM Fell English', Georgia, serif;
+  font-style: italic;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   gap: 3px;
   padding: 8px 4px 12px;
   transition: color 0.15s;

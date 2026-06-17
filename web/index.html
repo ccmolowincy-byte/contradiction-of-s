@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
   <title>Contradiction of S</title>
 
-  <!-- Calligraphic title font — closest web match to the handwritten examples -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css">
   <style>
@@ -22,7 +21,6 @@
       overflow: hidden;
     }
 
-    /* Only one variation shown at a time */
     .variation {
       position: absolute;
       inset: 0;
@@ -30,7 +28,6 @@
     }
     .variation.active { display: block; }
 
-    /* Figure PNG — constrained to bottom 62% so top zone stays clear for title/stars */
     .v-fig {
       position: absolute;
       bottom: 0; left: 0;
@@ -42,24 +39,22 @@
       pointer-events: none;
     }
 
-    /* Handwritten title — Pinyon Script, dark crimson */
+    /* Feminine Uncanny — Cormorant Garamond italic, crimson */
     .v-title {
       position: absolute;
-      font-family: 'Pinyon Script', Georgia, cursive;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
       color: #891818;
       line-height: 1.15;
       pointer-events: none;
       user-select: none;
       z-index: 10;
-      text-shadow:
-        0 0 18px rgba(240,234,224,0.95),
-        0 2px 6px rgba(80,10,10,0.22);
     }
-    .v-t1 { display: block; font-size: 8vw; }
+    .v-t1 { display: block; font-size: 5vw; letter-spacing: 0.28em; text-transform: uppercase; }
     .v-t2 { display: block; font-size: 9vw; }
-    .v-t3 { display: block; font-size: 20vw; letter-spacing: 0.02em; }
+    .v-t3 { display: block; font-size: 20vw; letter-spacing: 0.01em; }
 
-    /* Enter button — dark red star PNG, fully tappable */
     .v-enter {
       position: absolute;
       display: block;
@@ -72,7 +67,6 @@
       mix-blend-mode: multiply;
     }
 
-    /* Hand-drawn star stickers */
     .v-star {
       position: absolute;
       pointer-events: none;
@@ -89,32 +83,32 @@
 
   <div id="home-stage">
 
-    <!-- ── Variation 1 ── three-figure group, lower centre ──────────────── -->
+    <!-- ── Variation 1 ── three-figure group ─────────────────────────────── -->
     <div class="variation" id="v1">
       <img class="v-fig" src="assets/home/figure1.png" alt="">
 
-      <!-- Stars -->
-      <div class="v-star" style="left:1%;  top:4%;  width:18%; transform:rotate(-12deg);">
+      <!-- Stars — right side; enter occupies top-left -->
+      <div class="v-star" style="right:0%;  top:3%;  width:15%; transform:rotate(-12deg);">
         <img src="assets/stars/star1.png" alt="">
       </div>
-      <div class="v-star" style="right:0%;  top:0%;  width:7%;  transform:rotate(22deg);">
+      <div class="v-star" style="right:0%;  top:22%; width:7%;  transform:rotate(22deg);">
         <img src="assets/stars/star5.png" alt="">
       </div>
-      <div class="v-star" style="left:0%;  top:38%; width:10%; transform:rotate(38deg);">
+      <div class="v-star" style="left:0%;   top:40%; width:10%; transform:rotate(38deg);">
         <img src="assets/stars/star2.png" alt="">
       </div>
 
-      <!-- Title: upper right, right-aligned -->
-      <div class="v-title" style="right:4%; top:7%; text-align:right;">
+      <!-- Enter star — top-left -->
+      <a class="v-enter" href="gesture.html" style="left:3%; top:4%; width:24%;">
+        <img src="assets/home/enter.png" alt="Enter">
+      </a>
+
+      <!-- Title — top-right, right-aligned, clear of enter -->
+      <div class="v-title" style="right:4%; left:30%; top:4%; text-align:right;">
         <span class="v-t1">The</span>
         <span class="v-t2">Contradiction</span>
         <span class="v-t3">of S</span>
       </div>
-
-      <!-- Enter star -->
-      <a class="v-enter" href="gesture.html" style="right:3%; top:50%; width:38%;">
-        <img src="assets/home/enter.png" alt="Enter">
-      </a>
     </div>
 
 
@@ -122,28 +116,28 @@
     <div class="variation" id="v2">
       <img class="v-fig" src="assets/home/figure2.png" alt="">
 
-      <!-- Stars -->
-      <div class="v-star" style="left:2%;  top:5%;  width:14%; transform:rotate(-35deg);">
+      <!-- Stars — right side; enter occupies top-left -->
+      <div class="v-star" style="right:2%;  top:5%;  width:13%; transform:rotate(35deg);">
         <img src="assets/stars/star2.png" alt="">
       </div>
-      <div class="v-star" style="left:2%;  top:25%; width:9%;  transform:rotate(15deg);">
+      <div class="v-star" style="right:2%;  top:24%; width:9%;  transform:rotate(-15deg);">
         <img src="assets/stars/star1.png" alt="">
       </div>
-      <div class="v-star" style="left:-2%; top:43%; width:16%; transform:rotate(28deg);">
+      <div class="v-star" style="left:-2%;  top:43%; width:16%; transform:rotate(28deg);">
         <img src="assets/stars/star5.png" alt="">
       </div>
 
-      <!-- Title: upper right, right-aligned -->
-      <div class="v-title" style="right:4%; top:7%; text-align:right;">
+      <!-- Enter star — top-left -->
+      <a class="v-enter" href="gesture.html" style="left:3%; top:4%; width:24%;">
+        <img src="assets/home/enter.png" alt="Enter">
+      </a>
+
+      <!-- Title — top-right, right-aligned -->
+      <div class="v-title" style="right:4%; left:30%; top:4%; text-align:right;">
         <span class="v-t1">The</span>
         <span class="v-t2">Contradiction</span>
         <span class="v-t3">of S</span>
       </div>
-
-      <!-- Enter star -->
-      <a class="v-enter" href="gesture.html" style="right:3%; top:49%; width:38%;">
-        <img src="assets/home/enter.png" alt="Enter">
-      </a>
     </div>
 
 
@@ -151,28 +145,28 @@
     <div class="variation" id="v3">
       <img class="v-fig" src="assets/home/figure3.png" alt="">
 
-      <!-- Stars -->
+      <!-- Stars — left side; enter occupies top-right -->
       <div class="v-star" style="left:0%;  top:2%;  width:7%;  transform:rotate(-45deg);">
         <img src="assets/stars/star4.png" alt="">
       </div>
-      <div class="v-star" style="right:0%; top:0%;  width:18%; transform:rotate(14deg);">
+      <div class="v-star" style="left:-2%; top:28%; width:16%; transform:rotate(14deg);">
         <img src="assets/stars/star3.png" alt="">
       </div>
-      <div class="v-star" style="right:4%; top:17%; width:10%; transform:rotate(-8deg);">
+      <div class="v-star" style="left:3%;  top:18%; width:9%;  transform:rotate(-8deg);">
         <img src="assets/stars/star1.png" alt="">
       </div>
 
-      <!-- Title: upper left, left-aligned -->
-      <div class="v-title" style="left:3%; top:8%; text-align:left;">
+      <!-- Enter star — top-right -->
+      <a class="v-enter" href="gesture.html" style="right:3%; top:4%; width:24%;">
+        <img src="assets/home/enter.png" alt="Enter">
+      </a>
+
+      <!-- Title — top-left, left-aligned -->
+      <div class="v-title" style="left:4%; right:30%; top:4%; text-align:left;">
         <span class="v-t1">The</span>
         <span class="v-t2">Contradiction</span>
         <span class="v-t3">of S</span>
       </div>
-
-      <!-- Enter star -->
-      <a class="v-enter" href="gesture.html" style="left:30%; top:47%; width:38%;">
-        <img src="assets/home/enter.png" alt="Enter">
-      </a>
     </div>
 
 
@@ -180,28 +174,28 @@
     <div class="variation" id="v4">
       <img class="v-fig" src="assets/home/figure4.png" alt="">
 
-      <!-- Stars -->
-      <div class="v-star" style="left:-2%; top:8%;  width:14%; transform:rotate(20deg);">
+      <!-- Stars — right side; enter occupies top-left -->
+      <div class="v-star" style="right:1%;  top:8%;  width:12%; transform:rotate(20deg);">
         <img src="assets/stars/star4.png" alt="">
       </div>
-      <div class="v-star" style="right:1%; top:2%;  width:8%;  transform:rotate(-15deg);">
+      <div class="v-star" style="right:1%;  top:2%;  width:8%;  transform:rotate(-15deg);">
         <img src="assets/stars/star5.png" alt="">
       </div>
-      <div class="v-star" style="right:2%; top:53%; width:11%; transform:rotate(10deg);">
+      <div class="v-star" style="right:2%;  top:52%; width:11%; transform:rotate(10deg);">
         <img src="assets/stars/star1.png" alt="">
       </div>
 
-      <!-- Title: upper right, right-aligned -->
-      <div class="v-title" style="right:4%; top:7%; text-align:right;">
+      <!-- Enter star — top-left -->
+      <a class="v-enter" href="gesture.html" style="left:3%; top:4%; width:24%;">
+        <img src="assets/home/enter.png" alt="Enter">
+      </a>
+
+      <!-- Title — top-right, right-aligned -->
+      <div class="v-title" style="right:4%; left:30%; top:4%; text-align:right;">
         <span class="v-t1">The</span>
         <span class="v-t2">Contradiction</span>
         <span class="v-t3">of S</span>
       </div>
-
-      <!-- Enter star -->
-      <a class="v-enter" href="gesture.html" style="right:3%; top:48%; width:38%;">
-        <img src="assets/home/enter.png" alt="Enter">
-      </a>
     </div>
 
 
@@ -209,7 +203,7 @@
     <div class="variation" id="v5">
       <img class="v-fig" src="assets/home/figure5.png" alt="">
 
-      <!-- Stars — upper-left cleared for enter button; star1 moved to mid-left -->
+      <!-- Stars — scattered, clear of top zone -->
       <div class="v-star" style="left:-2%; top:40%; width:12%; transform:rotate(-5deg);">
         <img src="assets/stars/star1.png" alt="">
       </div>
@@ -223,13 +217,13 @@
         <img src="assets/stars/star3.png" alt="">
       </div>
 
-      <!-- Enter star: LEFT of title (before "The"), matching Example 5 -->
-      <a class="v-enter" href="gesture.html" style="left:2%; top:3%; width:28%;">
+      <!-- Enter star — top-left -->
+      <a class="v-enter" href="gesture.html" style="left:2%; top:3%; width:24%;">
         <img src="assets/home/enter.png" alt="Enter">
       </a>
 
-      <!-- Title: upper area, left-aligned starting after enter star -->
-      <div class="v-title" style="left:33%; top:2%; text-align:left;">
+      <!-- Title — beside enter -->
+      <div class="v-title" style="left:27%; right:4%; top:2%; text-align:left;">
         <span class="v-t1">The</span>
         <span class="v-t2">Contradiction</span>
         <span class="v-t3">of S</span>
@@ -246,11 +240,24 @@
       Home
     </a>
     <a href="gesture.html" class="nav-item" aria-label="Record">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 100 10A5 5 0 0012 2zm0 12c-5.33 0-8 2.67-8 4v1h16v-1c0-1.33-2.67-4-8-4z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path d="M13,2 C17.5,2 17.5,8 13,11 C8.5,14 8.5,20 13,22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <polygon points="4.5,0.5 6.2,3.5 9,3 6.8,5.5 7.5,8.5 4.5,7.2 1.5,8.5 2.2,5.5 0,3 2.8,3.5" fill="currentColor"/>
+        <polygon points="20,15.5 21,17.5 23,17.2 21.5,18.8 22.2,21 20,19.8 17.8,21 18.5,18.8 17,17.2 19,17.5" fill="currentColor"/>
+      </svg>
       Record
     </a>
     <a href="ar.html" class="nav-item" aria-label="Archive">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6l3 1v7l-3.5 2L1 13l2-1V6zm3.5 8.5L9 16v-2l-2.5-1.5zM13 4l-4.5 1.5v2L13 6v10l-4.5-1.5v2L13 18l7-2V6l-7-2zm5.5 10L16 15.5v-7L18.5 7v7z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <g transform="translate(12,12)">
+          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(0)"/>
+          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(72)"/>
+          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(144)"/>
+          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(216)"/>
+          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(288)"/>
+          <circle cx="0" cy="0" r="1.8" fill="currentColor" stroke="none"/>
+        </g>
+      </svg>
       Archive
     </a>
   </nav>
