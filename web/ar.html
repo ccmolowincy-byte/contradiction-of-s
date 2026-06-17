@@ -355,6 +355,43 @@
       text-decoration: none;
       letter-spacing: 0.04em;
     }
+
+    /* â"€â"€ Landscape responsive layout â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
+    @media (orientation: landscape) {
+      /* Slim the nav bar to reclaim vertical space for the archive garden */
+      .bottom-nav {
+        height: 48px;
+      }
+      /* Hide text labels — keep only icons — in landscape */
+      .nav-item {
+        font-size: 0;
+        gap: 0;
+        padding: 0 20px;
+        justify-content: center;
+        align-items: center;
+      }
+      /* Stage tracks the slimmer nav */
+      #ar-stage {
+        bottom: 48px;
+      }
+      /* Compact controls so they don't crowd the short landscape viewport */
+      #ar-controls {
+        bottom: 10px;
+        gap: 20px;
+      }
+      #ar-capture-btn {
+        width: 52px; height: 52px;
+      }
+      #ar-capture-btn::after {
+        width: 38px; height: 38px;
+      }
+      #ar-switch-btn {
+        width: 34px; height: 34px;
+      }
+      #ar-draw-cta      { bottom: 64px; }
+      #ar-saved-msg     { bottom: 60px; }
+      #ar-debug         { bottom: 80px; }
+    }
   </style>
 </head>
 <body>
@@ -640,12 +677,21 @@
         .subscribe();
 
       setupOrientation();
-      window.addEventListener('resize', () => { if (garden) garden.resize(); });
-      // iOS fires orientationchange before dimensions settle; the 200 ms delay
-      // ensures resize() reads the correct post-rotation viewport size.
-      window.addEventListener('orientationchange', () => {
-        setTimeout(() => { if (garden) garden.resize(); }, 200);
-      });
+      // Debounced resize: both 'resize' and 'orientationchange' funnel into
+      // a single handler that fires 300 ms after the last event. This prevents
+      // repeated calls with stale/intermediate viewport dimensions that occur
+      // on iOS during the rotation animation, which caused sprite distortion
+      // after multiple orientation changes.
+      let _resizeTimer = null;
+      function _scheduleResize() {
+        clearTimeout(_resizeTimer);
+        _resizeTimer = setTimeout(() => {
+          _resizeTimer = null;
+          if (garden) garden.resize();
+        }, 300);
+      }
+      window.addEventListener('resize', _scheduleResize);
+      window.addEventListener('orientationchange', _scheduleResize);
       loadingEl.classList.remove('visible');
 
       // â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
