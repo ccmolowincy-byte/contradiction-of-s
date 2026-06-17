@@ -188,7 +188,18 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
     ctx.translate(hx, hy);
     ctx.rotate(rot);
 
-    // ── Stroke pass: petal outlines only (no fill — avoids solid block on dark bg)
+    // ── Fill pass: crimson inside each petal (safe — drawn directly to ctx, no offscreen canvas)
+    ctx.globalAlpha = alpha * 0.60;
+    PETAL_F.forEach((p, i) => {
+      const s = 1 + 0.18 * Math.sin(time * PETAL_FREQ[i] + p.a + seed * 0.65);
+      ctx.save(); ctx.rotate(p.a);
+      _ruffPath(ctx, R * p.l * s, R * p.w * s, p.lean);
+      ctx.fillStyle = 'rgba(210, 35, 35, 1)';
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // ── Stroke pass: petal outlines over the fill
     ctx.globalAlpha = alpha * 0.95;
     const sw = Math.max(1, R * 0.028);
     PETAL_F.forEach((p, i) => {
