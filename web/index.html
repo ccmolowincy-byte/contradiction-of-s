@@ -272,8 +272,27 @@
     var next = (parseInt(localStorage.getItem(key) || '0') % 5) + 1;
     localStorage.setItem(key, next);
     document.getElementById('v' + next).classList.add('active');
+
+    // Give the Enter button a longer exit window so star animation plays first
+    document.querySelectorAll('.v-enter').forEach(function (a) {
+      a.dataset.exitDelay = '420';
+    });
+
+    // Star scatter animation fires when Enter is clicked, before veil covers page
+    document.addEventListener('page-exit', function (e) {
+      if (!e.detail.trigger.classList.contains('v-enter')) return;
+      var activeVar = document.querySelector('.variation.active');
+      if (!activeVar) return;
+      activeVar.querySelectorAll('.v-star').forEach(function (star, i) {
+        var dir = (i % 2 === 0 ? 1 : -1);
+        star.style.transition = 'transform 0.4s ease-out, opacity 0.35s ease';
+        star.style.transform  = 'translateY(-55px) scale(1.25) rotate(' + (dir * 28) + 'deg)';
+        star.style.opacity    = '0';
+      });
+    });
   </script>
 
   <script src="js/app.js"></script>
+  <script src="js/transitions.js"></script>
 </body>
 </html>
