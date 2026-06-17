@@ -221,7 +221,7 @@ export async function initGarden(canvas, options = {}) {
 
     if (customSkel) {
       /* â”€â”€ Sprite + CanvasTexture path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-      const CW = 256, CH = 480;   // portrait canvas — taller to give petals room above head
+      const CW = 256, CH = 640;   // portrait canvas — tall enough to always clear petal aura above head
       const oc  = document.createElement('canvas');
       oc.width  = CW; oc.height = CH;
       const octx = oc.getContext('2d');
@@ -241,7 +241,7 @@ export async function initGarden(canvas, options = {}) {
         blending:    THREE.AdditiveBlending,
       });
       const sprite = new THREE.Sprite(spriteMat);
-      sprite.scale.set(1.10, 2.063, 1.0);  // matches 256×480 canvas aspect, ~2× taller in world space
+      sprite.scale.set(1.10, 2.75, 1.0);   // matches 256×640 canvas aspect (1.10 / (256/640))
 
       const group = new THREE.Group();
       group.add(sprite);
