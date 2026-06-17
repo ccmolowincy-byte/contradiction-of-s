@@ -10,7 +10,7 @@
   let db; // assigned inside init() after CDN guard — avoids top-level throw if supabase CDN fails
 
   /* â”€â”€ Single exhibition prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const PROMPT = 'What movement helps you negotiate with pain?';
+  const PROMPT = 'Show a movement you use to cope with physical pain.';
 
   /* â”€â”€ Recording constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const RECORD_DURATION = 20;   // seconds
