@@ -126,7 +126,7 @@ export async function initGarden(canvas, options = {}) {
   /* â”€â”€ Scene & camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(72, W / H, 0.01, 100);
-  camera.position.set(0, 2.0, 6.0);
+  camera.position.set(0, 2.0, 4.5);
   camera.lookAt(0, -0.5, 0);
 
   /* â”€â”€ Lighting â€” cool X-ray palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -201,7 +201,7 @@ export async function initGarden(canvas, options = {}) {
       const refY = hipOk ? (lHip.y + rHip.y) / 2
                          : (shOk ? (lSh.y + rSh.y) / 2 + 0.14 : 0.60);
       anchorDX = 0.50 - refX;         // centre body horizontally
-      anchorDY = 0.82 - refY;         // place hip/waist at 82% canvas height — head gets room for petals above
+      anchorDY = 0.86 - refY;         // place hip/waist at 86% canvas height — more room above for petals
     }
     const skelFrames = renderFrames.map(frame => ({
       kp: frame.kp.map(kp => ({
@@ -221,7 +221,7 @@ export async function initGarden(canvas, options = {}) {
 
     if (customSkel) {
       /* â”€â”€ Sprite + CanvasTexture path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-      const CW = 256, CH = 320;   // portrait canvas â€” 4:5 ratio
+      const CW = 256, CH = 480;   // portrait canvas — taller to give petals room above head
       const oc  = document.createElement('canvas');
       oc.width  = CW; oc.height = CH;
       const octx = oc.getContext('2d');
@@ -241,7 +241,7 @@ export async function initGarden(canvas, options = {}) {
         blending:    THREE.AdditiveBlending,
       });
       const sprite = new THREE.Sprite(spriteMat);
-      sprite.scale.set(1.10, 1.38, 1.0);   // portrait proportions — sized to stay within frustum
+      sprite.scale.set(1.10, 2.063, 1.0);  // matches 256×480 canvas aspect, ~2× taller in world space
 
       const group = new THREE.Group();
       group.add(sprite);
