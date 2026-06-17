@@ -6,23 +6,15 @@
 (function () {
   'use strict';
 
-  /* ── Prompts — 15 pain-gesture entries ──────────────────────────────────── */
+  /* ── Prompts ─────────────────────────────────────────────────────────────── */
   const PROMPTS = [
-    'Draw the shape your pain takes. Again.',
-    'Draw the same mark, twelve times.',
-    'Draw what rest looks like in your body.',
-    'Draw the path discomfort travels today.',
-    'Draw a movement your spine remembers.',
-    'Draw the shape of a good day.',
-    'Draw what bracing feels like from the inside.',
-    'Draw the motion that brings you relief.',
-    'Draw your body\'s most repeated gesture.',
-    'Draw a curve that knows you.',
-    'Draw something your physiotherapist has never seen.',
-    'Draw the movement you return to.',
-    'Draw the weight of an ordinary morning.',
-    'Draw what your body is asking for right now.',
-    'Draw the space between pain and not-pain.',
+    'Draw the same mark, again and again.',
+    'Trace the curve your body makes.',
+    'Draw the movement that helps.',
+    'Make the gesture slowly. Then slower.',
+    'Draw what your hand does without thinking.',
+    'Trace where it holds right now.',
+    'Draw the path of a breath.',
   ];
 
   /* ── Spinal palette — 6 tones from X-ray / scoliosis imagery ───────────── */
