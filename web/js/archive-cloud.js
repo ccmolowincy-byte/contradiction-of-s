@@ -216,12 +216,79 @@ export async function initGarden(canvas, options = {}) {
       anchorDX = 0.50 - refX;   // centre average body position horizontally
       anchorDY = 0.86 - refY;   // place average hip at 86% canvas height
     }
+    // ── Scale-to-fit: compute the full animation bounding box across ALL
+    // frames — skeleton joints AND the petal/flower-head envelope — then
+    // scale the figure down if anything would be clipped. This guarantees
+    // zero clipping regardless of gesture size, movement range, or entry count.
+    const _CW = 384, _CH = 960, _PAD = 20;
+    let fitScale = 1.0, pivotNX = 0.50, pivotNY = 0.60;
+    {
+      let bMinX = Infinity, bMaxX = -Infinity;
+      let bMinY = Infinity, bMaxY = -Infinity;
+
+      renderFrames.forEach(frame => {
+        // Anchor-shifted keypoints mapped to estimated canvas pixels
+        const pts = frame.kp.map(k => ({
+          x: ((k.x ?? 0) + anchorDX) * _CW,
+          y: ((k.y ?? 0) + anchorDY) * _CH,
+          s: k.s ?? k.score ?? 0,
+        }));
+
+        // Include every visible skeleton joint
+        pts.forEach(p => {
+          if (p.s > 0.10) {
+            if (p.x < bMinX) bMinX = p.x;
+            if (p.x > bMaxX) bMaxX = p.x;
+            if (p.y < bMinY) bMinY = p.y;
+            if (p.y > bMaxY) bMaxY = p.y;
+          }
+        });
+
+        // Include petal + flower-head envelope (full circle around head centre)
+        // Mirrors _headCenter() and hy-clamp logic from custom-skel-draw.js
+        const lSh = pts[5], rSh = pts[6];
+        if (lSh && rSh && lSh.s > 0.10 && rSh.s > 0.10) {
+          const sPx  = Math.hypot(rSh.x - lSh.x, rSh.y - lSh.y);
+          const midX = (lSh.x + rSh.x) / 2;
+          const midY = (lSh.y + rSh.y) / 2;
+          const nose = pts[0];
+          const hx   = (nose && nose.s > 0.12) ? nose.x * 0.60 + midX * 0.40 : midX;
+          const hyR  = (nose && nose.s > 0.12) ? nose.y - sPx * 0.35 : midY - sPx * 0.55;
+          const hy   = Math.max(sPx * 2.8 + 4, hyR);  // mirror hy-clamp in draw()
+          // Max petal reach = R(1.6) × l_max(1.42) × s_max(1.18) ≈ 2.68×shoulderPx
+          // Use 2.8× as a safe envelope covering all 6 petal directions
+          const pr   = sPx * 2.8;
+          if (hx - pr < bMinX) bMinX = hx - pr;
+          if (hx + pr > bMaxX) bMaxX = hx + pr;
+          if (hy - pr < bMinY) bMinY = hy - pr;
+          if (hy + pr > bMaxY) bMaxY = hy + pr;
+        }
+      });
+
+      if (bMinX < Infinity) {
+        const bboxW = bMaxX - bMinX;
+        const bboxH = bMaxY - bMinY;
+        const avW   = _CW - 2 * _PAD;
+        const avH   = _CH - 2 * _PAD;
+        if (bboxW > avW || bboxH > avH) {
+          fitScale = Math.min(avW / bboxW, avH / bboxH);
+        }
+        // Scale pivot: bounding-box centre in normalised coords
+        pivotNX = ((bMinX + bMaxX) / 2) / _CW;
+        pivotNY = ((bMinY + bMaxY) / 2) / _CH;
+      }
+    }
+
     const skelFrames = renderFrames.map(frame => ({
-      kp: frame.kp.map(kp => ({
-        ...kp,
-        x: kp.x + anchorDX,
-        y: kp.y + anchorDY,
-      })),
+      kp: frame.kp.map(kp => {
+        const nx = (kp.x ?? 0) + anchorDX;
+        const ny = (kp.y ?? 0) + anchorDY;
+        return {
+          ...kp,
+          x: pivotNX + (nx - pivotNX) * fitScale,
+          y: pivotNY + (ny - pivotNY) * fitScale,
+        };
+      }),
     }));
 
     // Per-contributor seed â€” offsets petal drift so each entry looks distinct
