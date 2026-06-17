@@ -189,19 +189,32 @@ export async function initGarden(canvas, options = {}) {
       renderFrames.push(frames[Math.min(idx, N - 1)]);
     }
 
-    // â”€â”€ Root-anchor: compute translation from first frame so body stays
-    // spatially fixed during replay â€” only limb movement is visible.
+    // â”€â”€ Root-anchor: average body position across ALL animation frames so the
+    // figure stays centred on canvas throughout playback.
+    // Previously only frame 0 was used â€” any frame where the body had shifted
+    // from its frame-0 position would push limbs outside the canvas boundaries.
     let anchorDX = 0, anchorDY = 0;
     if (renderFrames.length > 0) {
-      const fk = renderFrames[0].kp;
-      const lSh = fk[5], rSh = fk[6], lHip = fk[11], rHip = fk[12];
-      const shOk  = lSh  && rSh  && (lSh.s  ?? 0) > 0.15 && (rSh.s  ?? 0) > 0.15;
-      const hipOk = lHip && rHip && (lHip.s ?? 0) > 0.15 && (rHip.s ?? 0) > 0.15;
-      const refX = shOk  ? (lSh.x + rSh.x) / 2 : 0.50;
-      const refY = hipOk ? (lHip.y + rHip.y) / 2
-                         : (shOk ? (lSh.y + rSh.y) / 2 + 0.14 : 0.60);
-      anchorDX = 0.50 - refX;         // centre body horizontally
-      anchorDY = 0.86 - refY;         // place hip/waist at 86% canvas height — more room above for petals
+      let sumX = 0, sumY = 0, count = 0;
+      renderFrames.forEach(frame => {
+        const kp = frame.kp;
+        const lSh = kp[5], rSh = kp[6], lHip = kp[11], rHip = kp[12];
+        const shOk  = lSh  && rSh  && (lSh.s  ?? 0) > 0.15 && (rSh.s  ?? 0) > 0.15;
+        const hipOk = lHip && rHip && (lHip.s ?? 0) > 0.15 && (rHip.s ?? 0) > 0.15;
+        if (hipOk) {
+          sumX += (lHip.x + rHip.x) / 2;
+          sumY += (lHip.y + rHip.y) / 2;
+          count++;
+        } else if (shOk) {
+          sumX += (lSh.x + rSh.x) / 2;
+          sumY += (lSh.y + rSh.y) / 2 + 0.14;
+          count++;
+        }
+      });
+      const refX = count > 0 ? sumX / count : 0.50;
+      const refY = count > 0 ? sumY / count : 0.60;
+      anchorDX = 0.50 - refX;   // centre average body position horizontally
+      anchorDY = 0.86 - refY;   // place average hip at 86% canvas height
     }
     const skelFrames = renderFrames.map(frame => ({
       kp: frame.kp.map(kp => ({
