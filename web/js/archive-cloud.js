@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { loadCustomSkel } from './custom-skel-draw.js?v=13';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
-const MAX_R    = 2.0;
+const MAX_R    = 2.8;
 const MAX_TRAC = 200;
 
 /* â”€â”€ MoveNet 17-keypoint connections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -125,7 +125,7 @@ export async function initGarden(canvas, options = {}) {
 
   /* â”€â”€ Scene & camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(65, W / H, 0.01, 100);
+  const camera = new THREE.PerspectiveCamera(72, W / H, 0.01, 100);
   camera.position.set(0, 2.0, 6.0);
   camera.lookAt(0, -0.5, 0);
 
@@ -421,13 +421,14 @@ export async function initGarden(canvas, options = {}) {
     const N = ribbons.length;
     if (N === 0) return;
     ribbons.forEach((r, i) => {
-      // (i + 0.5) / N spreads N entries evenly with no entry at radius 0
-      const frac   = (i + 0.5) / N;
+      // Full radius range always used: 2 entries = min vs max, N entries fill evenly.
+      // This spreads few entries wide; many entries pack naturally via the golden angle.
+      const frac   = N <= 1 ? 0.5 : i / (N - 1);
       const radius = MIN_R + frac * (MAX_R - MIN_R);
       const angle  = i * GOLDEN;
-      r.targetX = Math.max(-0.85, Math.min(0.85, Math.cos(angle) * radius));
+      r.targetX = Math.max(-1.0, Math.min(1.0, Math.cos(angle) * radius));
       r.targetZ = Math.sin(angle) * radius;
-      r.baseY   = (1 - (i + 0.5) / N) * 0.8;
+      r.baseY   = (1 - frac) * 0.8;
       if (instant) {
         r.group.position.x = r.targetX;
         r.group.position.z = r.targetZ;
