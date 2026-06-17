@@ -10,7 +10,7 @@
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js?v=14';
+import { loadCustomSkel } from './custom-skel-draw.js?v=15';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
 const MAX_R    = 2.8;
@@ -221,7 +221,7 @@ export async function initGarden(canvas, options = {}) {
 
     if (customSkel) {
       /* â”€â”€ Sprite + CanvasTexture path â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-      const CW = 256, CH = 640;   // portrait canvas — tall enough to always clear petal aura above head
+      const CW = 384, CH = 960;   // wider for wide gestures, taller for petal headroom (0.4 ratio matches sprite)
       const oc  = document.createElement('canvas');
       oc.width  = CW; oc.height = CH;
       const octx = oc.getContext('2d');

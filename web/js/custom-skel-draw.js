@@ -181,7 +181,7 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
   function _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, time) {
     if (alpha < 0.005) return;
 
-    const R   = shoulderPx * 1.2;
+    const R   = shoulderPx * 1.6;  // restored — larger canvas + hy-clamp in draw() prevents cropping
     const rot = Math.sin(time * 0.35 + seed * 1.8) * 0.12;
 
     ctx.save();
@@ -306,10 +306,12 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
         ? Math.hypot(rSh.x - lSh.x, rSh.y - lSh.y)
         : W * 0.28;   // sensible fallback if shoulders not visible
 
-      const { x: hx, y: hy } = _headCenter(pts, shoulderPx);
+      const rawHead = _headCenter(pts, shoulderPx);
+      const hx = rawHead.x;
+      // Clamp hy so petals (R=1.6×shoulderPx, max reach ≈2.8× above hy) never exit canvas top
+      const hy = Math.max(shoulderPx * 2.8 + 4, rawHead.y);
 
       // ── Layer 1 (back): petal aura ────────────────────────────────────────
-      // Petal cloud is intentionally oversized — clipping at canvas edges is fine
       _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, t);
 
       // ── Layer 2: face/void oval — dark crimson, sways with petals
