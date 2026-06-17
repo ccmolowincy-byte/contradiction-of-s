@@ -402,6 +402,34 @@
       #ar-saved-msg     { bottom: 60px; }
       #ar-debug         { bottom: 80px; }
     }
+
+    /* -- Sculpture keyword overlay ------------------------------------ */
+    #sculpture-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 8;
+      overflow: hidden;
+    }
+    #sculpture-overlay.hidden { display: none; }
+    .sculpt-kw {
+      position: absolute;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 17px;
+      color: rgba(240,234,224,0.85);
+      letter-spacing: 0.03em;
+      opacity: 0;
+      animation: kw-drift var(--kd, 10s) ease-in-out var(--kq, 0s) infinite;
+      white-space: nowrap;
+    }
+    @keyframes kw-drift {
+      0%   { opacity: 0;    transform: translateY(5px);  }
+      14%  { opacity: 0.22;                              }
+      72%  { opacity: 0.22; transform: translateY(-5px); }
+      100% { opacity: 0;    transform: translateY(-8px); }
+    }
   </style>
 </head>
 <body>
@@ -413,6 +441,9 @@
 
     <!-- Three.js archive garden (alpha, layered over video) -->
     <canvas id="garden-canvas"></canvas>
+
+    <!-- Sculpture keyword overlay — populated when ?s=N is in URL -->
+    <div id="sculpture-overlay" class="hidden"></div>
 
     <!-- Gesture count â€” top centre -->
     <div id="ar-trace-count"></div>
@@ -537,6 +568,71 @@
     let currentFacing = 'environment';
     let traceCount = 0;
     let newTracePulseTimer = null;
+
+    /* -- Sculpture context (placeholder — swap keywords when sculptures finalised) */
+    const SCULPTURES = {
+      1: {
+        title: 'Movement I',
+        keywords: [
+          { word: 'adaptation',  top: '18%', left:  '8%'  },
+          { word: 'compression', top: '32%', right: '10%' },
+          { word: 'weight',      top: '52%', left:  '16%' },
+          { word: 'memory',      top: '42%', left:  '62%' },
+          { word: 'holding',     top: '67%', right: '14%' },
+        ],
+      },
+      2: {
+        title: 'Movement II',
+        keywords: [
+          { word: 'repetition',  top: '16%', right: '8%'  },
+          { word: 'negotiation', top: '38%', left:  '6%'  },
+          { word: 'fatigue',     top: '28%', left:  '54%' },
+          { word: 'reaching',    top: '60%', right: '12%' },
+          { word: 'adjustment',  top: '46%', left:  '22%' },
+        ],
+      },
+      3: {
+        title: 'Movement III',
+        keywords: [
+          { word: 'balance',    top: '22%', left:  '10%' },
+          { word: 'tension',    top: '44%', right: '8%'  },
+          { word: 'stretching', top: '33%', right: '24%' },
+          { word: 'return',     top: '62%', left:  '14%' },
+          { word: 'patience',   top: '50%', left:  '58%' },
+        ],
+      },
+      4: {
+        title: 'Movement IV',
+        keywords: [
+          { word: 'accumulation', top: '20%', right: '6%'  },
+          { word: 'release',      top: '40%', left:  '8%'  },
+          { word: 'gravity',      top: '28%', left:  '46%' },
+          { word: 'resistance',   top: '58%', right: '16%' },
+          { word: 'breath',       top: '70%', left:  '26%' },
+        ],
+      },
+    };
+
+    const _sculptureId = parseInt(new URLSearchParams(window.location.search).get('s')) || null;
+    const _sculpture   = _sculptureId ? (SCULPTURES[_sculptureId] || null) : null;
+
+    if (_sculpture) {
+      document.getElementById('ar-start-eyebrow').textContent = _sculpture.title;
+
+      const _overlay = document.getElementById('sculpture-overlay');
+      _overlay.classList.remove('hidden');
+      _sculpture.keywords.forEach((kw, i) => {
+        const span       = document.createElement('span');
+        span.className   = 'sculpt-kw';
+        span.textContent = kw.word;
+        if (kw.top)   span.style.top   = kw.top;
+        if (kw.left)  span.style.left  = kw.left;
+        if (kw.right) span.style.right = kw.right;
+        span.style.setProperty('--kd', (9 + i * 1.6) + 's');
+        span.style.setProperty('--kq', (i * 2.4)     + 's');
+        _overlay.appendChild(span);
+      });
+    }
 
     /* â”€â”€ Debug overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     const _debugMode  = new URLSearchParams(window.location.search).has('debug');
