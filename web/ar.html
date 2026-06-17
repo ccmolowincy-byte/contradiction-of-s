@@ -578,10 +578,14 @@
       // â”€â”€ Load traces from Supabase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       arLog('Loading archive from Supabase...');
       try {
+        // Fetch newest 120 entries so late-arriving visitors always see recent gestures.
+        // All data remains safe in Supabase — only the display window is capped here.
+        // Descending order + reverse gives loadBatch its expected oldest-first sequence
+        // so the newest entry lands at the garden centre as intended.
         const { data, error } = await db.from('pain_traces')
           .select('*')
-          .order('created_at', { ascending: true })
-          .limit(200);
+          .order('created_at', { ascending: false })
+          .limit(120);
 
         if (error) {
           arLog('Supabase error: ' + error.message);
@@ -592,7 +596,7 @@
         arLog('Loaded ' + n + ' trace' + (n === 1 ? '' : 's'));
 
         if (n > 0) {
-          garden.loadBatch(data);
+          garden.loadBatch([...data].reverse());
           updateCount(n);
           updateDebugOverlay(n);
         } else {
@@ -637,6 +641,11 @@
 
       setupOrientation();
       window.addEventListener('resize', () => { if (garden) garden.resize(); });
+      // iOS fires orientationchange before dimensions settle; the 200 ms delay
+      // ensures resize() reads the correct post-rotation viewport size.
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => { if (garden) garden.resize(); }, 200);
+      });
       loadingEl.classList.remove('visible');
 
       // â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -380,14 +380,16 @@
 
     /* â”€â”€ Load existing traces â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     try {
+      // Fetch newest 150 entries — projection screen always shows recent contributions.
+      // Descending + reverse preserves the oldest-first sequence loadBatch expects.
       const { data } = await db
         .from('pain_traces')
         .select('*')
-        .order('created_at', { ascending: true })
-        .limit(200);
+        .order('created_at', { ascending: false })
+        .limit(150);
 
       if (data?.length) {
-        garden.loadBatch(data);
+        garden.loadBatch([...data].reverse());
         updateCount(data.length);
       } else {
         updateCount(0);
