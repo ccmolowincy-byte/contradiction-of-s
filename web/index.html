@@ -16,7 +16,7 @@
     #home-stage {
       position: fixed;
       top: 0; left: 0; right: 0;
-      bottom: var(--nav-h, 60px);
+      bottom: var(--nav-h, 44px);
       background: var(--bg);
       overflow: hidden;
     }
@@ -24,76 +24,108 @@
     .variation { position: absolute; inset: 0; display: none; }
     .variation.active { display: block; }
 
-    /* Figure — fills bottom 82%; top 18% zone stays clear for title/enter */
+    /* ── Figure zone — top 69% ── */
+    .v-figure-zone {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 69%;
+      overflow: hidden;
+    }
     .v-fig {
       position: absolute;
       bottom: 0; left: 0;
-      width: 100%; height: 82%;
+      width: 100%; height: 100%;
       object-fit: contain;
       object-position: center bottom;
       display: block;
       pointer-events: none;
     }
 
-    /* ── Title ──────────────────────────────────────────────────────────────
-       Two spans only:
-         .v-ta  "The Contradiction of"  — one uniform size
-         .v-ts  "S"                     — single large accent
-    */
-    .v-title {
-      position: absolute;
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-style: italic;
-      font-weight: 300;
-      color: #891818;
-      line-height: 1.2;
-      pointer-events: none;
-      user-select: none;
-      z-index: 10;
-    }
-    .v-ta { display: block; font-size: 6.5vw; }
-    .v-ts { display: block; font-size: 20vw;  letter-spacing: 0.01em; }
-
-    /* ── Enter button ────────────────────────────────────────────────────── */
-    .v-enter {
-      position: absolute;
-      display: block;
-      -webkit-tap-highlight-color: transparent;
-      z-index: 20;
-    }
-    .v-enter img { width: 100%; height: auto; display: block; mix-blend-mode: multiply; }
-
-    /* ── Stars ───────────────────────────────────────────────────────────── */
+    /* ── Stars in figure zone ── */
     .v-star {
       position: absolute;
       pointer-events: none;
       user-select: none;
       z-index: 5;
     }
-    .v-star img { width: 100%; height: auto; display: block; animation: vstar-bob 7s ease-in-out infinite; }
+    .v-star img {
+      width: 100%; height: auto; display: block;
+      mix-blend-mode: multiply;
+      animation: vstar-bob 7s ease-in-out infinite;
+    }
     @keyframes vstar-bob {
       0%, 100% { transform: translateY(0); }
       50%       { transform: translateY(-6px); }
     }
-    .v-star + .v-star img                     { animation-delay: -2.3s; }
-    .v-star + .v-star + .v-star img           { animation-delay: -4.7s; }
-    .v-star + .v-star + .v-star + .v-star img { animation-delay: -1.5s; }
+    .v-star:nth-child(2) img { animation-delay: -2.3s; }
+    .v-star:nth-child(3) img { animation-delay: -4.7s; }
+    .v-star:nth-child(4) img { animation-delay: -1.5s; }
 
-    /* ── Landscape overrides ─────────────────────────────────────────────── */
-    /*
-      Problems in landscape:
-        • vw-based title/enter become huge (844px viewport width → 8vw = 67px)
-        • 24% wide enter on 844px = 203px element, ht ~200px → overflows figure
-      Fix:
-        • Clamp fonts to vh so they scale with stage HEIGHT not width
-        • Cap enter button so it can't overflow the top safe zone
-        • Shrink figure to 50% to create a taller safe zone (50% instead of 38%)
-    */
+    /* ── Caption strip — bottom 31% ── */
+    .v-caption-strip {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 31%;
+      background: #EDE5D6;
+      border-top: 1px solid rgba(137,24,24,.28);
+      display: flex;
+      align-items: stretch;
+      padding: clamp(4px,1.8vw,12px) clamp(6px,2.5vw,16px);
+      gap: clamp(4px,1.5vw,10px);
+      z-index: 10;
+    }
+    .v-caption-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .v-caption-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-shrink: 0;
+      padding: clamp(2px,1vw,6px) 0;
+    }
+
+    /* ── Title ── */
+    .v-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      color: #891818;
+      pointer-events: none;
+      user-select: none;
+    }
+    .v-ta { display: block; font-size: clamp(10px, 3.8vw, 18px); line-height: 1.2; white-space: nowrap; overflow: hidden; }
+    .v-ts { display: block; font-size: clamp(30px, 15vw, 68px); line-height: .82; letter-spacing: 0.01em; }
+
+    /* ── Stars in caption strip ── */
+    .v-star-caption {
+      pointer-events: none;
+      width: clamp(16px, 5.5vw, 28px);
+      flex-shrink: 0;
+    }
+    .v-star-caption img { width: 100%; height: auto; display: block; mix-blend-mode: multiply; }
+
+    /* ── Enter button ── */
+    .v-enter {
+      display: block;
+      width: clamp(50px, 22vw, 90px);
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .v-enter img { width: 100%; height: auto; display: block; mix-blend-mode: multiply; }
+
+    /* ── Landscape overrides ── */
     @media (orientation: landscape) {
-      .v-fig    { height: 50%; }
-      .v-ta     { font-size: min(6.5vw, 5.5vh); }
-      .v-ts     { font-size: min(20vw,  14vh);   }
-      .v-enter  { max-width: 72px; }
+      .v-figure-zone { height: 52%; }
+      .v-caption-strip { height: 48%; }
+      .v-ta { font-size: min(3.6vw, 4vh); }
+      .v-ts { font-size: min(13vw, 11.5vh); }
+      .v-enter { width: min(20vw, 80px); }
     }
   </style>
 </head>
@@ -101,176 +133,133 @@
 
   <div id="home-stage">
 
-    <!--
-      ZONE MAP (portrait)
-      ─────────────────────────────────────────────
-       0 – 4%   top margin
-       4 – 16%  [ ENTER btn   ] [ "The Contradiction of" ]
-      16 – 20%  [ ↑ enter end ] [ ↑ title line 1 end     ]
-      20 – 28%                   [ "S"                    ]
-      28 – 38%  STAR ZONE        [ ↑ title end            ]
-      38 – 100% FIGURE (62% h)
-      ─────────────────────────────────────────────
-      Stars live ONLY in the STAR ZONE (left col y:20-38%)
-      OR in the figure area at extreme edges.
-      Never in the enter button zone or title box.
-    -->
-
-    <!-- ── Variation 1 ─────────────────────────────────────────────────── -->
+    <!-- ── Variation 1 ── -->
     <div class="variation" id="v1">
-      <img class="v-fig" src="assets/home/figure1.png" alt="">
-
-      <!-- Stars: left column only, strictly below enter button -->
-      <div class="v-star" style="left:0%;  top:21%; width:11%; transform:rotate(-12deg);">
-        <img src="assets/stars/star2.png" alt="">
-      </div>
-      <div class="v-star" style="left:1%;  top:32%; width:8%;  transform:rotate(38deg);">
-        <img src="assets/stars/star5.png" alt="">
-      </div>
-      <div class="v-star" style="left:-1%; top:46%; width:12%; transform:rotate(-5deg);">
-        <img src="assets/stars/star1.png" alt="">
-      </div>
-
-      <a class="v-enter" href="gesture.html" style="left:3%; top:4%; width:24%;">
-        <img src="assets/home/enter.png" alt="Enter">
-      </a>
-      <div class="v-title" style="right:4%; left:30%; top:4%; text-align:right;">
-        <span class="v-ta">The Contradiction of</span>
-        <span class="v-ts">S</span>
+      <div class="v-figure-zone">
+        <img class="v-fig" src="assets/home/figure1.png" alt="">
+        <div class="v-star" style="left:0%;  top:4px;  width:11%; transform:rotate(-12deg);">
+          <img src="assets/stars/star2.png" alt="">
+        </div>
+        <div class="v-star" style="right:0%; top:4px;  width:9%;  transform:rotate(22deg);">
+          <img src="assets/stars/star3.png" alt="">
+        </div>
+        <div class="v-star" style="left:-1%; top:42%; width:12%; transform:rotate(-5deg);">
+          <img src="assets/stars/star1.png" alt="">
+        </div>
+        <div class="v-star" style="right:-1%;top:38%; width:10%; transform:rotate(34deg);">
+          <img src="assets/stars/star5.png" alt="">
+        </div>
       </div>
     </div>
 
-
-    <!-- ── Variation 2 ─────────────────────────────────────────────────── -->
+    <!-- ── Variation 2 ── -->
     <div class="variation" id="v2">
-      <img class="v-fig" src="assets/home/figure2.png" alt="">
-
-      <div class="v-star" style="left:0%;  top:22%; width:9%;  transform:rotate(-35deg);">
-        <img src="assets/stars/star2.png" alt="">
-      </div>
-      <div class="v-star" style="left:1%;  top:33%; width:7%;  transform:rotate(15deg);">
-        <img src="assets/stars/star1.png" alt="">
-      </div>
-      <div class="v-star" style="left:-2%; top:48%; width:13%; transform:rotate(28deg);">
-        <img src="assets/stars/star5.png" alt="">
-      </div>
-
-      <a class="v-enter" href="gesture.html" style="left:3%; top:4%; width:24%;">
-        <img src="assets/home/enter.png" alt="Enter">
-      </a>
-      <div class="v-title" style="right:4%; left:30%; top:4%; text-align:right;">
-        <span class="v-ta">The Contradiction of</span>
-        <span class="v-ts">S</span>
+      <div class="v-figure-zone">
+        <img class="v-fig" src="assets/home/figure2.png" alt="">
+        <div class="v-star" style="left:0%;  top:4px;  width:9%;  transform:rotate(-35deg);">
+          <img src="assets/stars/star2.png" alt="">
+        </div>
+        <div class="v-star" style="right:1%; top:4px;  width:8%;  transform:rotate(15deg);">
+          <img src="assets/stars/star4.png" alt="">
+        </div>
+        <div class="v-star" style="left:-2%; top:45%; width:13%; transform:rotate(28deg);">
+          <img src="assets/stars/star5.png" alt="">
+        </div>
+        <div class="v-star" style="right:0%; top:40%; width:10%; transform:rotate(-20deg);">
+          <img src="assets/stars/star1.png" alt="">
+        </div>
       </div>
     </div>
 
-
-    <!-- ── Variation 3 (enter RIGHT, title LEFT) ────────────────────────── -->
+    <!-- ── Variation 3 ── -->
     <div class="variation" id="v3">
-      <img class="v-fig" src="assets/home/figure3.png" alt="">
-
-      <!-- Stars: right column only, strictly below enter button -->
-      <div class="v-star" style="right:0%;  top:21%; width:11%; transform:rotate(14deg);">
-        <img src="assets/stars/star3.png" alt="">
-      </div>
-      <div class="v-star" style="right:1%;  top:33%; width:8%;  transform:rotate(-8deg);">
-        <img src="assets/stars/star1.png" alt="">
-      </div>
-      <div class="v-star" style="right:-1%; top:47%; width:12%; transform:rotate(-45deg);">
-        <img src="assets/stars/star4.png" alt="">
-      </div>
-
-      <a class="v-enter" href="gesture.html" style="right:3%; top:4%; width:24%;">
-        <img src="assets/home/enter.png" alt="Enter">
-      </a>
-      <div class="v-title" style="left:4%; right:30%; top:4%; text-align:left;">
-        <span class="v-ta">The Contradiction of</span>
-        <span class="v-ts">S</span>
+      <div class="v-figure-zone">
+        <img class="v-fig" src="assets/home/figure3.png" alt="">
+        <div class="v-star" style="left:0%;  top:4px;  width:10%; transform:rotate(8deg);">
+          <img src="assets/stars/star4.png" alt="">
+        </div>
+        <div class="v-star" style="right:0%; top:4px;  width:11%; transform:rotate(14deg);">
+          <img src="assets/stars/star3.png" alt="">
+        </div>
+        <div class="v-star" style="right:-1%;top:42%; width:12%; transform:rotate(-45deg);">
+          <img src="assets/stars/star1.png" alt="">
+        </div>
+        <div class="v-star" style="left:-1%; top:48%; width:9%;  transform:rotate(20deg);">
+          <img src="assets/stars/star2.png" alt="">
+        </div>
       </div>
     </div>
 
-
-    <!-- ── Variation 4 ─────────────────────────────────────────────────── -->
+    <!-- ── Variation 4 ── -->
     <div class="variation" id="v4">
-      <img class="v-fig" src="assets/home/figure4.png" alt="">
-
-      <div class="v-star" style="left:0%;  top:22%; width:10%; transform:rotate(20deg);">
-        <img src="assets/stars/star4.png" alt="">
-      </div>
-      <div class="v-star" style="left:1%;  top:34%; width:7%;  transform:rotate(-15deg);">
-        <img src="assets/stars/star5.png" alt="">
-      </div>
-      <div class="v-star" style="right:0%; top:48%; width:11%; transform:rotate(10deg);">
-        <img src="assets/stars/star1.png" alt="">
-      </div>
-
-      <a class="v-enter" href="gesture.html" style="left:3%; top:4%; width:24%;">
-        <img src="assets/home/enter.png" alt="Enter">
-      </a>
-      <div class="v-title" style="right:4%; left:30%; top:4%; text-align:right;">
-        <span class="v-ta">The Contradiction of</span>
-        <span class="v-ts">S</span>
+      <div class="v-figure-zone">
+        <img class="v-fig" src="assets/home/figure4.png" alt="">
+        <div class="v-star" style="left:0%;  top:4px;  width:10%; transform:rotate(20deg);">
+          <img src="assets/stars/star4.png" alt="">
+        </div>
+        <div class="v-star" style="right:1%; top:4px;  width:9%;  transform:rotate(-8deg);">
+          <img src="assets/stars/star5.png" alt="">
+        </div>
+        <div class="v-star" style="left:-1%; top:44%; width:11%; transform:rotate(-15deg);">
+          <img src="assets/stars/star5.png" alt="">
+        </div>
+        <div class="v-star" style="right:0%; top:40%; width:11%; transform:rotate(10deg);">
+          <img src="assets/stars/star1.png" alt="">
+        </div>
       </div>
     </div>
 
-
-    <!-- ── Variation 5 ─────────────────────────────────────────────────── -->
+    <!-- ── Variation 5 ── -->
     <div class="variation" id="v5">
-      <img class="v-fig" src="assets/home/figure5.png" alt="">
+      <div class="v-figure-zone">
+        <img class="v-fig" src="assets/home/figure5.png" alt="">
+        <div class="v-star" style="left:-2%; top:4px;  width:12%; transform:rotate(-5deg);">
+          <img src="assets/stars/star1.png" alt="">
+        </div>
+        <div class="v-star" style="right:1%; top:4px;  width:8%;  transform:rotate(10deg);">
+          <img src="assets/stars/star5.png" alt="">
+        </div>
+        <div class="v-star" style="left:-1%; top:46%; width:13%; transform:rotate(22deg);">
+          <img src="assets/stars/star2.png" alt="">
+        </div>
+        <div class="v-star" style="right:2%; top:40%; width:11%; transform:rotate(-8deg);">
+          <img src="assets/stars/star3.png" alt="">
+        </div>
+      </div>
+    </div>
 
-      <!-- Stars in figure zone only — top zone reserved for enter + title -->
-      <div class="v-star" style="left:-2%; top:40%; width:12%; transform:rotate(-5deg);">
-        <img src="assets/stars/star1.png" alt="">
+    <!-- ── Caption strip — same for all variations ── -->
+    <div class="v-caption-strip">
+      <div class="v-caption-left">
+        <div class="v-title">
+          <span class="v-ta">The Contradiction of</span>
+          <span class="v-ts">S</span>
+        </div>
       </div>
-      <div class="v-star" style="right:1%; top:1%;  width:7%;  transform:rotate(10deg);">
-        <img src="assets/stars/star5.png" alt="">
-      </div>
-      <div class="v-star" style="left:1%;  top:57%; width:13%; transform:rotate(22deg);">
-        <img src="assets/stars/star2.png" alt="">
-      </div>
-      <div class="v-star" style="right:2%; top:64%; width:11%; transform:rotate(-8deg);">
-        <img src="assets/stars/star3.png" alt="">
-      </div>
-
-      <a class="v-enter" href="gesture.html" style="left:2%; top:3%; width:24%;">
-        <img src="assets/home/enter.png" alt="Enter">
-      </a>
-      <div class="v-title" style="left:27%; right:4%; top:2%; text-align:left;">
-        <span class="v-ta">The Contradiction of</span>
-        <span class="v-ts">S</span>
+      <div class="v-caption-right">
+        <div class="v-star-caption" style="transform:rotate(-14deg);">
+          <img src="assets/stars/star1.png" alt="">
+        </div>
+        <div class="v-star-caption" style="transform:rotate(20deg);">
+          <img src="assets/stars/star4.png" alt="">
+        </div>
+        <a class="v-enter" href="gesture.html" data-exit-delay="420">
+          <img src="assets/home/enter.png" alt="Enter">
+        </a>
       </div>
     </div>
 
   </div><!-- /#home-stage -->
 
 
-  <!-- ── Bottom navigation ─────────────────────────────────────────────────── -->
+  <!-- ── Navigation ── -->
   <nav class="bottom-nav" aria-label="Main navigation">
-    <a href="index.html" class="nav-item active" aria-label="Home">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-      Home
-    </a>
-    <a href="gesture.html" class="nav-item" aria-label="Record">
-      <svg viewBox="0 0 24 24">
-        <path d="M13,2 C17.5,2 17.5,8 13,11 C8.5,14 8.5,20 13,22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        <polygon points="4.5,0.5 6.2,3.5 9,3 6.8,5.5 7.5,8.5 4.5,7.2 1.5,8.5 2.2,5.5 0,3 2.8,3.5" fill="currentColor"/>
-        <polygon points="20,15.5 21,17.5 23,17.2 21.5,18.8 22.2,21 20,19.8 17.8,21 18.5,18.8 17,17.2 19,17.5" fill="currentColor"/>
-      </svg>
-      Record
-    </a>
-    <a href="ar.html" class="nav-item" aria-label="Archive">
-      <svg viewBox="0 0 24 24">
-        <g transform="translate(12,12)">
-          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(0)"/>
-          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(72)"/>
-          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(144)"/>
-          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(216)"/>
-          <ellipse cx="0" cy="-5.5" rx="2.1" ry="4.2" fill="none" stroke="currentColor" stroke-width="1.2" transform="rotate(288)"/>
-          <circle cx="0" cy="0" r="1.8" fill="currentColor" stroke="none"/>
-        </g>
-      </svg>
-      Archive
-    </a>
+    <span class="nav-d-label">Home</span>
+    <div class="nav-d-dots">
+      <a href="index.html"   class="nav-dot active" aria-label="Home"></a>
+      <a href="gesture.html" class="nav-dot"        aria-label="Record"></a>
+      <a href="ar.html"      class="nav-dot"        aria-label="Archive"></a>
+    </div>
   </nav>
 
 
@@ -280,17 +269,18 @@
     localStorage.setItem(key, next);
     document.getElementById('v' + next).classList.add('active');
 
-    // Give the Enter button a longer exit window so star animation plays first
-    document.querySelectorAll('.v-enter').forEach(function (a) {
+    // Enter button exit animation
+    document.querySelectorAll('.v-enter').forEach(function(a) {
       a.dataset.exitDelay = '420';
     });
 
-    // Star scatter animation fires when Enter is clicked, before veil covers page
-    document.addEventListener('page-exit', function (e) {
+    // Star scatter on exit — animates both figure-zone and caption-strip stars
+    document.addEventListener('page-exit', function(e) {
       if (!e.detail.trigger.classList.contains('v-enter')) return;
-      var activeVar = document.querySelector('.variation.active');
-      if (!activeVar) return;
-      activeVar.querySelectorAll('.v-star').forEach(function (star, i) {
+      var stars = Array.from(
+        document.querySelectorAll('.variation.active .v-star, .v-star-caption')
+      );
+      stars.forEach(function(star, i) {
         var dir = (i % 2 === 0 ? 1 : -1);
         star.style.transition = 'transform 0.4s ease-out, opacity 0.35s ease';
         star.style.transform  = 'translateY(-55px) scale(1.25) rotate(' + (dir * 28) + 'deg)';
