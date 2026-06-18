@@ -447,6 +447,14 @@
     @keyframes ar-rise-3 { 0%{opacity:0;transform:translateY(0)scale(.45)rotate(-6deg)}  22%{opacity:.75} 100%{opacity:0;transform:translateY(-130vh)scale(.85)rotate(18deg)} }
     @keyframes ar-rise-4 { 0%{opacity:0;transform:translateY(0)scale(.58)rotate(24deg)}  20%{opacity:.80} 100%{opacity:0;transform:translateY(-130vh)scale(.94)rotate(-12deg)} }
     @keyframes ar-rise-5 { 0%{opacity:0;transform:translateY(0)scale(.50)rotate(-20deg)} 20%{opacity:.72} 100%{opacity:0;transform:translateY(-130vh)scale(.90)rotate(34deg)} }
+    /* -- Start screen atmospheric stars -------------------------------------- */
+    .ar-bg-star-wrap { position: absolute; pointer-events: none; }
+    .ar-bg-star-inner { display: block; animation: ar-bg-drift 13s ease-in-out infinite; }
+    .ar-bg-star-inner-b { animation-duration: 16s; animation-delay: 4.5s; }
+    @keyframes ar-bg-drift {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
   </style>
 </head>
 <body>
@@ -511,6 +519,12 @@
 
     <!-- Start screen -->
     <div id="ar-start">
+      <div class="ar-bg-star-wrap" style="left:-20px; top:8%; transform:rotate(-15deg);">
+        <svg class="ar-bg-star-inner" viewBox="0 0 100 90" width="200" height="180" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 48,5 L 57,28 L 90,20 L 65,44 L 80,80 L 50,60 L 20,80 L 34,44 L 8,22 L 42,29 Z" stroke="rgba(240,234,224,0.25)" stroke-width="1.3" fill="rgba(240,234,224,0.03)" stroke-linejoin="round"/><line x1="48" y1="5" x2="20" y2="80" stroke="rgba(215,56,76,0.38)" stroke-width="1.1" stroke-linecap="round"/><line x1="90" y1="20" x2="20" y2="80" stroke="rgba(215,56,76,0.32)" stroke-width="1.0" stroke-linecap="round"/><line x1="8" y1="22" x2="80" y2="80" stroke="rgba(215,56,76,0.28)" stroke-width="0.95" stroke-linecap="round"/><line x1="48" y1="5" x2="80" y2="80" stroke="rgba(215,56,76,0.26)" stroke-width="0.9" stroke-linecap="round"/><line x1="5" y1="44" x2="93" y2="38" stroke="rgba(215,56,76,0.20)" stroke-width="0.8" stroke-linecap="round"/></svg>
+      </div>
+      <div class="ar-bg-star-wrap" style="right:-20px; bottom:18%; transform:rotate(22deg);">
+        <svg class="ar-bg-star-inner ar-bg-star-inner-b" viewBox="0 0 100 90" width="155" height="140" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 52,4 L 60,32 L 92,24 L 66,46 L 78,82 L 50,62 L 22,82 L 36,46 L 8,20 L 42,32 Z" stroke="rgba(240,234,224,0.20)" stroke-width="1.3" fill="rgba(240,234,224,0.02)" stroke-linejoin="round"/><line x1="52" y1="4" x2="22" y2="82" stroke="rgba(215,56,76,0.28)" stroke-width="1.0" stroke-linecap="round"/><line x1="92" y1="24" x2="22" y2="82" stroke="rgba(215,56,76,0.24)" stroke-width="0.95" stroke-linecap="round"/><line x1="8" y1="20" x2="78" y2="82" stroke="rgba(215,56,76,0.22)" stroke-width="0.9" stroke-linecap="round"/><line x1="52" y1="4" x2="78" y2="82" stroke="rgba(215,56,76,0.20)" stroke-width="0.85" stroke-linecap="round"/><line x1="5" y1="44" x2="93" y2="38" stroke="rgba(215,56,76,0.15)" stroke-width="0.75" stroke-linecap="round"/></svg>
+      </div>
       <div id="ar-start-eyebrow">Pain Archive</div>
       <div id="ar-start-title">Everything the body<br>has held</div>
       <div id="ar-start-sub">Every trace is a body.<br>Every movement, remembered.</div>

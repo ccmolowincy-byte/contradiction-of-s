@@ -70,7 +70,14 @@
       user-select: none;
       z-index: 5;
     }
-    .v-star img { width: 100%; height: auto; display: block; }
+    .v-star img { width: 100%; height: auto; display: block; animation: vstar-bob 7s ease-in-out infinite; }
+    @keyframes vstar-bob {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-6px); }
+    }
+    .v-star + .v-star img                     { animation-delay: -2.3s; }
+    .v-star + .v-star + .v-star img           { animation-delay: -4.7s; }
+    .v-star + .v-star + .v-star + .v-star img { animation-delay: -1.5s; }
 
     /* ── Landscape overrides ─────────────────────────────────────────────── */
     /*
