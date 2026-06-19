@@ -534,7 +534,7 @@
   <script src="js/swipe-nav.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script type="module">
-    import { initGarden } from './js/archive-cloud.js?v=24';
+    import { initGarden } from './js/archive-cloud.js?v=25';
 
     const SUPA_URL = 'https://oexbsffepplhhhzhyxpy.supabase.co';
     const SUPA_KEY = 'sb_publishable_GgYdLTverVrWPYq93O6pmA_NJ4olWQ5';
@@ -817,6 +817,35 @@
         animId = requestAnimationFrame(tick);
       }
       animId = requestAnimationFrame(tick);
+
+      // ── Drag-to-pan: move all figures together ──────────────────────────────
+      let _dragActive = false;
+      let _dragLastX = 0, _dragLastY = 0;
+      let _panAccX = 0, _panAccZ = 0;
+      const _panScale = 5.0 / (gardenCanvas.offsetWidth || window.innerWidth);
+
+      stage.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button, a, nav')) return;
+        _dragActive = true;
+        _dragLastX  = e.clientX;
+        _dragLastY  = e.clientY;
+        stage.setPointerCapture(e.pointerId);
+      });
+
+      stage.addEventListener('pointermove', (e) => {
+        if (!_dragActive || !garden) return;
+        const dx = (e.clientX - _dragLastX) * _panScale;
+        const dy = (e.clientY - _dragLastY) * _panScale * 0.5;
+        _dragLastX = e.clientX;
+        _dragLastY = e.clientY;
+        _panAccX += dx;
+        _panAccZ += dy;
+        garden.setPan(_panAccX, _panAccZ);
+      });
+
+      ['pointerup', 'pointercancel'].forEach(evt => {
+        stage.addEventListener(evt, () => { _dragActive = false; });
+      });
     }
 
     startBtn.addEventListener('click', () => {

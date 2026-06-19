@@ -184,6 +184,8 @@ export async function initGarden(canvas, options = {}) {
   scene.add(gardenGroup);
 
   /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  let gardenPanX = 0, gardenPanZ = 0;
+
   const ribbons    = [];
   let   traceCount = 0;
   const highlightId = options.highlightTraceId || null;
@@ -606,20 +608,22 @@ export async function initGarden(canvas, options = {}) {
       targetX:        0,
       targetZ:        0,
       phaseOffset:    ribbons.length * 0.53,
+      swayFreq:       0.28 + (_hashId(trace.id, 'swayf') % 16) * 0.018,
+      swaySeed:       (_hashId(trace.id, 'swayp') % 628) * 0.01,
       opacity:        0,
       isHighlighted,
       playhead:       0,
       playRate:       3.5,
-      skelFrames:     skelFrames  ?? null,
-      skelCanvas:     skelCanvas  ?? null,
-      skelCtx:        skelCtx     ?? null,
-      skelSeed:       skelSeed    ?? 0,
-      skelSprite:     sprite      ?? null,
+      skelFrames:     skelFrames  != null ? skelFrames  : null,
+      skelCanvas:     skelCanvas  != null ? skelCanvas  : null,
+      skelCtx:        skelCtx     != null ? skelCtx     : null,
+      skelSeed:       skelSeed    != null ? skelSeed    : 0,
+      skelSprite:     sprite      != null ? sprite      : null,
       lastDrawnFrame: -1,
       skelSettled:    false,
-      palette:        palette     ?? SPINAL_PALETTE[0],
-      traceScale:     traceScale  ?? 1.0,
-      labelText:      labelText   ?? '',
+      palette:        palette     != null ? palette     : SPINAL_PALETTE[0],
+      traceScale:     traceScale  != null ? traceScale  : 1.0,
+      labelText:      labelText   != null ? labelText   : '',
     };
 
     if (isHighlighted) {
@@ -781,12 +785,13 @@ export async function initGarden(canvas, options = {}) {
       }
 
       // No autonomous breathing â€” figures stand still
-      r.group.position.y = r.baseY;
+      r.group.position.y = r.baseY + Math.sin(clock * r.swayFreq + r.swaySeed) * 0.10;
 
-      // Settle quickly toward phyllotaxis target (fast lerp â€” no visible drift)
-      r.group.position.x += (r.targetX - r.group.position.x) * 0.14;
-      r.group.position.z += (r.targetZ - r.group.position.z) * 0.14;
+      r.group.position.x += (r.targetX + gardenPanX - r.group.position.x) * 0.14;
+      r.group.position.z += (r.targetZ + gardenPanZ - r.group.position.z) * 0.14;
     }
+
+    gardenGroup.rotation.y += 0.00022;
 
     renderer.render(scene, camera);
   }
@@ -812,11 +817,16 @@ export async function initGarden(canvas, options = {}) {
     renderer.dispose();
   }
 
+  function setPan(x, z) {
+    gardenPanX = x;
+    gardenPanZ = z;
+  }
+
   function renderNow() { renderer.render(scene, camera); }
 
   function getDebugInfo() { return { ..._debug }; }
 
-  return { loadBatch, addTrace, update, setOrientation, resize, destroy, renderNow, getDebugInfo };
+  return { loadBatch, addTrace, update, setOrientation, setPan, resize, destroy, renderNow, getDebugInfo };
 }
 
 
