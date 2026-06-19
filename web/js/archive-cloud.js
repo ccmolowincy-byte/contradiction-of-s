@@ -10,7 +10,7 @@
  * Garden layout: golden-angle phyllotaxis, slow rotation, shared breathing.
  */
 import * as THREE from 'three';
-import { loadCustomSkel } from './custom-skel-draw.js?v=15';
+import { loadCustomSkel } from './custom-skel-draw.js?v=16';
 
 const GOLDEN   = Math.PI * (3 - Math.sqrt(5)); // ~137.5Â°, sunflower angle
 const MAX_R    = 2.8;
@@ -25,6 +25,39 @@ const SKEL_CONN = [
 ];
 const SKEL_SCORE    = 0.20;  // minimum keypoint confidence
 const RENDER_FRAMES = 12;    // ghost poses shown per trace (sampled from up to 50 stored)
+
+/* ── Per-contributor identity system ──────────────────────────────────────
+ * Each trace is permanently assigned a palette colour and a body scale
+ * derived from a hash of its UUID. This makes every figure in the garden
+ * visually distinct without any user choice.
+ */
+const SPINAL_PALETTE = [
+  { bone: '#C8D8E0', petal: 'rgba(195,55,55,1)'  },  // Bone white
+  { bone: '#4A8FAA', petal: 'rgba(30,85,135,1)'   },  // Scan blue
+  { bone: '#C4A060', petal: 'rgba(185,140,50,1)'  },  // Tissue gold
+  { bone: '#9BAAB8', petal: 'rgba(82,98,122,1)'   },  // Film grey
+  { bone: '#B07878', petal: 'rgba(105,28,28,1)'   },  // Deep dark
+  { bone: '#A8C0C0', petal: 'rgba(60,110,115,1)'  },  // Brace silver
+];
+
+const _SCALE_STEPS = [1.0, 0.82, 1.15, 0.90, 1.08, 0.76, 1.12, 0.95, 1.18, 0.84, 1.05, 0.88];
+
+function _hashId(id, salt) {
+  const s = (id || '') + (salt || '');
+  let h = 0;
+  for (let i = 0; i < Math.min(s.length, 12); i++) {
+    h = (h * 31 + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+function _tracePalette(trace) {
+  return SPINAL_PALETTE[_hashId(trace.id) % SPINAL_PALETTE.length];
+}
+
+function _traceScale(trace) {
+  return _SCALE_STEPS[_hashId(trace.id, 'scale') % _SCALE_STEPS.length];
+}
 
 /* â”€â”€ Procedural vertebra texture (legacy traces only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function buildVertebraTexture(vertebraCount) {
@@ -166,9 +199,25 @@ export async function initGarden(canvas, options = {}) {
    *
    * Falls back to dark-red LineSegments if customSkel failed to load.
    * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const ANIM_SLOTS = 10;  // how many recent entries animate; rest settle
+  const ANIM_SLOTS   = 10;  // most-recent N traces: full pose cycling + live petals
+  const BREATHE_SLOTS = 35; // traces 10–35: petal breathing only (fixed mid-frame, live clock)
+  let breatheFrame = 0;     // incremented each update(); breathe redraws throttled to ~15 fps
 
   /* â”€â”€ Soft radial vignette â€” fades petal/edge clipping gracefully â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* Identity label painted just below the figure's feet */
+  function _drawLabel(ctx, CW, CH, text, boneColor) {
+    if (!text) return;
+    const fs = Math.round(CH * 0.022);
+    ctx.save();
+    ctx.globalAlpha  = 0.52;
+    ctx.font         = 'italic ' + fs + 'px Georgia, serif';
+    ctx.fillStyle    = boneColor || '#C8D8E0';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(text, CW / 2, CH * 0.93);
+    ctx.restore();
+  }
+
   function _applyVignette(ctx, CW, CH) {
     const grad = ctx.createRadialGradient(CW / 2, CH * 0.38, 0, CW / 2, CH * 0.38, CW * 0.64);
     grad.addColorStop(0.30, 'rgba(0,0,0,1)');   // fully opaque center
@@ -179,7 +228,7 @@ export async function initGarden(canvas, options = {}) {
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  function _buildSkeletonTrace(trace, frames) {
+  function _buildSkeletonTrace(trace, frames, palette, traceScale) {
     const N = frames.length;
 
     // Evenly sample RENDER_FRAMES from the recorded snapshots
@@ -308,7 +357,9 @@ export async function initGarden(canvas, options = {}) {
 
       // Initial draw: middle frame as a settled pose (updated later in update())
       const midFrame = skelFrames[Math.floor(skelFrames.length / 2)];
-      customSkel.draw(octx, midFrame.kp, CW, CH, 0.68, seed, 0);
+      customSkel.draw(octx, midFrame.kp, CW, CH, 0.68, seed, 0, palette);
+      const labelText = (trace.id || '???').slice(0, 3).toUpperCase();
+      _drawLabel(octx, CW, CH, labelText, palette && palette.bone);
 
       const tex = new THREE.CanvasTexture(oc);
 
@@ -321,7 +372,8 @@ export async function initGarden(canvas, options = {}) {
         blending:    THREE.AdditiveBlending,
       });
       const sprite = new THREE.Sprite(spriteMat);
-      sprite.scale.set(1.10, 2.75, 1.0);   // matches 256×640 canvas aspect (1.10 / (256/640))
+      const sc = traceScale || 1.0;
+      sprite.scale.set(1.10 * sc, 2.75 * sc, 1.0);
 
       const group = new THREE.Group();
       group.add(sprite);
@@ -336,6 +388,9 @@ export async function initGarden(canvas, options = {}) {
         skelCanvas:  oc,
         skelCtx:     octx,
         skelSeed:    seed,
+        palette,
+        traceScale:  sc,
+        labelText,
       };
     }
 
@@ -477,12 +532,12 @@ export async function initGarden(canvas, options = {}) {
   }
 
   /* â”€â”€ Route to skeleton or legacy renderer based on data available â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  function _buildTrace(trace) {
+  function _buildTrace(trace, palette, traceScale) {
     const skel = trace.skeletons;
     if (skel && Array.isArray(skel) && skel.length >= 3) {
       _debug.skelCount++;
       _debug.lastSkelFrames = skel.length;
-      return _buildSkeletonTrace(trace, skel);
+      return _buildSkeletonTrace(trace, skel, palette, traceScale);
     }
     _debug.legacyCount++;
     if (!skel) {
@@ -518,9 +573,10 @@ export async function initGarden(canvas, options = {}) {
       r.targetX = Math.max(-1.0, Math.min(1.0, Math.cos(angle) * radius));
       r.targetZ = Math.sin(angle) * radius;
       r.baseY   = (1 - frac) * 0.8;
-      // Scale the sprite to match current archive density
+      // Scale the sprite — global density mult × per-contributor body scale
       if (r.skelSprite) {
-        r.skelSprite.scale.set(1.10 * spriteScaleMult, 2.75 * spriteScaleMult, 1.0);
+        const sc = spriteScaleMult * (r.traceScale || 1.0);
+        r.skelSprite.scale.set(1.10 * sc, 2.75 * sc, 1.0);
       }
       if (instant) {
         r.group.position.x = r.targetX;
@@ -530,11 +586,14 @@ export async function initGarden(canvas, options = {}) {
   }
 
   function _addToGarden(trace, isHighlighted) {
-    const result = _buildTrace(trace);
+    const palette    = _tracePalette(trace);
+    const traceScale = _traceScale(trace);
+    const result     = _buildTrace(trace, palette, traceScale);
     if (!result) return;
 
     const { group, materials, boneTex, isLegacy, sprite,
-            skelFrames, skelCanvas, skelCtx, skelSeed } = result;
+            skelFrames, skelCanvas, skelCtx, skelSeed,
+            labelText } = result;
     gardenGroup.add(group);
     group.position.set(0, 0, 0);
 
@@ -558,6 +617,9 @@ export async function initGarden(canvas, options = {}) {
       skelSprite:     sprite      ?? null,
       lastDrawnFrame: -1,
       skelSettled:    false,
+      palette:        palette     ?? SPINAL_PALETTE[0],
+      traceScale:     traceScale  ?? 1.0,
+      labelText:      labelText   ?? '',
     };
 
     if (isHighlighted) {
@@ -631,6 +693,7 @@ export async function initGarden(canvas, options = {}) {
 
   function update(dt) {
     clock += dt;
+    breatheFrame = (breatheFrame + 1) % 4;  // throttle breathe-slot redraws to ~15 fps
 
     // rotation off â€” garden is static
 
@@ -658,6 +721,7 @@ export async function initGarden(canvas, options = {}) {
         r.materials[0].mat.opacity = r.opacity * r.materials[0].targetAlpha;
 
         const shouldAnimate = i < ANIM_SLOTS || r.isHighlighted;
+        const shouldBreathe = !shouldAnimate && i < BREATHE_SLOTS;
 
         if (shouldAnimate && r.skelFrames) {
           const N = r.skelFrames.length;
@@ -674,20 +738,30 @@ export async function initGarden(canvas, options = {}) {
             for (let t = 3; t >= 1; t--) {
               const idx = ((ph - t) + N * 3) % N;
               const a = 0.06 * Math.pow(0.52, t - 1);
-              customSkel.draw(r.skelCtx, r.skelFrames[idx].kp, CW, CH, a, r.skelSeed, 0);
+              customSkel.draw(r.skelCtx, r.skelFrames[idx].kp, CW, CH, a, r.skelSeed, 0, r.palette);
             }
             // Current frame: full presence, live petal drift using scene clock
-            customSkel.draw(r.skelCtx, r.skelFrames[ph].kp, CW, CH, 0.86, r.skelSeed, clock);
+            customSkel.draw(r.skelCtx, r.skelFrames[ph].kp, CW, CH, 0.86, r.skelSeed, clock, r.palette);
+            _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
 
             r.boneTex.needsUpdate = true;
           }
-        } else if (!r.skelSettled && r.skelFrames) {
-          // Settle: draw the middle frame once, then never touch the canvas again
+        } else if (shouldBreathe && r.skelFrames && breatheFrame === 0) {
+          // Petal breathing: redraw mid-frame at ~15 fps with live clock so petals move
+          const midIdx = Math.floor(r.skelFrames.length / 2);
+          const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
+          r.skelCtx.clearRect(0, 0, CW, CH);
+          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, clock, r.palette);
+          _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
+          r.boneTex.needsUpdate = true;
+        } else if (!r.skelSettled && !shouldBreathe && r.skelFrames) {
+          // Truly static: draw once with palette, then freeze
           r.skelSettled = true;
           const midIdx = Math.floor(r.skelFrames.length / 2);
           const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
           r.skelCtx.clearRect(0, 0, CW, CH);
-          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, 0);
+          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, 0, r.palette);
+          _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
           r.boneTex.needsUpdate = true;
         }
       } else {

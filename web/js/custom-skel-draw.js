@@ -132,6 +132,14 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
   const boneCv   = _recolor(boneImg,   RED_BONE);
   const starCvs  = starImgs.map(img => _recolor(img, RED_STAR));
 
+  // Lazy per-colour asset cache — recolours PNG assets on first use for a given palette.
+  const _paletteCache = {};
+  function _getPng(img, color, key) {
+    const k = key + '||' + color;
+    if (!_paletteCache[k]) _paletteCache[k] = _recolor(img, color);
+    return _paletteCache[k];
+  }
+
   let _clock = 0;
 
   /* ── Internal helpers ─────────────────────────────────────────────────── */
@@ -178,23 +186,25 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
 
   /* Draw shape F flower — option C: fill + stroke directly on ctx, per-petal breathing.
    * No offscreen canvas — eliminates the rectangle artifact under AdditiveBlending. */
-  function _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, time) {
+  function _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, time, palette) {
     if (alpha < 0.005) return;
 
     const R   = shoulderPx * 1.6;  // restored — larger canvas + hy-clamp in draw() prevents cropping
     const rot = Math.sin(time * 0.35 + seed * 1.8) * 0.12;
+    const fillCol   = (palette && palette.petal) || 'rgba(210, 35, 35, 1)';
+    const strokeCol = (palette && palette.petal) || 'rgba(218, 36, 36, 0.88)';
 
     ctx.save();
     ctx.translate(hx, hy);
     ctx.rotate(rot);
 
-    // ── Fill pass: crimson inside each petal (safe — drawn directly to ctx, no offscreen canvas)
+    // ── Fill pass: petal interior colour
     ctx.globalAlpha = alpha * 0.60;
     PETAL_F.forEach((p, i) => {
       const s = 1 + 0.18 * Math.sin(time * PETAL_FREQ[i] + p.a + seed * 0.65);
       ctx.save(); ctx.rotate(p.a);
       _ruffPath(ctx, R * p.l * s, R * p.w * s, p.lean);
-      ctx.fillStyle = 'rgba(210, 35, 35, 1)';
+      ctx.fillStyle = fillCol;
       ctx.fill();
       ctx.restore();
     });
@@ -206,7 +216,7 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
       const s = 1 + 0.18 * Math.sin(time * PETAL_FREQ[i] + p.a + seed * 0.65);
       ctx.save(); ctx.rotate(p.a);
       _ruffPath(ctx, R * p.l * s, R * p.w * s, p.lean);
-      ctx.strokeStyle = 'rgba(218, 36, 36, 0.88)';
+      ctx.strokeStyle = strokeCol;
       ctx.lineWidth   = sw;
       ctx.stroke();
       ctx.restore();
@@ -233,22 +243,24 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
   }
 
   /* Stretch the bone PNG between two points. */
-  function _drawBone(ctx, x1, y1, x2, y2, shoulderPx, alpha) {
+  function _drawBone(ctx, x1, y1, x2, y2, shoulderPx, alpha, palette) {
     const len = Math.hypot(x2 - x1, y2 - y1);
     if (len < 3) return;
     // Keep bone line quality: cap height to avoid blob look on short segments
     const boneH = Math.min(shoulderPx * 0.068, len / 4.5);
     const angle = Math.atan2(y2 - y1, x2 - x1);
+    const boneColor = (palette && palette.bone) || null;
 
     ctx.save();
     ctx.globalAlpha = alpha * 0.88;
     ctx.translate(x1, y1);
     ctx.rotate(angle);
     if (boneCv) {
-      ctx.drawImage(boneCv, 0, -boneH / 2, len, boneH);
+      const cv = boneColor ? (_getPng(boneImg, boneColor, 'bone') || boneCv) : boneCv;
+      ctx.drawImage(cv, 0, -boneH / 2, len, boneH);
     } else {
       // Fallback: thin line in bone colour
-      ctx.strokeStyle = RED_BONE;
+      ctx.strokeStyle = boneColor || RED_BONE;
       ctx.lineWidth   = Math.max(1, boneH * 0.4);
       ctx.lineCap     = 'round';
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(len, 0); ctx.stroke();
@@ -257,16 +269,21 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
   }
 
   /* Draw one star at a joint position. */
-  function _drawStar(ctx, x, y, shoulderPx, jointKey, alpha) {
+  function _drawStar(ctx, x, y, shoulderPx, jointKey, alpha, palette) {
     const idx = STAR_MAP[jointKey];
-    if (idx === undefined || !starCvs[idx] || alpha < 0.004) return;
+    if (idx === undefined || alpha < 0.004) return;
+    const boneColor = (palette && palette.bone) || null;
+    const cv = boneColor
+      ? (_getPng(starImgs[idx], boneColor, 'star' + idx) || starCvs[idx])
+      : starCvs[idx];
+    if (!cv) return;
     const sz  = (STAR_SIZE[jointKey] || 0.24) * shoulderPx;
     const rot = STAR_ROT[jointKey] || 0;
     ctx.save();
     ctx.globalAlpha = alpha * 0.94;
     ctx.translate(x, y);
     ctx.rotate(rot);
-    ctx.drawImage(starCvs[idx], -sz, -sz, sz * 2, sz * 2);
+    ctx.drawImage(cv, -sz, -sz, sz * 2, sz * 2);
     ctx.restore();
   }
 
@@ -289,16 +306,16 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
      * seed  — any number; offsets petal drift so each contributor looks distinct
      * time  — explicit clock in seconds (pass null to use internal clock)
      */
-    draw(ctx, kp, W, H, alpha = 1.0, seed = 0, time = null) {
+    draw(ctx, kp, W, H, alpha = 1.0, seed = 0, time = null, palette = null) {
       if (!kp || kp.length < 17 || alpha < 0.005) return;
 
       const t = time !== null ? time : _clock;
 
       // Map normalised [0-1] keypoints to canvas pixel space
       const pts = kp.map(k => ({
-        x: (k.x ?? 0) * W,
-        y: (k.y ?? 0) * H,
-        s: k.s ?? k.score ?? 0,
+        x: (k.x != null ? k.x : 0) * W,
+        y: (k.y != null ? k.y : 0) * H,
+        s: k.s != null ? k.s : (k.score != null ? k.score : 0),
       }));
 
       const lSh = pts[5], rSh = pts[6];
@@ -312,7 +329,7 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
       const hy = Math.max(shoulderPx * 2.8 + 4, rawHead.y);
 
       // ── Layer 1 (back): petal aura ────────────────────────────────────────
-      _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, t);
+      _drawPetals(ctx, hx, hy, shoulderPx, alpha, seed, t, palette);
 
       // ── Layer 2: face/void oval — dark crimson, sways with petals
       _drawFace(ctx, hx, hy, shoulderPx, alpha, t, seed);
@@ -320,19 +337,19 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
       // ── Layer 3: bone connection lines ────────────────────────────────────
       BONES.forEach(([a, b]) => {
         if (pts[a].s < MIN_SCORE || pts[b].s < MIN_SCORE) return;
-        _drawBone(ctx, pts[a].x, pts[a].y, pts[b].x, pts[b].y, shoulderPx, alpha);
+        _drawBone(ctx, pts[a].x, pts[a].y, pts[b].x, pts[b].y, shoulderPx, alpha, palette);
       });
 
       // ── Layer 4 (front): star joints ─────────────────────────────────────
       // Shoulder midpoint — spine proxy star
       if (lSh.s > MIN_SCORE && rSh.s > MIN_SCORE) {
         _drawStar(ctx, (lSh.x + rSh.x) / 2, (lSh.y + rSh.y) / 2,
-          shoulderPx, 'mid', alpha);
+          shoulderPx, 'mid', alpha, palette);
       }
       // All other mapped landmark joints
       [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].forEach(i => {
         if (pts[i].s >= MIN_SCORE) {
-          _drawStar(ctx, pts[i].x, pts[i].y, shoulderPx, i, alpha);
+          _drawStar(ctx, pts[i].x, pts[i].y, shoulderPx, i, alpha, palette);
         }
       });
     },
@@ -345,11 +362,11 @@ export async function loadCustomSkel(basePath = 'assets/skel/') {
      * alphaFn — function(frameIndex, totalFrames) → alpha for that frame
      * seed    — per-contributor drift seed
      */
-    drawAccumulated(ctx, frames, W, H, alphaFn, seed = 0) {
+    drawAccumulated(ctx, frames, W, H, alphaFn, seed = 0, palette = null) {
       if (!frames || frames.length === 0) return;
       frames.forEach((frame, i) => {
         const a = alphaFn(i, frames.length);
-        if (a > 0.004) this.draw(ctx, frame.kp, W, H, a, seed, 0);
+        if (a > 0.004) this.draw(ctx, frame.kp, W, H, a, seed, 0, palette);
       });
     },
 
