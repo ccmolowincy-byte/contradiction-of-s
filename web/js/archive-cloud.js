@@ -1,4 +1,4 @@
-﻿/* archive-cloud.js â€” Pain Archive Garden
+/* archive-cloud.js â€” Pain Archive Garden
  *
  * Two rendering paths:
  *   A. Skeleton stills (Approach E) â€” traces with `skeletons` field:
@@ -250,6 +250,76 @@ export async function initGarden(canvas, options = {}) {
     ctx.globalCompositeOperation = 'source-over';
   }
 
+  function _drawStarOutline(ctx, cx, cy, sc, rot, progress, lw, col, glowW) {
+    const OR = [7.0,5.5,7.6,5.1,6.7], IR = [2.8,2.3,3.0,2.2,2.6];
+    const v = [];
+    for (let k = 0; k < 10; k++) {
+      const o = k%2===0, pi=Math.floor(k/2), r=(o?OR[pi]:IR[pi])*sc;
+      const a = k*Math.PI/5 + rot - Math.PI/2;
+      v.push({x: cx + r*Math.cos(a), y: cy + r*Math.sin(a)});
+    }
+    v.push({x: v[0].x, y: v[0].y});
+    const fs = Math.floor(progress * 10);
+    const fr = (progress * 10) - fs;
+    function buildPath() {
+      ctx.beginPath(); ctx.moveTo(v[0].x, v[0].y);
+      for (let s = 0; s < fs; s++) ctx.lineTo(v[s+1].x, v[s+1].y);
+      if (fs < 10 && fr > 0) {
+        const va = v[fs], vb = v[Math.min(fs+1,10)];
+        ctx.lineTo(va.x + fr*(vb.x-va.x), va.y + fr*(vb.y-va.y));
+      }
+    }
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (glowW) { buildPath(); ctx.strokeStyle = 'rgba(196,148,72,0.18)'; ctx.lineWidth = glowW; ctx.stroke(); }
+    buildPath(); ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke();
+    if (progress > 0 && progress < 1) {
+      const va = v[Math.min(fs,9)], vb = v[Math.min(fs+1,10)];
+      const tx = va.x + fr*(vb.x-va.x), ty = va.y + fr*(vb.y-va.y);
+      const g = ctx.createRadialGradient(tx,ty,0,tx,ty,lw*3.5);
+      g.addColorStop(0,'rgba(248,220,165,0.95)'); g.addColorStop(1,'rgba(196,162,96,0)');
+      ctx.beginPath(); ctx.arc(tx,ty,lw*3.5,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function _posAtArc(pts, arc, tl, s) {
+    s = Math.max(0, Math.min(tl, s));
+    for (let i = 1; i < arc.length; i++) {
+      if (arc[i] >= s) {
+        const f = (s - arc[i-1]) / (arc[i] - arc[i-1]);
+        return { x: pts[i-1].x + f*(pts[i].x-pts[i-1].x), y: pts[i-1].y + f*(pts[i].y-pts[i-1].y) };
+      }
+    }
+    return { x: pts[pts.length-1].x, y: pts[pts.length-1].y };
+  }
+
+  const STAR_CHAIN_END = 1.55, LARGE_START = 1.40, LARGE_DRAW_END = 3.60;
+  const HOLD_END = 4.60, ANIM_TOTAL = 5.40;
+
+  function _drawStarAnim(ctx, CW, CH, entry, age) {
+    if (age >= ANIM_TOTAL) { entry.starAnimDone = true; return; }
+    const fade = age > HOLD_END ? Math.max(0, 1 - (age - HOLD_END) / (ANIM_TOTAL - HOLD_END)) : 1;
+    ctx.save();
+    ctx.globalAlpha = fade;
+    if (entry.strokeArc && age < STAR_CHAIN_END + 0.5) {
+      const pts = entry.strokeArc.pts, arc = entry.strokeArc.arc, tl = entry.strokeArc.tl;
+      const SC=7, EACH=0.30, STAG=0.18;
+      for (let i = 0; i < SC; i++) {
+        const t2 = age - STAG*i;
+        const prog = Math.max(0, Math.min(1, t2/EACH));
+        if (prog <= 0) continue;
+        const pos = _posAtArc(pts, arc, tl, tl * i/(SC-1));
+        _drawStarOutline(ctx, pos.x, pos.y, 3.2, 0.14 + i*0.38, prog, 4, 'rgba(220,185,120,0.90)', 0);
+      }
+    }
+    if (age >= LARGE_START) {
+      const lp = Math.max(0, Math.min(1, (age - LARGE_START) / (LARGE_DRAW_END - LARGE_START)));
+      if (lp > 0) _drawStarOutline(ctx, CW*0.5, CH*0.50, 26, 0.14, lp, 6, 'rgba(220,185,120,0.82)', 24);
+    }
+    ctx.restore();
+  }
+
+
   function _buildSkeletonTrace(trace, frames, palette, traceScale) {
     const N = frames.length;
 
@@ -362,6 +432,24 @@ export async function initGarden(canvas, options = {}) {
       }),
     }));
 
+    let strokeArc = null;
+    {
+      const allPts = trace.strokes ? [].concat(...trace.strokes) : [];
+      const step   = Math.max(1, Math.floor(allPts.length / 40));
+      const sPts   = allPts
+        .filter(function(_, i) { return i % step === 0; })
+        .map(function(p) { return { x: ((p.x || 0) + anchorDX) * _CW, y: ((p.y || 0) + anchorDY) * _CH }; })
+        .filter(function(p) { return Number.isFinite(p.x) && Number.isFinite(p.y); });
+      if (sPts.length >= 2) {
+        const sArc = [0];
+        for (let i = 1; i < sPts.length; i++) {
+          const dx = sPts[i].x - sPts[i-1].x, dy = sPts[i].y - sPts[i-1].y;
+          sArc.push(sArc[i-1] + Math.sqrt(dx*dx + dy*dy));
+        }
+        strokeArc = { pts: sPts, arc: sArc, tl: sArc[sArc.length-1] || 1 };
+      }
+    }
+
     // Per-contributor seed â€” offsets petal drift so each entry looks distinct
     let seed = 0;
     if (trace.id) {
@@ -412,6 +500,7 @@ export async function initGarden(canvas, options = {}) {
         skelSeed:    seed,
         palette,
         traceScale:  sc,
+        strokeArc,
         labelText,
       };
     }
@@ -606,8 +695,7 @@ export async function initGarden(canvas, options = {}) {
       }
     });
   }
-
-  function _addToGarden(trace, isHighlighted) {
+  function _addToGarden(trace, isHighlighted, isNew = false) {
     const palette    = _tracePalette(trace);
     const traceScale = _traceScale(trace);
     const result     = _buildTrace(trace, palette, traceScale);
@@ -615,7 +703,7 @@ export async function initGarden(canvas, options = {}) {
 
     const { group, materials, boneTex, isLegacy, sprite,
             skelFrames, skelCanvas, skelCtx, skelSeed,
-            labelText } = result;
+            labelText, strokeArc } = result;
     gardenGroup.add(group);
     group.position.set(0, 0, 0);
 
@@ -644,6 +732,9 @@ export async function initGarden(canvas, options = {}) {
       palette:        palette     != null ? palette     : SPINAL_PALETTE[0],
       traceScale:     traceScale  != null ? traceScale  : 1.0,
       labelText:      labelText   != null ? labelText   : '',
+      strokeArc:      result.strokeArc != null ? result.strokeArc : null,
+      starAnimStart:  (isNew || isHighlighted) ? clock : -1,
+      starAnimDone:   !(isNew || isHighlighted),
       bloomStart:     isHighlighted ? clock : 0,
     };
 
@@ -673,7 +764,7 @@ export async function initGarden(canvas, options = {}) {
 
   /* â”€â”€ Public: add single trace (realtime insert) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function addTrace(trace) {
-    _addToGarden(trace, !!(highlightId && trace.id === highlightId));
+    _addToGarden(trace, !!(highlightId && trace.id === highlightId), true);
     traceCount++;
 
     if (ribbons.length > MAX_TRAC) {
@@ -743,53 +834,57 @@ export async function initGarden(canvas, options = {}) {
           mat.opacity = r.opacity * targetAlpha;
         });
       } else if (r.skelCanvas) {
-        // Sprite + CanvasTexture path: animate canvas for recent entries
         r.materials[0].mat.opacity = r.opacity * r.materials[0].targetAlpha;
 
-        const shouldAnimate = i < ANIM_SLOTS || r.isHighlighted;
-        const shouldBreathe = !shouldAnimate && i < BREATHE_SLOTS;
+        const shouldAnimate  = i < ANIM_SLOTS || r.isHighlighted;
+        const shouldBreathe  = !shouldAnimate && i < BREATHE_SLOTS;
+        const shouldStarAnim = !r.starAnimDone && r.starAnimStart >= 0;
 
         if (shouldAnimate && r.skelFrames) {
           const N = r.skelFrames.length;
           r.playhead = (r.playhead + dt * r.playRate) % N;
           const ph = Math.floor(r.playhead);
 
-          // Redraw canvas only when the frame index changes (~3.5Ã— per second)
-          if (ph !== r.lastDrawnFrame) {
-            r.lastDrawnFrame = ph;
+          if (ph !== r.lastDrawnFrame || shouldStarAnim) {
+            if (ph !== r.lastDrawnFrame) r.lastDrawnFrame = ph;
             const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
             r.skelCtx.clearRect(0, 0, CW, CH);
             if (r.bloomStart > 0) _drawBloom(r.skelCtx, CW, CH, clock - r.bloomStart);
-
-            // Short ghost trail: 3 frames fading behind the current one
             for (let t = 3; t >= 1; t--) {
               const idx = ((ph - t) + N * 3) % N;
               const a = 0.06 * Math.pow(0.52, t - 1);
               customSkel.draw(r.skelCtx, r.skelFrames[idx].kp, CW, CH, a, r.skelSeed, 0, r.palette);
             }
-            // Current frame: full presence, live petal drift using scene clock
             customSkel.draw(r.skelCtx, r.skelFrames[ph].kp, CW, CH, 0.86, r.skelSeed, clock, r.palette);
             _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
-
+            if (shouldStarAnim) _drawStarAnim(r.skelCtx, CW, CH, r, clock - r.starAnimStart);
             r.boneTex.needsUpdate = true;
           }
-        } else if (shouldBreathe && r.skelFrames && breatheFrame === 0) {
-          // Petal breathing: redraw mid-frame at ~15 fps with live clock so petals move
+        } else if (shouldBreathe && r.skelFrames && (breatheFrame === 0 || shouldStarAnim)) {
           const midIdx = Math.floor(r.skelFrames.length / 2);
           const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
           r.skelCtx.clearRect(0, 0, CW, CH);
           if (r.bloomStart > 0) _drawBloom(r.skelCtx, CW, CH, clock - r.bloomStart);
           customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, clock, r.palette);
           _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
+          if (shouldStarAnim) _drawStarAnim(r.skelCtx, CW, CH, r, clock - r.starAnimStart);
           r.boneTex.needsUpdate = true;
         } else if (!r.skelSettled && !shouldBreathe && r.skelFrames) {
-          // Truly static: draw once with palette, then freeze
           r.skelSettled = true;
           const midIdx = Math.floor(r.skelFrames.length / 2);
           const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
           r.skelCtx.clearRect(0, 0, CW, CH);
           customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, 0, r.palette);
           _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
+          if (shouldStarAnim) _drawStarAnim(r.skelCtx, CW, CH, r, clock - r.starAnimStart);
+          r.boneTex.needsUpdate = true;
+        } else if (r.skelSettled && shouldStarAnim && r.skelFrames) {
+          const midIdx = Math.floor(r.skelFrames.length / 2);
+          const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
+          r.skelCtx.clearRect(0, 0, CW, CH);
+          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, 0, r.palette);
+          _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
+          _drawStarAnim(r.skelCtx, CW, CH, r, clock - r.starAnimStart);
           r.boneTex.needsUpdate = true;
         }
       } else {
