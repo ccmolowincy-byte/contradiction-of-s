@@ -428,6 +428,66 @@
     .g-debug-line.err { color: #ff6060; }
     .g-debug-line.ok  { color: #60ffb0; }
 
+    /* ── Star step indicator bar ── */
+    #g-step-bar {
+      position: fixed;
+      bottom: calc(var(--nav-h) + 16px);
+      left: 0; right: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      padding: 0 24px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+      z-index: 20;
+    }
+    #g-step-bar.visible { opacity: 1; }
+
+    .g-star-step {
+      text-align: center;
+      opacity: 0.26;
+      transition: opacity 0.4s;
+      transform-origin: center bottom;
+    }
+    .g-star-step.active { opacity: 1; }
+    .g-star-step.done   { opacity: 0.14; }
+
+    .g-star-step:not(.active) .g-star-line { opacity: 0 !important; }
+
+    .g-star-step.active .g-star-svg {
+      animation: gStarPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes gStarPop {
+      0%   { transform: scale(0.7);  opacity: 0.2; }
+      65%  { transform: scale(1.12); opacity: 1;   }
+      100% { transform: scale(1);    opacity: 1;   }
+    }
+    @keyframes gPathDraw { to { stroke-dashoffset: 0; } }
+    @keyframes gLineDraw { to { stroke-dashoffset: 0; } }
+
+    .g-star-label {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      font-size: 8px;
+      color: rgba(200,216,224,0.38);
+      margin-top: 3px;
+      transition: color 0.3s;
+    }
+    .g-star-step.active .g-star-label                    { color: rgba(200,216,224,0.72); }
+    .g-star-step[data-step="2"].active .g-star-label     { color: #4A8FAA; }
+    .g-star-step[data-step="3"].active .g-star-label     { color: #C4A060; }
+
+    /* Dark gradient behind step bar during recording (camera feed is transparent) */
+    #s-recording::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 90px;
+      background: linear-gradient(to top, rgba(6,10,14,0.72), transparent);
+      pointer-events: none;
+    }
+
     /* No-camera detected hint */
     #g-no-body {
       position: fixed;
@@ -525,6 +585,63 @@
     <button id="g-error-retry" onclick="location.reload()">Reload</button>
   </div>
 
+  <!-- Step indicator bar -->
+  <div id="g-step-bar">
+
+    <!-- i. position — compact star -->
+    <div class="g-star-step" id="g-step-0" data-step="0">
+      <svg class="g-star-svg" width="36" height="32" viewBox="0 0 100 90" fill="none">
+        <path class="g-star-path" d="M 44,8 L 55,30 L 88,22 L 63,45 L 76,81 L 48,60 L 20,82 L 35,44 L 8,22 L 41,29 Z"
+              stroke="rgba(200,216,224,.72)" stroke-width="3.5" fill="rgba(200,216,224,.05)" stroke-linejoin="round"/>
+        <line class="g-star-line" x1="44" y1="8"  x2="20" y2="82" stroke="rgba(215,56,76,.58)" stroke-width="2.8" stroke-linecap="round"/>
+        <line class="g-star-line" x1="88" y1="22" x2="20" y2="82" stroke="rgba(215,56,76,.48)" stroke-width="2.4" stroke-linecap="round"/>
+        <line class="g-star-line" x1="8"  y1="22" x2="76" y2="81" stroke="rgba(215,56,76,.42)" stroke-width="2.2" stroke-linecap="round"/>
+        <line class="g-star-line" x1="44" y1="8"  x2="76" y2="81" stroke="rgba(215,56,76,.35)" stroke-width="2.0" stroke-linecap="round"/>
+      </svg>
+      <div class="g-star-label">i.</div>
+    </div>
+
+    <!-- ii. record — one arm reaching right -->
+    <div class="g-star-step" id="g-step-1" data-step="1">
+      <svg class="g-star-svg" width="40" height="32" viewBox="-5 0 110 90" fill="none">
+        <path class="g-star-path" d="M 40,5 L 50,29 L 96,16 L 63,44 L 77,84 L 48,59 L 17,84 L 33,43 L 6,23 L 38,29 Z"
+              stroke="rgba(200,216,224,.72)" stroke-width="3.5" fill="rgba(200,216,224,.05)" stroke-linejoin="round"/>
+        <line class="g-star-line" x1="40" y1="5"  x2="17" y2="84" stroke="rgba(215,56,76,.58)" stroke-width="2.8" stroke-linecap="round"/>
+        <line class="g-star-line" x1="96" y1="16" x2="17" y2="84" stroke="rgba(215,56,76,.48)" stroke-width="2.4" stroke-linecap="round"/>
+        <line class="g-star-line" x1="6"  y1="23" x2="77" y2="84" stroke="rgba(215,56,76,.42)" stroke-width="2.2" stroke-linecap="round"/>
+        <line class="g-star-line" x1="40" y1="5"  x2="77" y2="84" stroke="rgba(215,56,76,.35)" stroke-width="2.0" stroke-linecap="round"/>
+      </svg>
+      <div class="g-star-label">ii.</div>
+    </div>
+
+    <!-- iii. move — wide flat star, scan blue -->
+    <div class="g-star-step" id="g-step-2" data-step="2">
+      <svg class="g-star-svg" width="40" height="28" viewBox="0 0 105 78" fill="none">
+        <path class="g-star-path" d="M 50,6 L 60,28 L 98,22 L 68,40 L 80,72 L 50,55 L 20,72 L 32,40 L 2,22 L 40,28 Z"
+              stroke="rgba(74,143,170,.85)" stroke-width="3.5" fill="rgba(74,143,170,.07)" stroke-linejoin="round"/>
+        <line class="g-star-line" x1="50" y1="6"  x2="20" y2="72" stroke="rgba(74,143,170,.58)" stroke-width="2.8" stroke-linecap="round"/>
+        <line class="g-star-line" x1="98" y1="22" x2="20" y2="72" stroke="rgba(74,143,170,.48)" stroke-width="2.4" stroke-linecap="round"/>
+        <line class="g-star-line" x1="2"  y1="22" x2="80" y2="72" stroke="rgba(74,143,170,.42)" stroke-width="2.2" stroke-linecap="round"/>
+        <line class="g-star-line" x1="50" y1="6"  x2="80" y2="72" stroke="rgba(74,143,170,.35)" stroke-width="2.0" stroke-linecap="round"/>
+      </svg>
+      <div class="g-star-label">iii.</div>
+    </div>
+
+    <!-- iv. released — tall narrow spike, tissue gold -->
+    <div class="g-star-step" id="g-step-3" data-step="3">
+      <svg class="g-star-svg" width="28" height="40" viewBox="10 0 80 100" fill="none">
+        <path class="g-star-path" d="M 50,2 L 63,26 L 88,18 L 65,48 L 80,88 L 50,62 L 20,88 L 35,48 L 12,18 L 37,26 Z"
+              stroke="rgba(196,160,96,.88)" stroke-width="3.5" fill="rgba(196,160,96,.08)" stroke-linejoin="round"/>
+        <line class="g-star-line" x1="50" y1="2"  x2="20" y2="88" stroke="rgba(196,160,96,.58)" stroke-width="2.8" stroke-linecap="round"/>
+        <line class="g-star-line" x1="88" y1="18" x2="20" y2="88" stroke="rgba(196,160,96,.48)" stroke-width="2.4" stroke-linecap="round"/>
+        <line class="g-star-line" x1="12" y1="18" x2="80" y2="88" stroke="rgba(196,160,96,.42)" stroke-width="2.2" stroke-linecap="round"/>
+        <line class="g-star-line" x1="50" y1="2"  x2="80" y2="88" stroke="rgba(196,160,96,.35)" stroke-width="2.0" stroke-linecap="round"/>
+      </svg>
+      <div class="g-star-label">iv.</div>
+    </div>
+
+  </div>
+
   <!-- Bottom nav -->
   <nav class="bottom-nav" aria-label="Main navigation">
     <span class="nav-d-label">Record</span>
@@ -564,6 +681,90 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <!-- Gesture logic -->
   <script type="module" src="js/gesture.js?v=7"></script>
+
+  <!-- Step indicator logic -->
+  <script>
+  (function () {
+    var _step = -1, _advTimer = null;
+
+    function setStep(n) {
+      if (n === _step) return;
+      var bar = document.getElementById('g-step-bar');
+      if (!bar) return;
+
+      if (n < 0) { bar.classList.remove('visible'); _step = n; return; }
+      bar.classList.add('visible');
+
+      for (var i = 0; i < 4; i++) {
+        var el = document.getElementById('g-step-' + i);
+        if (!el) continue;
+        el.classList.remove('active', 'done');
+        if (i < n)      el.classList.add('done');
+        else if (i === n) el.classList.add('active');
+      }
+      _step = n;
+
+      // Trigger draw animations on the newly active star
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var active = document.getElementById('g-step-' + n);
+          if (!active) return;
+
+          // Re-trigger pop animation
+          var svg = active.querySelector('.g-star-svg');
+          if (svg) { svg.style.animation = 'none'; svg.offsetWidth; svg.style.animation = ''; }
+
+          // Draw the star outline path
+          var p = active.querySelector('.g-star-path');
+          if (p && p.getTotalLength) {
+            var plen = Math.ceil(p.getTotalLength()) + 2;
+            p.style.strokeDasharray = plen;
+            p.style.strokeDashoffset = plen;
+            p.getBoundingClientRect();
+            p.style.animation = 'gPathDraw 0.42s ease-out both';
+          }
+
+          // Draw cross-lines sequentially
+          active.querySelectorAll('.g-star-line').forEach(function (ln, li) {
+            var dx = parseFloat(ln.getAttribute('x2')) - parseFloat(ln.getAttribute('x1'));
+            var dy = parseFloat(ln.getAttribute('y2')) - parseFloat(ln.getAttribute('y1'));
+            var llen = Math.ceil(Math.sqrt(dx * dx + dy * dy)) + 4;
+            ln.style.strokeDasharray = llen;
+            ln.style.strokeDashoffset = llen;
+            ln.getBoundingClientRect();
+            ln.style.animation = 'gLineDraw 0.36s ease-out ' + (0.16 + li * 0.06).toFixed(2) + 's both';
+          });
+        });
+      });
+    }
+
+    function checkPanels() {
+      var mapping = { 's-preview': 0, 's-recording': 1, 's-review': 3, 's-saving': 3 };
+      for (var id in mapping) {
+        var el = document.getElementById(id);
+        if (el && !el.classList.contains('hidden')) {
+          if (id === 's-recording') {
+            if (_step !== 1 && _step !== 2) {
+              clearTimeout(_advTimer);
+              setStep(1);
+              _advTimer = setTimeout(function () { if (_step === 1) setStep(2); }, 1500);
+            }
+          } else {
+            setStep(mapping[id]);
+          }
+          return;
+        }
+      }
+      setStep(-1);
+    }
+
+    var obs = new MutationObserver(checkPanels);
+    document.querySelectorAll('.s-panel').forEach(function (el) {
+      obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+    });
+    checkPanels();
+  })();
+  </script>
 
 </body>
 </html>
