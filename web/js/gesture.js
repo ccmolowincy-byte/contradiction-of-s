@@ -1,4 +1,4 @@
-﻿/* gesture.js â€” Body movement capture with TF.js MoveNet
+/* gesture.js â€” Body movement capture with TF.js MoveNet
  * Tracks shoulder midpoint as anatomical spine proxy.
  * Flow: loading â†’ preview â†’ recording (20 s) â†’ review â†’ saving â†’ ar.html
  */
@@ -58,6 +58,7 @@
   let rafId         = null;
   let sampleIv      = null;
   let elapsedIv     = null;
+  let reviewAnimId  = null;
   let currentFacing = 'user';
 
   let currentKeypoints = null;
@@ -102,6 +103,7 @@
   }
 
   function setState(s) {
+    stopReviewAnimation();
     currentState = s;
     ['loading','preview','recording','review','saving','error'].forEach(id => {
       const el = document.getElementById('s-' + id);
@@ -113,6 +115,10 @@
       debugEl.classList.toggle('compact', needsSpace);
       if (needsSpace) debugEl.classList.remove('expanded');
     }
+  }
+
+  function stopReviewAnimation() {
+    if (reviewAnimId !== null) { cancelAnimationFrame(reviewAnimId); reviewAnimId = null; }
   }
 
   // Tap debug panel to expand/collapse
@@ -628,90 +634,219 @@
    * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function renderReviewTrace() {
     if (!reviewCv || samples.length < 2) return;
+    stopReviewAnimation();
 
     const W  = reviewCv.width  = reviewCv.offsetWidth;
     const H  = reviewCv.height = reviewCv.offsetHeight;
     const rc = reviewCv.getContext('2d');
-
-    rc.fillStyle = '#060A0E';
-    rc.fillRect(0, 0, W, H);
     if (W < 1 || H < 1) return;
 
-    // Smoothed version (what will be saved)
     const smoothed = smoothSamples(samples);
-    const n   = smoothed.length;
+    const n        = smoothed.length;
+    if (n < 2) return;
 
-    // Fit bounding box to canvas with padding
-    const xs  = smoothed.map(p => p.x), ys = smoothed.map(p => p.y);
+    // Fit bounding box with padding, preserve aspect ratio
+    const xs   = smoothed.map(p => p.x), ys = smoothed.map(p => p.y);
     const xMin = Math.min(...xs), xMax = Math.max(...xs);
     const yMin = Math.min(...ys), yMax = Math.max(...ys);
     const pad  = 42;
     const xR   = xMax - xMin || 0.01;
     const yR   = yMax - yMin || 0.01;
-    // Preserve aspect ratio
     const drawW = W - pad * 2, drawH = H - pad * 2;
-    const scale = Math.min(drawW / xR, drawH / yR);
-    const offX  = pad + (drawW - xR * scale) / 2;
-    const offY  = pad + (drawH - yR * scale) / 2;
+    const scl  = Math.min(drawW / xR, drawH / yR);
+    const offX = pad + (drawW - xR * scl) / 2;
+    const offY = pad + (drawH - yR * scl) / 2;
 
-    function toC(p) {
-      return {
-        x: offX + (p.x - xMin) * scale,
-        y: offY + (p.y - yMin) * scale,
-      };
-    }
+    const pts = smoothed.map(p => ({
+      x: offX + (p.x - xMin) * scl,
+      y: offY + (p.y - yMin) * scl,
+    }));
 
-    // â”€â”€ Pass 1: wide soft glow (depth) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    rc.save();
-    rc.lineCap = rc.lineJoin = 'round';
-    rc.shadowColor = 'rgba(138,188,218,0.20)';
-    rc.shadowBlur  = 22;
-    rc.lineWidth   = 9;
-    rc.strokeStyle = 'rgba(60,100,140,0.18)';
-    rc.beginPath();
-    const c0 = toC(smoothed[0]);
-    rc.moveTo(c0.x, c0.y);
-    smoothed.slice(1).forEach(p => { const c = toC(p); rc.lineTo(c.x, c.y); });
-    rc.stroke();
-    rc.restore();
-
-    // â”€â”€ Pass 2: time-fading segments (early = ghost, late = bright) â”€â”€â”€â”€â”€â”€â”€
-    // Each segment drawn independently so opacity encodes time position.
-    rc.save();
-    rc.lineCap = rc.lineJoin = 'round';
-    rc.shadowBlur = 0;
+    // Velocity per segment in canvas space
+    const vel = [0];
+    let maxV  = 0;
     for (let i = 1; i < n; i++) {
-      const t    = i / (n - 1);              // 0 = start, 1 = end
-      const alpha = 0.08 + t * 0.72;         // ghost at start â†’ bright at end
-      const width = 1.2 + t * 1.8;          // thin at start â†’ thicker at end
-      const prev  = toC(smoothed[i - 1]);
-      const curr  = toC(smoothed[i]);
+      const dx = pts[i].x - pts[i - 1].x, dy = pts[i].y - pts[i - 1].y;
+      const v  = Math.sqrt(dx * dx + dy * dy);
+      vel.push(v);
+      if (v > maxV) maxV = v;
+    }
+    maxV = maxV || 1;
 
+    // Warm glow velocity ink
+    rc.fillStyle  = '#0A0806';
+    rc.fillRect(0, 0, W, H);
+    rc.lineCap = rc.lineJoin = 'round';
+
+    // Pass 1: outer diffuse gold halo
+    for (let i = 1; i < n; i++) {
+      const nV = vel[i] / maxV;
       rc.beginPath();
-      rc.strokeStyle = `rgba(188,218,235,${alpha.toFixed(2)})`;
-      rc.lineWidth   = width;
-      rc.moveTo(prev.x, prev.y);
-      rc.lineTo(curr.x, curr.y);
+      rc.moveTo(pts[i - 1].x, pts[i - 1].y);
+      rc.lineTo(pts[i].x,     pts[i].y);
+      rc.strokeStyle = `rgba(196,140,80,${(0.008 + (1 - nV) * 0.055).toFixed(3)})`;
+      rc.lineWidth   = (0.4 + (1 - nV) * 12) * 6;
       rc.stroke();
     }
-    rc.restore();
 
-    // â”€â”€ End-point marker: bright dot showing final position â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    const cLast = toC(smoothed[n - 1]);
-    rc.save();
-    rc.shadowColor = 'rgba(220,240,248,0.55)';
-    rc.shadowBlur  = 12;
-    rc.beginPath();
-    rc.arc(cLast.x, cLast.y, 4.5, 0, Math.PI * 2);
-    rc.fillStyle = 'rgba(220,240,248,0.90)';
-    rc.fill();
-    rc.restore();
+    // Pass 2: mid warm glow
+    for (let i = 1; i < n; i++) {
+      const nV = vel[i] / maxV;
+      const rv = Math.round(196 + nV * (215 - 196));
+      const gv = Math.round(140 + nV * (56  - 140));
+      const bv = Math.round(80  + nV * (60  - 80));
+      rc.beginPath();
+      rc.moveTo(pts[i - 1].x, pts[i - 1].y);
+      rc.lineTo(pts[i].x,     pts[i].y);
+      rc.strokeStyle = `rgba(${rv},${gv},${bv},${(0.025 + (1 - nV) * 0.12).toFixed(3)})`;
+      rc.lineWidth   = (0.4 + (1 - nV) * 12) * 2.4;
+      rc.stroke();
+    }
 
-    // â”€â”€ Start-point marker: dim dot showing start position â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    rc.beginPath();
-    rc.arc(c0.x, c0.y, 3, 0, Math.PI * 2);
-    rc.fillStyle = 'rgba(138,188,218,0.38)';
-    rc.fill();
+    // Pass 3: core — tissue-gold (slow) to deep red (fast)
+    for (let i = 1; i < n; i++) {
+      const nV = vel[i] / maxV;
+      const rv = Math.round(196 + nV * (215 - 196));
+      const gv = Math.round(160 + nV * (56  - 160));
+      const bv = Math.round(96  + nV * (76  - 96));
+      rc.beginPath();
+      rc.moveTo(pts[i - 1].x, pts[i - 1].y);
+      rc.lineTo(pts[i].x,     pts[i].y);
+      rc.strokeStyle = `rgba(${rv},${gv},${bv},${(0.32 + nV * 0.30).toFixed(3)})`;
+      rc.lineWidth   = 0.5 + (1 - nV) * 12;
+      rc.stroke();
+    }
+
+    // Snapshot static ink for fast per-frame restore during star animation
+    const inkSnap = rc.getImageData(0, 0, W, H);
+
+    // Arc-length parameterisation for constant-speed star travel
+    const arcS = [0];
+    for (let i = 1; i < n; i++) {
+      const dx = pts[i].x - pts[i - 1].x, dy = pts[i].y - pts[i - 1].y;
+      arcS.push(arcS[i - 1] + Math.sqrt(dx * dx + dy * dy));
+    }
+    const totalLen = arcS[arcS.length - 1];
+
+    function posAtS(s) {
+      s = Math.max(0, Math.min(totalLen, s));
+      for (let i = 1; i < arcS.length; i++) {
+        if (arcS[i] >= s) {
+          const f = (s - arcS[i - 1]) / (arcS[i] - arcS[i - 1]);
+          return {
+            x: pts[i - 1].x + f * (pts[i].x - pts[i - 1].x),
+            y: pts[i - 1].y + f * (pts[i].y - pts[i - 1].y),
+          };
+        }
+      }
+      return { ...pts[n - 1] };
+    }
+
+    // Halo points: local velocity minima — where body hesitated or turned
+    const rawMin = [];
+    for (let i = 3; i < n - 3; i++) {
+      if (vel[i] <= vel[i - 1] && vel[i] <= vel[i + 1] && vel[i] / maxV < 0.55) {
+        rawMin.push(i);
+      }
+    }
+    const haloS = [];
+    let ki = 0;
+    while (ki < rawMin.length) {
+      const grp = [rawMin[ki]];
+      while (ki + 1 < rawMin.length && rawMin[ki + 1] - rawMin[ki] <= 5) { ki++; grp.push(rawMin[ki]); }
+      const best = grp.reduce((a, b) => vel[a] < vel[b] ? a : b);
+      haloS.push(arcS[best]);
+      ki++;
+    }
+    if (haloS.length < 2) {
+      haloS.push(totalLen * 0.25, totalLen * 0.60, totalLen * 0.85);
+    }
+
+    // Asymmetrical star — 5 arms with uneven lengths
+    function drawStar(x, y, sc, al, rot) {
+      const OR = [7.0, 5.5, 7.6, 5.1, 6.7];
+      const IR = [2.8, 2.3, 3.0, 2.2, 2.6];
+      const grd = rc.createRadialGradient(x, y, 0, x, y, 15 * sc);
+      grd.addColorStop(0,    `rgba(196,162,96,${(al * 0.42).toFixed(3)})`);
+      grd.addColorStop(0.45, `rgba(196,148,76,${(al * 0.16).toFixed(3)})`);
+      grd.addColorStop(1,    'rgba(190,130,60,0)');
+      rc.beginPath();
+      rc.arc(x, y, 15 * sc, 0, Math.PI * 2);
+      rc.fillStyle = grd;
+      rc.fill();
+      rc.beginPath();
+      for (let k = 0; k < 10; k++) {
+        const isO = k % 2 === 0, pi = Math.floor(k / 2);
+        const r   = (isO ? OR[pi] : IR[pi]) * sc;
+        const ang = k * Math.PI / 5 + rot - Math.PI / 2;
+        const px  = x + r * Math.cos(ang), py = y + r * Math.sin(ang);
+        if (k === 0) rc.moveTo(px, py); else rc.lineTo(px, py);
+      }
+      rc.closePath();
+      rc.fillStyle = `rgba(220,185,120,${al.toFixed(3)})`;
+      rc.fill();
+      rc.beginPath();
+      rc.arc(x, y, 1.6 * sc, 0, Math.PI * 2);
+      rc.fillStyle = `rgba(248,220,165,${(al * 0.68).toFixed(3)})`;
+      rc.fill();
+    }
+
+    // Star animation state machine
+    const APPEAR_DELAY = 1500;
+    const DWELL_MS     = 800;
+    const FADE_MS      = 380;
+    const SPEED        = 52;
+
+    let phase      = 'wait';
+    let phaseStart = 0;
+    let visitIdx   = 0;
+    let currentS   = haloS[0];
+    let starRot    = 0.14;
+    let animStart  = null;
+
+    function frame(ts) {
+      if (!animStart) { animStart = ts; phaseStart = ts; }
+      rc.putImageData(inkSnap, 0, 0);
+
+      if (phase === 'wait') {
+        if (ts - animStart >= APPEAR_DELAY) { phase = 'appear'; phaseStart = ts; visitIdx = 0; currentS = haloS[0]; }
+
+      } else if (phase === 'appear') {
+        const a = Math.min(1, (ts - phaseStart) / FADE_MS);
+        if (a >= 1) { phase = 'dwell'; phaseStart = ts; }
+        const p = posAtS(currentS);
+        drawStar(p.x, p.y, 1, a, starRot);
+
+      } else if (phase === 'dwell') {
+        const t  = (ts - phaseStart) / DWELL_MS;
+        const sc = 1 + 0.09 * Math.sin(t * Math.PI);
+        if (t >= 1) { phase = (visitIdx === haloS.length - 1) ? 'loopfade' : 'travel'; phaseStart = ts; }
+        const p = posAtS(haloS[visitIdx]);
+        drawStar(p.x, p.y, sc, 1, starRot);
+
+      } else if (phase === 'travel') {
+        currentS = haloS[visitIdx] + (ts - phaseStart) / 1000 * SPEED;
+        if (currentS >= haloS[visitIdx + 1]) { currentS = haloS[visitIdx + 1]; visitIdx++; phase = 'dwell'; phaseStart = ts; }
+        const p = posAtS(currentS);
+        drawStar(p.x, p.y, 1, 1, starRot);
+
+      } else if (phase === 'loopfade') {
+        const t = (ts - phaseStart) / FADE_MS;
+        if (t >= 1) { visitIdx = 0; currentS = haloS[0]; phase = 'fadein'; phaseStart = ts; }
+        else { const p = posAtS(haloS[haloS.length - 1]); drawStar(p.x, p.y, 1, 1 - t, starRot); }
+
+      } else if (phase === 'fadein') {
+        const t = Math.min(1, (ts - phaseStart) / FADE_MS);
+        if (t >= 1) { phase = 'dwell'; phaseStart = ts; }
+        const p = posAtS(haloS[0]);
+        drawStar(p.x, p.y, 1, t, starRot);
+      }
+
+      starRot += 0.003;
+      reviewAnimId = requestAnimationFrame(frame);
+    }
+
+    reviewAnimId = requestAnimationFrame(frame);
   }
 
   /* â”€â”€ Save to Supabase â†’ redirect to ar.html?trace=<id> â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
