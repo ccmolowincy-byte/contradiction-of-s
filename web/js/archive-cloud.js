@@ -25,6 +25,7 @@ const SKEL_CONN = [
 ];
 const SKEL_SCORE    = 0.20;  // minimum keypoint confidence
 const RENDER_FRAMES = 12;    // ghost poses shown per trace (sampled from up to 50 stored)
+const BLOOM_DURATION  = 7.5; // seconds the tissue-gold bloom persists on the user's own figure
 
 /* ── Per-contributor identity system ──────────────────────────────────────
  * Each trace is permanently assigned a palette colour and a body scale
@@ -220,6 +221,24 @@ export async function initGarden(canvas, options = {}) {
     ctx.textBaseline = 'top';
     ctx.fillText(text, CW / 2, CH * 0.93);
     ctx.restore();
+  }
+
+  function _drawBloom(ctx, CW, CH, age) {
+    if (age < 0 || age >= BLOOM_DURATION) return;
+    const rise  = Math.min(age / 1.4, 1);
+    const fall  = age > 1.6 ? Math.max(0, 1 - (age - 1.6) / (BLOOM_DURATION - 1.6)) : 1;
+    const alpha = rise * fall * 0.52;
+    if (alpha < 0.005) return;
+    const cx = CW / 2, cy = CH / 2;
+    const r  = CW * 0.08 + rise * CW * 0.18 + (age > 1.6 ? (age - 1.6) * CW * 0.055 : 0);
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd.addColorStop(0,    'rgba(196,160,96,' + alpha.toFixed(3) + ')');
+    grd.addColorStop(0.55, 'rgba(196,160,96,' + (alpha * 0.38).toFixed(3) + ')');
+    grd.addColorStop(1,    'rgba(196,160,96,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function _applyVignette(ctx, CW, CH) {
@@ -626,6 +645,7 @@ export async function initGarden(canvas, options = {}) {
       palette:        palette     != null ? palette     : SPINAL_PALETTE[0],
       traceScale:     traceScale  != null ? traceScale  : 1.0,
       labelText:      labelText   != null ? labelText   : '',
+      bloomStart:     isHighlighted ? clock : 0,
     };
 
     if (isHighlighted) {
@@ -740,6 +760,7 @@ export async function initGarden(canvas, options = {}) {
             r.lastDrawnFrame = ph;
             const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
             r.skelCtx.clearRect(0, 0, CW, CH);
+            if (r.bloomStart > 0) _drawBloom(r.skelCtx, CW, CH, clock - r.bloomStart);
 
             // Short ghost trail: 3 frames fading behind the current one
             for (let t = 3; t >= 1; t--) {
@@ -758,6 +779,7 @@ export async function initGarden(canvas, options = {}) {
           const midIdx = Math.floor(r.skelFrames.length / 2);
           const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
           r.skelCtx.clearRect(0, 0, CW, CH);
+          if (r.bloomStart > 0) _drawBloom(r.skelCtx, CW, CH, clock - r.bloomStart);
           customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, clock, r.palette);
           _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
           r.boneTex.needsUpdate = true;
