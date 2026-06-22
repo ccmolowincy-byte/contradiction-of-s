@@ -184,7 +184,9 @@ export async function initGarden(canvas, options = {}) {
   scene.add(gardenGroup);
 
   /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  let gardenPanX = 0, gardenPanZ = 0;
+  let gardenPanX = 0, gardenPanY = 0, gardenPanZ = 0;
+  let _targetCamZ = 4.5;
+  const _CAM_Z_MIN = 1.8, _CAM_Z_MAX = 9.0;
 
   const ribbons    = [];
   let   traceCount = 0;
@@ -701,8 +703,9 @@ export async function initGarden(canvas, options = {}) {
 
     // rotation off â€” garden is static
 
-    camera.position.x += (targetCamX - camera.position.x) * 0.006;
-    camera.position.y += (targetCamY - camera.position.y) * 0.006;
+    camera.position.x += (targetCamX    - camera.position.x) * 0.006;
+    camera.position.y += (targetCamY    - camera.position.y) * 0.006;
+    camera.position.z += (_targetCamZ   - camera.position.z) * 0.06;
     camera.lookAt(0, -0.5, 0);
 
     const n = ribbons.length;
@@ -822,11 +825,17 @@ export async function initGarden(canvas, options = {}) {
     gardenPanZ = z;
   }
 
+  function setZoom(camZ) {
+    _targetCamZ = Math.max(_CAM_Z_MIN, Math.min(_CAM_Z_MAX, camZ));
+  }
+
+  function getZoom() { return _targetCamZ; }
+
   function renderNow() { renderer.render(scene, camera); }
 
   function getDebugInfo() { return { ..._debug }; }
 
-  return { loadBatch, addTrace, update, setOrientation, setPan, resize, destroy, renderNow, getDebugInfo };
+  return { loadBatch, addTrace, update, setOrientation, setPan, setZoom, getZoom, resize, destroy, renderNow, getDebugInfo };
 }
 
 
