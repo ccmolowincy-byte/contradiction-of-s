@@ -141,9 +141,8 @@ export async function initGarden(canvas, options = {}) {
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    alpha:                 !options.opaque,
-    antialias:             true,
-    preserveDrawingBuffer: true,   // required for screenshot capture
+    alpha:     !options.opaque,
+    antialias: false,
   });
   renderer.setPixelRatio(dpr);
   renderer.setSize(W, H, false);
@@ -204,8 +203,8 @@ export async function initGarden(canvas, options = {}) {
    *
    * Falls back to dark-red LineSegments if customSkel failed to load.
    * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const ANIM_SLOTS   = 10;  // most-recent N traces: full pose cycling + live petals
-  const BREATHE_SLOTS = 35; // traces 10–35: petal breathing only (fixed mid-frame, live clock)
+  const ANIM_SLOTS   = 5;   // most-recent N traces: full pose cycling + live petals
+  const BREATHE_SLOTS = 18; // traces 5–18: petal breathing only (fixed mid-frame, live clock)
   let breatheFrame = 0;     // incremented each update(); breathe redraws throttled to ~15 fps
 
   /* â”€â”€ Soft radial vignette â€” fades petal/edge clipping gracefully â”€â”€â”€â”€â”€â”€â”€â”€â”€ */

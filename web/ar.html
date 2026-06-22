@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -810,11 +810,13 @@
 
       // â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       let prev = performance.now();
+      const MIN_FRAME_S = 1 / 25;
       function tick(now) {
+        animId = requestAnimationFrame(tick);
         const dt = Math.min((now - prev) / 1000, 0.05);
+        if (dt < MIN_FRAME_S) return;
         prev = now;
         if (garden) garden.update(dt);
-        animId = requestAnimationFrame(tick);
       }
       animId = requestAnimationFrame(tick);
 
@@ -966,7 +968,7 @@
       flashEl.classList.add('active');
       setTimeout(() => flashEl.classList.remove('active'), 160);
 
-      // Force garden to render into the preserved buffer before we read it
+      // Render synchronously — canvas is readable in the same JS task before the next frame
       if (garden) garden.renderNow();
 
       // Use garden canvas's actual internal pixel dimensions (already at devicePixelRatio)
