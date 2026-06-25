@@ -9,9 +9,107 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&display=swap" rel="stylesheet">
 
+  <link rel="preload" href="assets/home/home-screen-intro.jpg" as="image">
   <link rel="stylesheet" href="style.css">
   <style>
     body { overflow: hidden; }
+
+    /* ── Intro overlay ── */
+    #intro-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+    }
+    #intro-dark {
+      position: absolute;
+      inset: 0;
+      background: #0D0908;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(32px,8vw,60px) clamp(24px,6vw,48px);
+    }
+    .intro-text {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(13px,3.8vw,18px);
+      color: rgba(240,234,224,0.80);
+      line-height: 1.75;
+      text-align: center;
+      max-width: 320px;
+    }
+    #intro-parch {
+      position: absolute;
+      inset: 0;
+      background: #F0EAE0;
+      opacity: 0;
+    }
+    #intro-draw {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 65%;
+      opacity: 0;
+    }
+    #intro-draw img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 38%;
+      mix-blend-mode: multiply;
+      display: block;
+    }
+    #intro-title {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: max(56px,14vh);
+      text-align: center;
+      opacity: 0;
+    }
+    .intro-tm {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(18px,5.5vw,32px);
+      color: #1C0E0A;
+      line-height: 1.3;
+      letter-spacing: 0.02em;
+    }
+    .intro-ts {
+      display: block;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(10px,2.8vw,16px);
+      color: #5C1A1A;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+    #intro-tap {
+      position: absolute;
+      bottom: max(28px,7vh);
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-size: clamp(13px,3.8vw,19px);
+      color: #5C1A1A;
+      letter-spacing: 0.1em;
+      border: 0.5px solid #8B2525;
+      padding: clamp(8px,2vh,12px) clamp(20px,6vw,32px);
+      background: transparent;
+      cursor: pointer;
+      opacity: 0;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #intro-overlay { display: none; }
+    }
 
     #home-stage {
       position: fixed;
@@ -251,6 +349,22 @@
 
   </div><!-- /#home-stage -->
 
+  <!-- ── Intro overlay ── -->
+  <div id="intro-overlay">
+    <div id="intro-dark">
+      <p class="intro-text">In 2023, I was diagnosed with scoliosis. This archive holds traces of the repetitive exercises I was prescribed to negotiate the pain.</p>
+    </div>
+    <div id="intro-parch">
+      <div id="intro-draw">
+        <img src="assets/home/home-screen-intro.jpg" alt="" decoding="async">
+      </div>
+      <div id="intro-title">
+        <span class="intro-tm">The Contradiction of S</span>
+        <span class="intro-ts">AR Archive</span>
+      </div>
+      <button id="intro-tap">tap to begin</button>
+    </div>
+  </div>
 
   <!-- ── Navigation ── -->
   <nav class="bottom-nav" aria-label="Main navigation">
@@ -262,6 +376,51 @@
     </div>
   </nav>
 
+
+  <script>
+    (function () {
+      var overlay = document.getElementById('intro-overlay');
+      var dark    = document.getElementById('intro-dark');
+      var parch   = document.getElementById('intro-parch');
+      var draw    = document.getElementById('intro-draw');
+      var title   = document.getElementById('intro-title');
+      var tap     = document.getElementById('intro-tap');
+
+      function fd(el, to, dur, del) {
+        setTimeout(function () {
+          el.style.transition = 'opacity ' + dur + 's ease-out';
+          el.style.opacity    = String(to);
+        }, del * 1000);
+      }
+
+      // Variant A: dark fades → parchment + title rise → drawing blooms → tap appears
+      fd(dark,  0, 2.0, 0.1);
+      fd(parch, 1, 2.0, 0.5);
+      fd(title, 1, 2.0, 0.8);
+      fd(draw,  1, 2.5, 3.2);
+      fd(tap,   1, 1.2, 6.0);
+
+      // Failsafe: never leave visitors stuck on a dark screen
+      var failsafe = setTimeout(function () {
+        overlay.style.display = 'none';
+      }, 15000);
+
+      tap.addEventListener('click', function () {
+        clearTimeout(failsafe);
+        tap.style.pointerEvents = 'none';
+        // Fade parchment layers out, dark back in → clean fade-to-black
+        [parch, draw, title, tap].forEach(function (el) {
+          el.style.transition = 'opacity 0.7s ease-out';
+          el.style.opacity = '0';
+        });
+        dark.style.transition = 'opacity 0.7s ease-out';
+        dark.style.opacity = '1';
+        setTimeout(function () {
+          window.location.href = 'gesture.html';
+        }, 800);
+      });
+    }());
+  </script>
 
   <script>
     var key  = 'home-var';
