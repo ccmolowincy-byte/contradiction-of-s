@@ -33,11 +33,11 @@
       font-family: 'Cormorant Garamond', Georgia, serif;
       font-style: italic;
       font-weight: 300;
-      font-size: clamp(13px,3.8vw,18px);
-      color: rgba(240,234,224,0.80);
+      font-size: clamp(14px,4.2vw,20px);
+      color: rgba(240,234,224,0.88);
       line-height: 1.75;
       text-align: center;
-      max-width: 320px;
+      max-width: 300px;
     }
     #intro-parch {
       position: absolute;
@@ -45,11 +45,41 @@
       background: #F0EAE0;
       opacity: 0;
     }
+    /* paragraphs 2–4 on parchment */
+    #intro-texts {
+      position: absolute;
+      top: max(22px,5vh);
+      left: clamp(22px,6vw,44px);
+      right: clamp(22px,6vw,44px);
+      opacity: 0;
+      z-index: 2;
+    }
+    .intro-parch-text {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(11px,3vw,14px);
+      color: rgba(28,14,10,0.78);
+      line-height: 1.75;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .intro-parch-text:last-child { margin-bottom: 0; }
+    /* decorative stars on parchment */
+    .intro-star {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .intro-star-a { top: 8%;  right: 6%; }
+    .intro-star-b { top: 52%; left: 4%; }
+    .intro-star-c { bottom: 46%; right: 5%; }
     #intro-draw {
       position: absolute;
       left: 0; right: 0; bottom: 0;
-      height: 65%;
+      height: 50%;
       opacity: 0;
+      z-index: 1;
     }
     #intro-draw img {
       width: 100%;
@@ -59,39 +89,9 @@
       mix-blend-mode: multiply;
       display: block;
     }
-    #intro-title {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-top: max(56px,14vh);
-      text-align: center;
-      opacity: 0;
-    }
-    .intro-tm {
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: clamp(18px,5.5vw,32px);
-      color: #1C0E0A;
-      line-height: 1.3;
-      letter-spacing: 0.02em;
-    }
-    .intro-ts {
-      display: block;
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: clamp(10px,2.8vw,16px);
-      color: #5C1A1A;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      margin-top: 6px;
-    }
     #intro-tap {
       position: absolute;
-      bottom: max(28px,7vh);
+      bottom: max(24px,6vh);
       left: 50%;
       transform: translateX(-50%);
       font-family: 'Cormorant Garamond', Georgia, serif;
@@ -106,6 +106,7 @@
       opacity: 0;
       white-space: nowrap;
       -webkit-tap-highlight-color: transparent;
+      z-index: 3;
     }
     @media (prefers-reduced-motion: reduce) {
       #intro-overlay { display: none; }
@@ -349,18 +350,38 @@
 
   </div><!-- /#home-stage -->
 
-  <!-- ── Intro overlay ── -->
+  <!-- ── Intro overlay (Option B) ── -->
   <div id="intro-overlay">
+    <!-- Dark layer: para 1 holds alone for 3 s -->
     <div id="intro-dark">
-      <p class="intro-text">In 2023, I was diagnosed with scoliosis. This archive holds traces of the repetitive exercises I was prescribed to negotiate the pain.</p>
+      <p class="intro-text">The Contradiction of S explores how people live with, adapt to, and negotiate scoliosis.</p>
     </div>
+    <!-- Parchment layer: fades in at 3 s with context + drawing -->
     <div id="intro-parch">
+      <!-- decorative stars -->
+      <div class="intro-star intro-star-a" aria-hidden="true">
+        <svg viewBox="0 0 128 128" width="26" height="26" xmlns="http://www.w3.org/2000/svg">
+          <path fill="rgba(92,26,26,0.18)" d="M87.085930,112.291977 C87.572365,118.436356 84.936508,122.692001 80.475388,125.776062 C79.209877,126.650932 76.959808,126.824310 75.477005,126.344215 C74.780518,126.118713 74.106544,123.203819 74.655014,122.148003 C82.258606,107.511009 78.160362,93.264801 73.525200,79.006416 C73.271065,78.224655 72.916862,77.475433 72.153320,75.578255 C69.586800,78.171249 67.274574,80.344925 65.168297,82.702576 C64.085670,83.914413 63.668297,85.904953 62.414822,86.733917 C60.785385,87.811508 58.614010,88.498367 56.696087,88.455223 C56.104683,88.441917 54.830772,85.317093 55.157734,83.918076 C56.355686,78.792221 57.333950,73.380386 59.795483,68.834641 C64.527908,60.095222 62.808609,53.363026 56.219818,46.403652 C47.612812,37.312546 39.602207,27.640726 31.670940,17.943981 C30.534494,16.554565 30.405281,13.103568 31.347885,11.525060 C32.994530,8.767548 35.188736,10.713937 37.072407,12.229750 C46.336731,19.684841 55.642582,27.088642 64.972946,34.460972 C66.213142,35.440903 67.677017,36.137764 69.717751,37.379879 C70.247086,32.780041 70.341873,28.837475 71.270874,25.102400 C71.793129,23.002674 73.693115,21.245625 74.972412,19.334194 C76.645515,21.057970 79.184067,22.512033 79.821838,24.558470 C81.432358,29.726280 82.652786,35.114651 83.185081,40.498142 C84.181145,50.571987 93.044281,52.366066 99.438469,56.749794 C101.745857,58.331696 104.606964,59.122131 106.858139,60.763668 C108.181648,61.728756 109.919022,64.234489 109.506714,65.031555 C108.656593,66.674965 106.659142,68.213638 104.827682,68.749580 C101.853340,69.619995 98.642738,69.832390 95.514717,69.997208 C88.998024,70.340591 87.686745,71.570351 89.131592,77.779541 C91.832253,89.385628 89.799370,100.622772 87.085930,112.291977 z"/>
+        </svg>
+      </div>
+      <div class="intro-star intro-star-b" aria-hidden="true">
+        <svg viewBox="0 0 128 128" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+          <path fill="rgba(92,26,26,0.13)" d="M87.085930,112.291977 C87.572365,118.436356 84.936508,122.692001 80.475388,125.776062 C79.209877,126.650932 76.959808,126.824310 75.477005,126.344215 C74.780518,126.118713 74.106544,123.203819 74.655014,122.148003 C82.258606,107.511009 78.160362,93.264801 73.525200,79.006416 C73.271065,78.224655 72.916862,77.475433 72.153320,75.578255 C69.586800,78.171249 67.274574,80.344925 65.168297,82.702576 C64.085670,83.914413 63.668297,85.904953 62.414822,86.733917 C60.785385,87.811508 58.614010,88.498367 56.696087,88.455223 C56.104683,88.441917 54.830772,85.317093 55.157734,83.918076 C56.355686,78.792221 57.333950,73.380386 59.795483,68.834641 C64.527908,60.095222 62.808609,53.363026 56.219818,46.403652 C47.612812,37.312546 39.602207,27.640726 31.670940,17.943981 C30.534494,16.554565 30.405281,13.103568 31.347885,11.525060 C32.994530,8.767548 35.188736,10.713937 37.072407,12.229750 C46.336731,19.684841 55.642582,27.088642 64.972946,34.460972 C66.213142,35.440903 67.677017,36.137764 69.717751,37.379879 C70.247086,32.780041 70.341873,28.837475 71.270874,25.102400 C71.793129,23.002674 73.693115,21.245625 74.972412,19.334194 C76.645515,21.057970 79.184067,22.512033 79.821838,24.558470 C81.432358,29.726280 82.652786,35.114651 83.185081,40.498142 C84.181145,50.571987 93.044281,52.366066 99.438469,56.749794 C101.745857,58.331696 104.606964,59.122131 106.858139,60.763668 C108.181648,61.728756 109.919022,64.234489 109.506714,65.031555 C108.656593,66.674965 106.659142,68.213638 104.827682,68.749580 C101.853340,69.619995 98.642738,69.832390 95.514717,69.997208 C88.998024,70.340591 87.686745,71.570351 89.131592,77.779541 C91.832253,89.385628 89.799370,100.622772 87.085930,112.291977 z"/>
+        </svg>
+      </div>
+      <div class="intro-star intro-star-c" aria-hidden="true">
+        <svg viewBox="0 0 128 128" width="14" height="14" xmlns="http://www.w3.org/2000/svg">
+          <path fill="rgba(92,26,26,0.10)" d="M87.085930,112.291977 C87.572365,118.436356 84.936508,122.692001 80.475388,125.776062 C79.209877,126.650932 76.959808,126.824310 75.477005,126.344215 C74.780518,126.118713 74.106544,123.203819 74.655014,122.148003 C82.258606,107.511009 78.160362,93.264801 73.525200,79.006416 C73.271065,78.224655 72.916862,77.475433 72.153320,75.578255 C69.586800,78.171249 67.274574,80.344925 65.168297,82.702576 C64.085670,83.914413 63.668297,85.904953 62.414822,86.733917 C60.785385,87.811508 58.614010,88.498367 56.696087,88.455223 C56.104683,88.441917 54.830772,85.317093 55.157734,83.918076 C56.355686,78.792221 57.333950,73.380386 59.795483,68.834641 C64.527908,60.095222 62.808609,53.363026 56.219818,46.403652 C47.612812,37.312546 39.602207,27.640726 31.670940,17.943981 C30.534494,16.554565 30.405281,13.103568 31.347885,11.525060 C32.994530,8.767548 35.188736,10.713937 37.072407,12.229750 C46.336731,19.684841 55.642582,27.088642 64.972946,34.460972 C66.213142,35.440903 67.677017,36.137764 69.717751,37.379879 C70.247086,32.780041 70.341873,28.837475 71.270874,25.102400 C71.793129,23.002674 73.693115,21.245625 74.972412,19.334194 C76.645515,21.057970 79.184067,22.512033 79.821838,24.558470 C81.432358,29.726280 82.652786,35.114651 83.185081,40.498142 C84.181145,50.571987 93.044281,52.366066 99.438469,56.749794 C101.745857,58.331696 104.606964,59.122131 106.858139,60.763668 C108.181648,61.728756 109.919022,64.234489 109.506714,65.031555 C108.656593,66.674965 106.659142,68.213638 104.827682,68.749580 C101.853340,69.619995 98.642738,69.832390 95.514717,69.997208 C88.998024,70.340591 87.686745,71.570351 89.131592,77.779541 C91.832253,89.385628 89.799370,100.622772 87.085930,112.291977 z"/>
+        </svg>
+      </div>
+      <!-- paragraphs 2–4 -->
+      <div id="intro-texts">
+        <p class="intro-parch-text">Developed through interviews, research, and lived experience, the project translates stories, coping strategies, and embodied knowledge into physical artefacts and a growing digital archive.</p>
+        <p class="intro-parch-text">By activating the AR experience, you will encounter a collective garden of movements surrounding the sculptures. As more people participate, each gesture becomes part of a larger landscape of shared experience.</p>
+        <p class="intro-parch-text">You are invited to contribute a movement and become part of this evolving archive.</p>
+      </div>
       <div id="intro-draw">
         <img src="assets/home/home-screen-intro.jpg" alt="" decoding="async">
-      </div>
-      <div id="intro-title">
-        <span class="intro-tm">The Contradiction of S</span>
-        <span class="intro-ts">AR Archive</span>
       </div>
       <button id="intro-tap">tap to begin</button>
     </div>
@@ -382,8 +403,8 @@
       var overlay = document.getElementById('intro-overlay');
       var dark    = document.getElementById('intro-dark');
       var parch   = document.getElementById('intro-parch');
+      var texts   = document.getElementById('intro-texts');
       var draw    = document.getElementById('intro-draw');
-      var title   = document.getElementById('intro-title');
       var tap     = document.getElementById('intro-tap');
 
       function fd(el, to, dur, del) {
@@ -393,23 +414,23 @@
         }, del * 1000);
       }
 
-      // Variant A: dark fades → parchment + title rise → drawing blooms → tap appears
-      fd(dark,  0, 2.0, 0.1);
-      fd(parch, 1, 2.0, 0.5);
-      fd(title, 1, 2.0, 0.8);
-      fd(draw,  1, 2.5, 3.2);
-      fd(tap,   1, 1.2, 6.0);
+      // Option B: dark holds 3 s with para 1 → parchment blooms in → texts appear → drawing → tap
+      fd(dark,  0, 1.8, 3.0);
+      fd(parch, 1, 1.8, 3.2);
+      fd(texts, 1, 1.5, 4.2);
+      fd(draw,  1, 2.5, 5.0);
+      fd(tap,   1, 1.2, 8.0);
 
       // Failsafe: never leave visitors stuck on a dark screen
       var failsafe = setTimeout(function () {
         overlay.style.display = 'none';
-      }, 15000);
+      }, 18000);
 
       tap.addEventListener('click', function () {
         clearTimeout(failsafe);
         tap.style.pointerEvents = 'none';
-        // Fade parchment layers out, dark back in → clean fade-to-black
-        [parch, draw, title, tap].forEach(function (el) {
+        // Fade parchment layers out, dark back in → clean fade-to-black before navigate
+        [parch, texts, draw, tap].forEach(function (el) {
           el.style.transition = 'opacity 0.7s ease-out';
           el.style.opacity = '0';
         });
