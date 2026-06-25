@@ -72,11 +72,12 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .g-loading-text {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 9px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: rgba(200,216,224,0.28);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-size: 16px;
+      letter-spacing: 0.04em;
+      color: rgba(240,234,224,0.50);
+      transition: opacity 0.5s;
     }
     #g-loading-sub {
       font-family: 'Space Grotesk', sans-serif;
@@ -87,6 +88,21 @@
       text-align: center;
       padding: 0 32px;
     }
+
+    /* — Star trace loading animation — */
+    #g-load-star { display:flex; align-items:center; justify-content:center; margin-bottom:4px; }
+    #g-load-path {
+      fill: #981D12;
+      fill-opacity: 0;
+      stroke: #981D12;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 700;
+      stroke-dashoffset: 700;
+    }
+    @keyframes gLoadDraw { to { stroke-dashoffset: 0; } }
+    @keyframes gLoadFill { to { fill-opacity: 1; } }
 
     /* â”€â”€ PREVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #s-preview {
@@ -523,8 +539,12 @@
 
   <!-- â”€â”€ LOADING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div id="s-loading" class="s-panel">
-    <div class="g-spinner"></div>
-    <div class="g-loading-text" id="g-loading-status">The archive is awakening.</div>
+    <div id="g-load-star">
+      <svg viewBox="20 5 95 128" width="72" height="98" aria-hidden="true">
+        <path id="g-load-path" d="M87.085930,112.291977 C87.572365,118.436356 84.936508,122.692001 80.475388,125.776062 C79.209877,126.650932 76.959808,126.824310 75.477005,126.344215 C74.780518,126.118713 74.106544,123.203819 74.655014,122.148003 C82.258606,107.511009 78.160362,93.264801 73.525200,79.006416 C73.271065,78.224655 72.916862,77.475433 72.153320,75.578255 C69.586800,78.171249 67.274574,80.344925 65.168297,82.702576 C64.085670,83.914413 63.668297,85.904953 62.414822,86.733917 C60.785385,87.811508 58.614010,88.498367 56.696087,88.455223 C56.104683,88.441917 54.830772,85.317093 55.157734,83.918076 C56.355686,78.792221 57.333950,73.380386 59.795483,68.834641 C64.527908,60.095222 62.808609,53.363026 56.219818,46.403652 C47.612812,37.312546 39.602207,27.640726 31.670940,17.943981 C30.534494,16.554565 30.405281,13.103568 31.347885,11.525060 C32.994530,8.767548 35.188736,10.713937 37.072407,12.229750 C46.336731,19.684841 55.642582,27.088642 64.972946,34.460972 C66.213142,35.440903 67.677017,36.137764 69.717751,37.379879 C70.247086,32.780041 70.341873,28.837475 71.270874,25.102400 C71.793129,23.002674 73.693115,21.245625 74.972412,19.334194 C76.645515,21.057970 79.184067,22.512033 79.821838,24.558470 C81.432358,29.726280 82.652786,35.114651 83.185081,40.498142 C84.181145,50.571987 93.044281,52.366066 99.438469,56.749794 C101.745857,58.331696 104.606964,59.122131 106.858139,60.763668 C108.181648,61.728756 109.919022,64.234489 109.506714,65.031555 C108.656593,66.674965 106.659142,68.213638 104.827682,68.749580 C101.853340,69.619995 98.642738,69.832390 95.514717,69.997208 C88.998024,70.340591 87.686745,71.570351 89.131592,77.779541 C91.832253,89.385628 89.799370,100.622772 87.085930,112.291977 z"/>
+      </svg>
+    </div>
+    <div class="g-loading-text" id="g-loading-status">the archive stirs.</div>
     <div id="g-loading-sub">first visit learns to see the body — give it a moment</div>
   </div>
 
@@ -670,6 +690,26 @@
       if (el) el.textContent = 'Error: ' + msg;
       console.error('[gesture html] unhandled rejection:', msg);
     });
+
+    // Star trace animation — measure actual path length, then start draw+fill sequence
+    (function() {
+      var p = document.getElementById('g-load-path');
+      if (!p) return;
+      var len = p.getTotalLength ? (Math.ceil(p.getTotalLength()) + 8) : 700;
+      p.style.strokeDasharray  = len;
+      p.style.strokeDashoffset = len;
+      p.getBoundingClientRect(); // flush
+      p.style.animation =
+        'gLoadDraw 3.5s cubic-bezier(0.4,0,0.2,1) 0.4s forwards,' +
+        'gLoadFill 0.9s ease-out 4.0s forwards';
+
+      // Poetic text phases — override gesture.js status messages
+      var el = document.getElementById('g-loading-status');
+      window._setLoadPhase = function(txt) { if (el) el.textContent = txt; };
+      window._setLoadPhase('the archive stirs.');
+      setTimeout(function() { window._setLoadPhase('learning to see the body.'); }, 2400);
+      setTimeout(function() { window._setLoadPhase('almost.'); }, 4800);
+    })();
   </script>
 
   <script src="js/transitions.js"></script>

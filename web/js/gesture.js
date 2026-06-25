@@ -41,7 +41,6 @@
 
   /* â”€â”€ Debug log (visible on screen + console) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function log(msg, type) {
-    console.log('[archive]', msg);
     if (!debugEl) return;
     const line = document.createElement('div');
     line.className = 'g-debug-line' + (type ? ' ' + type : '');
@@ -79,9 +78,8 @@
   function lerp(a, b, t)    { return a + (b - a) * clamp(t, 0, 1); }
 
   function setLoadingStatus(msg, sub) {
-    console.log('[gesture load]', msg, sub !== undefined ? '| ' + sub : '');
-    // Support both new id and old cached class — fallback ensures text updates
-    // even if the browser has the old gesture.html without id="g-loading-status"
+    // Poetic phases manage the main status text — suppress technical messages
+    if (window._setLoadPhase) return;
     const el = document.getElementById('g-loading-status')
             || document.querySelector('.g-loading-text');
     const subEl = document.getElementById('g-loading-sub')
