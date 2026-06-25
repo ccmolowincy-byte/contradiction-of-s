@@ -10,7 +10,17 @@
   let db; // assigned inside init() after CDN guard — avoids top-level throw if supabase CDN fails
 
   /* â”€â”€ Single exhibition prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const PROMPT = 'Show a movement you use to cope with physical pain.';
+  const PROMPTS = [
+    'Move the way you move when no one is watching.',
+    'Do the exercise. The one you\'ve done the most times.',
+    'Show me the stretch that helps.',
+    'Move through what today feels like.',
+    'Do the movement. The one your body knows without thinking.',
+    'Move the way you have for years.',
+    'Do the stretch. The same one, again.',
+    'Show me what you do in the morning.',
+  ];
+  const PROMPT = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
 
   /* â”€â”€ Recording constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const RECORD_DURATION = 20;   // seconds
