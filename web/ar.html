@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -515,18 +515,20 @@
 
     <!-- Camera error -->
     <div id="ar-cam-error">
-      <p>Camera not available.<br>Allow camera access in your browser settings.</p>
-      <a href="draw.html">â† contribute a gesture instead</a>
+      <p>To enter the space, allow the archive to see through your camera.</p>
+      <p style="margin-top:10px;font-size:12px">The archive exists without your camera. The garden continues.</p>
+      <a href="gesture.html" style="display:block;margin-top:16px">&#8592; leave a trace instead</a>
+      <button onclick="document.getElementById('ar-cam-error').classList.remove('visible')" style="display:block;margin-top:10px;background:transparent;border:none;font-family:inherit;font-style:italic;font-size:13px;color:rgba(240,234,224,0.5);cursor:pointer;padding:0;text-align:center;width:100%">continue to the garden &#8594;</button>
     </div>
 
   </div><!-- /#ar-stage -->
 
   <nav class="bottom-nav" aria-label="Main navigation">
-    <span class="nav-d-label">Archive</span>
+    <span class="nav-d-label">enter the space</span>
     <div class="nav-d-dots">
-      <a href="index.html"   class="nav-dot"        aria-label="Home"></a>
-      <a href="gesture.html" class="nav-dot"         aria-label="Record"></a>
-      <a href="ar.html"      class="nav-dot active"  aria-label="Archive"></a>
+      <a href="index.html"   class="nav-dot"        aria-label="home"></a>
+      <a href="gesture.html" class="nav-dot"         aria-label="leave a trace"></a>
+      <a href="ar.html"      class="nav-dot active"  aria-label="enter the space"></a>
     </div>
   </nav>
 
