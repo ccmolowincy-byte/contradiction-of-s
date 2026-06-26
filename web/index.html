@@ -489,8 +489,11 @@
         dark.style.transition = 'opacity 0.7s ease-out';
         dark.style.opacity = '1';
         var hint = document.getElementById('intro-camera-hint');
-        if (hint) setTimeout(function () { hint.style.opacity = '1'; }, 450);
-        setTimeout(function () { window.location.href = 'gesture.html'; }, 1700);
+        if (hint) {
+          setTimeout(function () { hint.style.opacity = '1'; }, 800);   // after texts fully gone
+          setTimeout(function () { hint.style.opacity = '0'; }, 1700);  // fade out before navigating
+        }
+        setTimeout(function () { window.location.href = 'gesture.html'; }, 2500);
       }
 
       // Whole parchment layer is tappable (not just the small button)
