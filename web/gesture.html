@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#060A0E">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Garden of S">
   <title>Record — The Garden of S</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&family=IM+Fell+English:ital@0;1&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
@@ -520,6 +526,70 @@
       transition: opacity 0.6s;
     }
 
+    /* ── SAVED ─────────────────────────────────────────────────────────────────── */
+    #s-saved {
+      background: rgba(6,10,14,0.92);
+      justify-content: flex-end;
+      padding-bottom: 80px;
+      pointer-events: auto;
+    }
+    #g-saved-header {
+      position: absolute;
+      top: 32px; left: 0; right: 0;
+      text-align: center;
+      padding: 0 32px;
+    }
+    #g-saved-eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 8px;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: rgba(200,216,224,0.22);
+      margin-bottom: 10px;
+    }
+    #g-saved-title {
+      font-family: 'IM Fell English', Georgia, serif;
+      font-style: italic;
+      font-size: 16px;
+      color: rgba(238,246,248,0.60);
+      letter-spacing: 0.02em;
+    }
+    #g-saved-canvas {
+      position: absolute;
+      top: 100px;
+      left: 20px; right: 20px;
+      bottom: 180px;
+      border-radius: 2px;
+    }
+    #g-saved-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 0 40px;
+    }
+    #g-share-btn {
+      width: 100%;
+      padding: 16px;
+      background: transparent;
+      border: 1.5px solid rgba(200,216,224,0.45);
+      color: rgba(238,246,248,0.82);
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 16px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      border-radius: 2px;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #g-share-btn:active { border-color: rgba(200,216,224,0.9); color: var(--vert-white); }
+    #g-saved-secondary {
+      display: flex;
+      gap: 40px;
+    }
+
   </style>
 </head>
 <body>
@@ -595,9 +665,25 @@
   </div>
 
   <!-- â”€â”€ SAVING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
-  <div id="s-saving" class="s-panel hidden">
-    <div class="g-spinner"></div>
-    <div id="g-saving-text">Your trace is entering the archive&hellip;</div>
+  <div id=”s-saving” class=”s-panel hidden”>
+    <div class=”g-spinner”></div>
+    <div id=”g-saving-text”>Your trace is entering the archive&hellip;</div>
+  </div>
+
+  <!-- ── SAVED ─────────────────────────────────────────────────────────────────── -->
+  <div id=”s-saved” class=”s-panel hidden”>
+    <div id=”g-saved-header”>
+      <div id=”g-saved-eyebrow”>trace released</div>
+      <div id=”g-saved-title”>it is now in the garden</div>
+    </div>
+    <canvas id=”g-saved-canvas”></canvas>
+    <div id=”g-saved-actions”>
+      <button id=”g-share-btn”>Share this trace</button>
+      <div id=”g-saved-secondary”>
+        <button class=”g-secondary-btn” id=”g-download-btn”>Download</button>
+        <button class=”g-secondary-btn” id=”g-enter-btn”>Enter the garden</button>
+      </div>
+    </div>
   </div>
 
   <!-- â”€â”€ ERROR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
@@ -805,6 +891,14 @@
     });
     checkPanels();
   })();
+  </script>
+
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('./sw.js').catch(function() {});
+    });
+  }
   </script>
 
 </body>

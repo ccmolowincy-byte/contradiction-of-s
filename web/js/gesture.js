@@ -82,6 +82,7 @@
   let customSkel         = null;   // loaded async after MoveNet; used by drawSkeleton
   let lastFrameTime      = 0;      // for dt calculation in the animation loop
   let smoothedKeypoints  = null;   // EMA-smoothed MoveNet output (reduces jitter)
+  let savedTraceId       = null;   // assigned after successful Supabase save
 
   /* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -113,7 +114,7 @@
   function setState(s) {
     stopReviewAnimation();
     currentState = s;
-    ['loading','preview','recording','review','saving','error'].forEach(id => {
+    ['loading','preview','recording','review','saving','saved','error'].forEach(id => {
       const el = document.getElementById('s-' + id);
       if (el) el.classList.toggle('hidden', id !== s);
     });
@@ -907,13 +908,59 @@
       }
 
       log('Saved! trace ID: ' + data.id, 'ok');
-      log('Redirecting to ar.html...', 'ok');
-      window.location.href = 'ar.html?trace=' + data.id;
+      transitionToSaved(data.id);
 
     } catch (e) {
       log('Save failed: ' + (e.message || JSON.stringify(e)), 'err');
       setState('review');
     }
+  }
+
+  /* ── Post-save: snapshot canvas + share / download ────────────────────────── */
+  function transitionToSaved(traceId) {
+    savedTraceId = traceId;
+    const savedCv = document.getElementById('g-saved-canvas');
+    savedCv.width  = reviewCv.width;
+    savedCv.height = reviewCv.height;
+    savedCv.getContext('2d').drawImage(reviewCv, 0, 0);
+    stopReviewAnimation();
+    setState('saved');
+  }
+
+  async function shareTrace() {
+    if (!savedTraceId) return;
+    const traceUrl = new URL('ar.html?trace=' + savedTraceId, location.href).href;
+    const shareData = {
+      title: 'The Contradiction of S',
+      text: 'My movement trace in the garden.',
+      url: traceUrl,
+    };
+    try {
+      const blob = await new Promise(res =>
+        document.getElementById('g-saved-canvas').toBlob(res, 'image/png', 0.92)
+      );
+      const file = new File([blob], 'trace-of-s.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) shareData.files = [file];
+    } catch (_) {}
+    if (navigator.share) {
+      try { await navigator.share(shareData); }
+      catch (e) { if (e.name !== 'AbortError') log('Share: ' + e.message, 'err'); }
+    } else {
+      try { await navigator.clipboard.writeText(traceUrl); }
+      catch (_) {}
+    }
+  }
+
+  function downloadTrace() {
+    document.getElementById('g-saved-canvas').toBlob(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'trace-of-s.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    }, 'image/png', 0.92);
   }
 
   /* â”€â”€ Button handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -925,6 +972,12 @@
 
   document.getElementById('g-switch-btn').addEventListener('click', () => {
     startCamera(currentFacing === 'user' ? 'environment' : 'user');
+  });
+
+  document.getElementById('g-share-btn')   .addEventListener('click', shareTrace);
+  document.getElementById('g-download-btn').addEventListener('click', downloadTrace);
+  document.getElementById('g-enter-btn')   .addEventListener('click', () => {
+    window.location.href = 'ar.html' + (savedTraceId ? '?trace=' + savedTraceId : '');
   });
 
   window.addEventListener('resize', resizeOverlay);

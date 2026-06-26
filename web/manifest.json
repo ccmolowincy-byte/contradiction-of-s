@@ -1,0 +1,19 @@
+{
+  "name": "The Contradiction of S",
+  "short_name": "Garden of S",
+  "description": "A living archive of movement traces. Scoliosis, pain, and the garden of S.",
+  "start_url": "./ar.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#060A0E",
+  "theme_color": "#060A0E",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
