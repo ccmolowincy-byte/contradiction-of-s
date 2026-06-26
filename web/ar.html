@@ -501,10 +501,20 @@
       position: absolute;
       pointer-events: none;
       display: block;
-      transition: transform 0.55s cubic-bezier(.42,0,1,1), opacity 0.5s ease;
+      height: auto;
+      transition: transform 0.65s cubic-bezier(.42,0,1,1), opacity 0.55s ease;
     }
-    .ar-tr.exit-l { transform: translateX(-130vw) !important; opacity: 0 !important; }
-    .ar-tr.exit-r { transform: translateX(130vw)  !important; opacity: 0 !important; }
+    /* -- Start screen content wrapper (zoom on Enter Garden) ----------------- */
+    #ar-start-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 26px;
+      position: relative;
+      z-index: 5;
+      transition: transform 0.80s cubic-bezier(.25,.46,.45,.94) 0.12s;
+    }
+    #ar-start-content.zoomed { transform: scale(1.10); }
   </style>
 </head>
 <body>
@@ -598,23 +608,23 @@
 
     <!-- Start screen -->
     <div id="ar-start">
-      <!-- Left-side traces — slide off left on Enter Garden -->
+      <!-- Left traces — slide off left on Enter Garden -->
       <img class="ar-tr ar-tr-l" src="assets/traces/trace-02-scan-blue.png"
-        style="width:56vw;top:-6%;left:-24%;transform:rotate(-12deg);opacity:0.88">
+        style="width:52vw;top:-4%;left:-14%;opacity:0.88">
       <img class="ar-tr ar-tr-l" src="assets/traces/trace-01-bone-white.png"
-        style="width:34vw;top:47%;left:-5%;transform:rotate(8deg);opacity:0.65">
-      <img class="ar-tr ar-tr-l" src="assets/traces/trace-07-crimson.png"
-        style="width:19vw;top:23%;left:6%;transform:rotate(-5deg);opacity:0.55">
-      <!-- Right-side traces — slide off right on Enter Garden -->
+        style="width:28vw;bottom:5%;left:-7%;opacity:0.52;transform:scaleY(-1)" data-flip="1">
+      <!-- Right traces — slide off right on Enter Garden -->
       <img class="ar-tr ar-tr-r" src="assets/traces/trace-08-ivory.png"
-        style="width:52vw;bottom:-5%;right:-20%;transform:rotate(14deg);opacity:0.82">
+        style="width:48vw;bottom:4%;right:-12%;opacity:0.80;transform:scaleY(-1)" data-flip="1">
       <img class="ar-tr ar-tr-r" src="assets/traces/trace-06-brace-silver.png"
-        style="width:28vw;top:7%;right:-8%;transform:rotate(-10deg);opacity:0.68">
-      <div id="ar-start-eyebrow">The Garden of S</div>
-      <div id="ar-start-title">Everything the body<br>has held</div>
-      <div id="ar-start-sub">Every trace is a body.<br>Every movement, remembered.</div>
-      <button id="ar-start-btn">Enter Garden</button>
-      <a href="gesture.html" id="ar-start-draw-link">or record a trace &rarr;</a>
+        style="width:20vw;top:3%;right:-3%;opacity:0.44">
+      <div id="ar-start-content">
+        <div id="ar-start-eyebrow">The Garden of S</div>
+        <div id="ar-start-title">Everything the body<br>has held</div>
+        <div id="ar-start-sub">Every trace is a body.<br>Every movement, remembered.</div>
+        <button id="ar-start-btn">Enter Garden</button>
+        <a href="gesture.html" id="ar-start-draw-link">or record a trace &rarr;</a>
+      </div>
     </div>
 
     <!-- Enter Garden — rising star transition layer -->
@@ -999,9 +1009,20 @@
     }
 
     startBtn.addEventListener('click', () => {
-      // Slide trace decorations off to their respective sides
-      startEl.querySelectorAll('.ar-tr-l').forEach(el => el.classList.add('exit-l'));
-      startEl.querySelectorAll('.ar-tr-r').forEach(el => el.classList.add('exit-r'));
+      // Slide traces off — compose with scaleY(-1) for bottom-positioned traces
+      startEl.querySelectorAll('.ar-tr-l').forEach(el => {
+        const base = el.dataset.flip ? 'scaleY(-1) ' : '';
+        el.style.transform = base + 'translateX(-130vw)';
+        el.style.opacity = '0';
+      });
+      startEl.querySelectorAll('.ar-tr-r').forEach(el => {
+        const base = el.dataset.flip ? 'scaleY(-1) ' : '';
+        el.style.transform = base + 'translateX(130vw)';
+        el.style.opacity = '0';
+      });
+
+      // Text zooms gently toward the viewer as traces part
+      document.getElementById('ar-start-content').classList.add('zoomed');
 
       startEl.style.transition = 'opacity 0.65s ease';
       startEl.style.opacity    = '0';
