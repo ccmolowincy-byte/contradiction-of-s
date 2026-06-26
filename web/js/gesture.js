@@ -163,6 +163,16 @@
       });
       video.srcObject = stream;
       await video.play();
+      // Unlock continuous auto-exposure/focus — fixes dark/blurry feed on Android WebRTC
+      try {
+        const _track = stream.getVideoTracks()[0];
+        const _caps  = _track.getCapabilities ? _track.getCapabilities() : {};
+        const _adv   = [];
+        if (_caps.exposureMode)     _adv.push({ exposureMode:     'continuous' });
+        if (_caps.whiteBalanceMode) _adv.push({ whiteBalanceMode: 'continuous' });
+        if (_caps.focusMode)        _adv.push({ focusMode:        'continuous' });
+        if (_adv.length) await _track.applyConstraints({ advanced: _adv });
+      } catch (_) {}
       log('Camera started (' + currentFacing + ')', 'ok');
       return true;
     } catch (e) {
