@@ -204,7 +204,7 @@ export async function initGarden(canvas, options = {}) {
    * Falls back to dark-red LineSegments if customSkel failed to load.
    * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const ANIM_SLOTS   = 3;   // most-recent N traces: full pose cycling + live petals
-  const BREATHE_SLOTS = 10; // traces 3–10: petal breathing only (fixed mid-frame, live clock)
+  const BREATHE_SLOTS = 18; // traces 3–18: petal breathing only (fixed mid-frame, live clock)
   let breatheFrame = 0;     // incremented each update(); breathe redraws throttled to ~15 fps
 
   /* â”€â”€ Soft radial vignette â€” fades petal/edge clipping gracefully â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
