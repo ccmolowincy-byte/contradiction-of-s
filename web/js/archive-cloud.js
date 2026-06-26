@@ -736,7 +736,7 @@ export async function initGarden(canvas, options = {}) {
       traceId:        trace.id,
       starAnimStart:  isNew ? clock : -1,   // only on realtime inserts, not on highlight (camera zoom handles that)
       starAnimDone:   !isNew,
-      bloomStart:     isHighlighted ? clock : 0,
+      bloomStart:     (isHighlighted || isNew) ? clock : 0,
     };
 
     if (isHighlighted) {
