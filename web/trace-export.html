@@ -108,6 +108,7 @@ async function renderTrace(skel, trace, palette){
 
 let _skel=null;
 const _store=[];  // { canvas, name }
+window._traceStore = _store;  // expose for data extraction
 
 document.getElementById('load-btn').addEventListener('click',async()=>{
   const btn=document.getElementById('load-btn');
