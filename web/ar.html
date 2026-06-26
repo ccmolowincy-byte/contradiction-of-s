@@ -196,23 +196,70 @@
     /* â”€â”€ Draw CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-draw-cta {
       position: absolute;
-      bottom: 106px; left: 0; right: 0;
+      bottom: 88px; left: 0; right: 0;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
       z-index: 20;
       pointer-events: none;
     }
-    #ar-draw-cta a {
+    #ar-cta-beacon {
+      position: relative;
+      width: 44px; height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ar-cta-ring {
+      position: absolute;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(152,29,18,0.7);
+      animation: ar-cta-sonar 2.4s ease-out infinite;
+    }
+    @keyframes ar-cta-sonar {
+      0%   { transform: scale(0.5); opacity: 0.85; }
+      100% { transform: scale(3.0); opacity: 0; }
+    }
+    .ar-cta-star-main {
+      display: block;
+      font-size: 20px;
+      color: #981D12;
+      animation: ar-cta-breathe 2.4s ease-in-out infinite;
+      line-height: 1;
+      position: relative;
+      z-index: 1;
+    }
+    @keyframes ar-cta-breathe {
+      0%,100% { transform: scale(1) rotate(0deg); opacity: 0.65; }
+      50%      { transform: scale(1.3) rotate(22deg); opacity: 1; }
+    }
+    .ar-cta-floater {
+      position: absolute;
+      top: 50%; left: 50%;
+      color: rgba(152,29,18,0.75);
+      pointer-events: none;
+      animation: ar-cta-rise 2.4s ease-out infinite;
+      animation-delay: var(--sd, 0s);
+    }
+    @keyframes ar-cta-rise {
+      0%   { transform: translate(calc(-50% + var(--sdx,0px)), -50%); opacity: 0; }
+      18%  { opacity: 0.9; }
+      100% { transform: translate(calc(-50% + var(--sdx,0px)), calc(-50% - 52px)); opacity: 0; }
+    }
+    #ar-cta-link {
       pointer-events: auto;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 9px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(240,234,224,0.22);
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      color: rgba(240,234,224,0.7);
       text-decoration: none;
       -webkit-tap-highlight-color: transparent;
+      transition: color 0.3s;
     }
-    #ar-draw-cta a:active { color: rgba(240,234,224,0.6); }
+    #ar-cta-link:active { color: rgba(240,234,224,1); }
 
     /* â”€â”€ Saved msg â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #ar-saved-msg {
@@ -303,20 +350,20 @@
     }
     #ar-start-btn {
       margin-top: 10px;
-      padding: 18px 62px;
-      background: var(--burgundy);
-      color: #f5ede0;
+      padding: 0.6rem 1.5rem;
+      background: none;
+      color: rgba(240,234,224,0.68);
       border: none;
       font-family: 'IM Fell English', serif;
       font-size: 20px;
       font-style: italic;
       letter-spacing: 0.09em;
-      border-radius: 2px;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: background 0.14s;
+      transition: color 0.28s, letter-spacing 0.35s;
     }
-    #ar-start-btn:active { background: var(--red); }
+    #ar-start-btn:hover { color: rgba(240,234,224,0.9); letter-spacing: 0.14em; }
+    #ar-start-btn:active { color: #F0EAE0; }
     #ar-start-draw-link {
       font-family: 'IM Fell English', serif;
       font-style: italic;
@@ -400,7 +447,7 @@
       #ar-switch-btn {
         width: 34px; height: 34px;
       }
-      #ar-draw-cta      { bottom: 64px; }
+      #ar-draw-cta      { bottom: 72px; }
       #ar-saved-msg     { bottom: 60px; }
       #ar-debug         { bottom: 80px; }
     }
@@ -476,12 +523,12 @@
     <div id="ar-trace-count"></div>
 
     <!-- Real-time arrival label -->
-    <div id="ar-new-trace">new gesture received</div>
+    <div id="ar-new-trace">new trace received</div>
 
     <!-- Empty state -->
     <div id="ar-empty">
-      <div id="ar-empty-text">No gestures yet.<br>Be the first.</div>
-      <a href="gesture.html" id="ar-empty-link">Record a gesture &rarr;</a>
+      <div id="ar-empty-text">No traces yet.<br>Be the first.</div>
+      <a href="gesture.html" id="ar-empty-link">Record a trace &rarr;</a>
     </div>
 
     <!-- Loading — gathering stars -->
@@ -522,7 +569,17 @@
     </div>
 
     <!-- Draw CTA -->
-    <div id="ar-draw-cta"><a href="gesture.html">Add your gesture &rarr;</a></div>
+    <div id="ar-draw-cta">
+      <div id="ar-cta-beacon">
+        <div class="ar-cta-ring" style="animation-delay:0s"></div>
+        <div class="ar-cta-ring" style="animation-delay:1.2s"></div>
+        <span class="ar-cta-star-main">✦</span>
+        <span class="ar-cta-floater" style="--sdx:-18px;--sd:0s;font-size:8px">✦</span>
+        <span class="ar-cta-floater" style="--sdx:5px;--sd:0.85s;font-size:12px">✦</span>
+        <span class="ar-cta-floater" style="--sdx:20px;--sd:1.6s;font-size:7px">✦</span>
+      </div>
+      <a href="gesture.html" id="ar-cta-link">Add your trace</a>
+    </div>
 
     <!-- Controls -->
     <div id="ar-controls">
@@ -550,7 +607,7 @@
       <div id="ar-start-title">Everything the body<br>has held</div>
       <div id="ar-start-sub">Every trace is a body.<br>Every movement, remembered.</div>
       <button id="ar-start-btn">Enter Garden</button>
-      <a href="gesture.html" id="ar-start-draw-link">or record a gesture &rarr;</a>
+      <a href="gesture.html" id="ar-start-draw-link">or record a trace &rarr;</a>
     </div>
 
     <!-- Enter Garden — rising star transition layer -->
@@ -703,7 +760,7 @@
     function updateCount(n) {
       traceCount = n;
       if (n > 0) {
-        countEl.textContent = n === 1 ? '1 gesture in the archive' : n + ' gestures in the archive';
+        countEl.textContent = n === 1 ? '1 trace in the archive' : n + ' traces in the archive';
         countEl.classList.add('visible');
         emptyEl.classList.remove('visible');
       } else {
@@ -823,7 +880,7 @@
 
       // â”€â”€ Arriving from gesture.html â€” highlight + welcome â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (_newTraceId) {
-        savedMsg.textContent = 'Your gesture has entered the archive';
+        savedMsg.textContent = 'Your trace has entered the archive';
         setTimeout(() => {
           savedMsg.classList.add('visible');
           setTimeout(() => savedMsg.classList.remove('visible'), 4200);

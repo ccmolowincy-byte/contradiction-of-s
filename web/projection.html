@@ -249,14 +249,14 @@
 
     <!-- Scan instruction + optional URL -->
     <div id="proj-cta">
-      Scan to add your gesture
+      Scan to add your trace
       <span id="proj-cta-url"></span>
     </div>
 
     <!-- New-gesture pulse -->
     <div id="proj-pulse">
       <span id="proj-pulse-prompt"></span>
-      <span id="proj-pulse-sub">gesture received</span>
+      <span id="proj-pulse-sub">trace received</span>
     </div>
 
     <!-- Controls: contrast toggle + fullscreen -->
@@ -353,9 +353,9 @@
     /* â”€â”€ Archive count display â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     function updateCount(n) {
       countEl.textContent =
-        n === 0 ? 'no gestures yet'
-        : n === 1 ? '1 gesture in the archive'
-        : `${n} gestures in the archive`;
+        n === 0 ? 'no traces yet'
+        : n === 1 ? '1 trace in the archive'
+        : `${n} traces in the archive`;
     }
 
     /* â”€â”€ New-gesture notification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
