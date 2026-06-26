@@ -314,7 +314,7 @@ export async function initGarden(canvas, options = {}) {
     }
     if (age >= LARGE_START) {
       const lp = Math.max(0, Math.min(1, (age - LARGE_START) / (LARGE_DRAW_END - LARGE_START)));
-      if (lp > 0) _drawStarOutline(ctx, CW*0.5, CH*0.50, 26, 0.14, lp, 6, 'rgba(220,185,120,0.82)', 24);
+      if (lp > 0) _drawStarOutline(ctx, CW*0.5, CH*0.68, 26, 0.14, lp, 6, 'rgba(220,185,120,0.82)', 24);
     }
     ctx.restore();
   }
@@ -672,8 +672,8 @@ export async function initGarden(canvas, options = {}) {
     // Sprite scale: √(10/N) keeps baseline at N=10 and grows for fewer entries.
     // Clamped: 0.70× (large archives) to 1.75× (1–3 entries).
     const spriteScaleMult = Math.max(0.70, Math.min(1.75, Math.sqrt(10 / Math.max(1, N))));
-    // Radius range: wider spread for few entries, settles for large archives.
-    const adaptMaxR = Math.max(2.4, Math.min(3.5, 3.5 - N * 0.05));
+    // Radius range: wide spread for few entries, settles for large archives.
+    const adaptMaxR = Math.max(3.0, Math.min(5.5, 5.5 - N * 0.06));
 
     ribbons.forEach((r, i) => {
       // Full radius range always used: 2 entries = min vs max, N entries fill evenly.
@@ -681,7 +681,7 @@ export async function initGarden(canvas, options = {}) {
       const frac   = N <= 1 ? 0.5 : i / (N - 1);
       const radius = MIN_R + frac * (adaptMaxR - MIN_R);
       const angle  = i * GOLDEN;
-      r.targetX = Math.max(-1.0, Math.min(1.0, Math.cos(angle) * radius));
+      r.targetX = Math.cos(angle) * radius;   // no X clamp — let figures spread naturally
       r.targetZ = Math.sin(angle) * radius;
       r.baseY   = (1 - frac) * 0.8;
       // Scale the sprite — global density mult × per-contributor body scale
@@ -733,8 +733,9 @@ export async function initGarden(canvas, options = {}) {
       traceScale:     traceScale  != null ? traceScale  : 1.0,
       labelText:      labelText   != null ? labelText   : '',
       strokeArc:      result.strokeArc != null ? result.strokeArc : null,
-      starAnimStart:  (isNew || isHighlighted) ? clock : -1,
-      starAnimDone:   !(isNew || isHighlighted),
+      traceId:        trace.id,
+      starAnimStart:  isNew ? clock : -1,   // only on realtime inserts, not on highlight (camera zoom handles that)
+      starAnimDone:   !isNew,
       bloomStart:     isHighlighted ? clock : 0,
     };
 
@@ -760,6 +761,26 @@ export async function initGarden(canvas, options = {}) {
     _layout(true);   // instant positioning â€” no drift on initial load
     traceCount = ribbons.length;
     if (options.onTraceAdded) options.onTraceAdded(traceCount);
+
+    // Auto-zoom: fewer entries = closer camera; more = pull back so garden fills screen
+    const N = ribbons.length;
+    const autoZ = Math.max(3.5, Math.min(8.0, 3.0 + Math.sqrt(N) * 0.9));
+    _targetCamZ = autoZ;
+    camera.position.z = autoZ;  // instant on load — no visible drift
+
+    // Zoom-in on newly submitted trace, then pull back to reveal the full garden
+    if (highlightId) {
+      const highlighted = ribbons.find(r => r.traceId === highlightId);
+      if (highlighted) {
+        const closeZ = Math.max(1.8, autoZ - 2.5);
+        camera.position.set(highlighted.targetX * 0.35, camera.position.y, closeZ);
+        _targetCamZ = closeZ;
+        setTimeout(() => {
+          _targetCamZ = autoZ;
+          targetCamX  = 0;
+        }, 2800);
+      }
+    }
   }
 
   /* â”€â”€ Public: add single trace (realtime insert) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
