@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-  <title>Archive â€” Contradiction of S</title>
+  <title>The Garden of S &mdash; Contradiction of S</title>
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js" } }
@@ -433,7 +433,7 @@
       100% { opacity: 0;    transform: translateY(-8px); }
     }
 
-    /* -- Enter Archive — rising star transition ------------------------ */
+    /* -- Enter Garden — rising star transition ------------------------ */
     #ar-star-layer {
       position: absolute;
       inset: 0;
@@ -481,7 +481,7 @@
     <!-- Empty state -->
     <div id="ar-empty">
       <div id="ar-empty-text">No gestures yet.<br>Be the first.</div>
-      <a href="gesture.html" id="ar-empty-link">Record a gesture â†’</a>
+      <a href="gesture.html" id="ar-empty-link">Record a gesture &rarr;</a>
     </div>
 
     <!-- Loading — gathering stars -->
@@ -514,15 +514,15 @@
 
     <!-- Debug overlay â€” visible only with ?debug=1 in URL -->
     <div id="ar-debug">
-      <div id="adb-trace">trace: â€”</div>
-      <div id="adb-loaded">loaded: â€”</div>
-      <div id="adb-skel">skeleton traces: â€”</div>
-      <div id="adb-legacy">legacy traces: â€”</div>
-      <div id="adb-mode">renderer: â€”</div>
+      <div id=”adb-trace”>trace: &mdash;</div>
+      <div id=”adb-loaded”>loaded: &mdash;</div>
+      <div id=”adb-skel”>skeleton traces: &mdash;</div>
+      <div id=”adb-legacy”>legacy traces: &mdash;</div>
+      <div id=”adb-mode”>renderer: &mdash;</div>
     </div>
 
     <!-- Draw CTA -->
-    <div id="ar-draw-cta"><a href="gesture.html">Add your gesture â†’</a></div>
+    <div id="ar-draw-cta"><a href="gesture.html">Add your gesture &rarr;</a></div>
 
     <!-- Controls -->
     <div id="ar-controls">
@@ -549,11 +549,11 @@
       <div id="ar-start-eyebrow">The Garden of S</div>
       <div id="ar-start-title">Everything the body<br>has held</div>
       <div id="ar-start-sub">Every trace is a body.<br>Every movement, remembered.</div>
-      <button id="ar-start-btn">Enter Archive</button>
-      <a href="gesture.html" id="ar-start-draw-link">or record a gesture â†’</a>
+      <button id="ar-start-btn">Enter Garden</button>
+      <a href="gesture.html" id="ar-start-draw-link">or record a gesture &rarr;</a>
     </div>
 
-    <!-- Enter Archive — rising star transition layer -->
+    <!-- Enter Garden — rising star transition layer -->
     <div id="ar-star-layer"></div>
 
     <!-- Camera error -->
@@ -976,7 +976,7 @@
       }, 1350);
     });
 
-    // Auto-start if arriving from gesture capture (gesture.html â†’ ar.html?trace=id)
+    // Auto-start if arriving from gesture capture (gesture.html &rarr; ar.html?trace=id)
     const _urlTrace = new URLSearchParams(window.location.search).get('trace');
     if (_urlTrace) startExperience();
 
