@@ -785,3 +785,8 @@ hr.divider {
 .star-float { animation: starFloat 6s ease-in-out infinite; }
 .star-float-2 { animation: starFloat 8s ease-in-out 1.5s infinite; }
 .star-float-3 { animation: starFloat 7s ease-in-out 3s infinite; }
+
+/* ── Landscape: hide portrait nav bar across all pages ────────────────────── */
+@media (orientation: landscape) {
+  .bottom-nav { display: none; }
+}

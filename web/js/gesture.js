@@ -889,19 +889,27 @@
       + ' radius=' + visual_params.tubeRadius
       + ' orient=' + visual_params.orientation);
 
+    let _saveTimer;
+    const _timeout = new Promise((_, reject) => {
+      _saveTimer = setTimeout(() => reject(new Error('save timed out — check connection')), 15000);
+    });
+
     try {
       log('Inserting to Supabase...');
-      const { data, error } = await db
-        .from('pain_traces')
-        .insert({
-          strokes:      [strokeData],
-          prompt:       currentPrompt,
-          visual_params,
-          skeletons:    skeletonSnapshots.length >= 3 ? skeletonSnapshots : null,
-        })
-        .select()
-        .single();
+      const { data, error } = await Promise.race([
+        db.from('pain_traces')
+          .insert({
+            strokes:      [strokeData],
+            prompt:       currentPrompt,
+            visual_params,
+            skeletons:    skeletonSnapshots.length >= 3 ? skeletonSnapshots : null,
+          })
+          .select()
+          .single(),
+        _timeout,
+      ]);
 
+      clearTimeout(_saveTimer);
       if (error) {
         log('Supabase error: ' + JSON.stringify(error), 'err');
         throw error;
@@ -911,8 +919,10 @@
       transitionToSaved(data.id);
 
     } catch (e) {
+      clearTimeout(_saveTimer);
       log('Save failed: ' + (e.message || JSON.stringify(e)), 'err');
       setState('review');
+      renderReviewTrace();
     }
   }
 

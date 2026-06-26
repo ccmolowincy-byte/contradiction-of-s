@@ -938,8 +938,11 @@ export async function initGarden(canvas, options = {}) {
 
   /* â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function resize() {
-    const nW = canvas.offsetWidth  || window.innerWidth;
-    const nH = canvas.offsetHeight || window.innerHeight;
+    // getBoundingClientRect forces a layout reflow, giving reliable dimensions
+    // even immediately after an orientationchange event on Android Chrome.
+    const rect = canvas.getBoundingClientRect();
+    const nW = Math.round(rect.width)  || window.innerWidth;
+    const nH = Math.round(rect.height) || window.innerHeight;
     renderer.setSize(nW, nH, false);
     camera.aspect = nW / nH;
     camera.updateProjectionMatrix();

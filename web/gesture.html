@@ -584,6 +584,14 @@
       gap: 40px;
     }
 
+    /* ── Landscape: extend camera, overlay and panels to full screen ── */
+    @media (orientation: landscape) {
+      #g-video   { inset: 0; height: 100%; }
+      #g-overlay { inset: 0; height: 100%; }
+      .s-panel   { inset: 0; }
+      #g-step-bar { bottom: 12px; }
+    }
+
   </style>
 </head>
 <body>
@@ -801,7 +809,7 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <!-- Gesture logic -->
-  <script type="module" src="js/gesture.js?v=8"></script>
+  <script type="module" src="js/gesture.js?v=9"></script>
 
   <!-- Step indicator logic -->
   <script>
