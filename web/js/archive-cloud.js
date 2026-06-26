@@ -159,7 +159,7 @@ export async function initGarden(canvas, options = {}) {
   /* â”€â”€ Scene & camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(72, W / H, 0.01, 100);
-  camera.position.set(0, 2.0, 4.5);
+  camera.position.set(0, 2.0, 5.5);
   camera.lookAt(0, -0.5, 0);
 
   /* â”€â”€ Lighting â€” cool X-ray palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -185,8 +185,8 @@ export async function initGarden(canvas, options = {}) {
 
   /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   let gardenPanX = 0, gardenPanY = 0, gardenPanZ = 0;
-  let _targetCamZ = 4.5;
-  const _CAM_Z_MIN = 1.8, _CAM_Z_MAX = 9.0;
+  let _targetCamZ = 5.5;
+  const _CAM_Z_MIN = 2.5, _CAM_Z_MAX = 12.0;
 
   const ribbons    = [];
   let   traceCount = 0;
@@ -670,8 +670,8 @@ export async function initGarden(canvas, options = {}) {
 
     // ── Adaptive garden scale ────────────────────────────────────────────
     // Sprite scale: √(10/N) keeps baseline at N=10 and grows for fewer entries.
-    // Clamped: 0.70× (large archives) to 1.75× (1–3 entries).
-    const spriteScaleMult = Math.max(0.70, Math.min(1.75, Math.sqrt(10 / Math.max(1, N))));
+    // Clamped: 0.65× (large archives) to 1.20× (1–3 entries).
+    const spriteScaleMult = Math.max(0.65, Math.min(1.20, Math.sqrt(10 / Math.max(1, N))));
     // Radius range: wide spread for few entries, settles for large archives.
     const adaptMaxR = Math.max(3.0, Math.min(5.5, 5.5 - N * 0.06));
 
@@ -764,7 +764,7 @@ export async function initGarden(canvas, options = {}) {
 
     // Auto-zoom: fewer entries = closer camera; more = pull back so garden fills screen
     const N = ribbons.length;
-    const autoZ = Math.max(3.5, Math.min(8.0, 3.0 + Math.sqrt(N) * 0.9));
+    const autoZ = Math.max(4.5, Math.min(9.5, 4.0 + Math.sqrt(N) * 0.9));
     _targetCamZ = autoZ;
     camera.position.z = autoZ;  // instant on load — no visible drift
 
@@ -772,7 +772,7 @@ export async function initGarden(canvas, options = {}) {
     if (highlightId) {
       const highlighted = ribbons.find(r => r.traceId === highlightId);
       if (highlighted) {
-        const closeZ = Math.max(1.8, autoZ - 2.5);
+        const closeZ = Math.max(3.5, autoZ - 1.2);
         camera.position.set(highlighted.targetX * 0.35, camera.position.y, closeZ);
         _targetCamZ = closeZ;
         setTimeout(() => {
