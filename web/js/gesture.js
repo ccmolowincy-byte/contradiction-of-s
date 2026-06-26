@@ -12,13 +12,13 @@
   /* â”€â”€ Single exhibition prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const PROMPTS = [
     'Move the way you move when no one is watching.',
-    'Do the exercise. The one you\'ve done the most times.',
-    'Show me the stretch that helps.',
-    'Move through what today feels like.',
-    'Do the movement. The one your body knows without thinking.',
-    'Move the way you have for years.',
-    'Do the stretch. The same one, again.',
-    'Show me what you do in the morning.',
+    'Do the exercise you\'re most familiar with.',
+    'Show me a stretch you find helpful.',
+    'Do the movement you\'ve been doing most today.',
+    'Do a movement your body knows without thinking.',
+    'Move the way you think your spine will age.',
+    'Do the stretch you repeat most.',
+    'Do the first movement you make each morning.',
   ];
   const PROMPT = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
 
