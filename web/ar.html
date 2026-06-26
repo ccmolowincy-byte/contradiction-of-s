@@ -526,11 +526,14 @@
     <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
       <defs>
         <filter id="cam-enhance" color-interpolation-filters="sRGB">
+          <!-- Shadow lift: offset pushes blacks to warm dark grey, exponent lifts midtones -->
           <feComponentTransfer>
-            <feFuncR type="gamma" amplitude="1.05" exponent="0.86" offset="0.018"/>
-            <feFuncG type="gamma" amplitude="1.02" exponent="0.86" offset="0.014"/>
-            <feFuncB type="gamma" amplitude="0.95" exponent="0.90" offset="0.012"/>
+            <feFuncR type="gamma" amplitude="0.93" exponent="0.80" offset="0.06"/>
+            <feFuncG type="gamma" amplitude="0.91" exponent="0.82" offset="0.04"/>
+            <feFuncB type="gamma" amplitude="0.87" exponent="0.86" offset="0.03"/>
           </feComponentTransfer>
+          <!-- Restore saturation lost in Android WebRTC pipeline -->
+          <feColorMatrix type="saturate" values="1.4"/>
         </filter>
       </defs>
     </svg>
