@@ -26,7 +26,7 @@
       inset: 0;
       width: 100%; height: 100%;
       object-fit: cover;
-      filter: brightness(1.08) contrast(0.90) saturate(0.92);
+      filter: url(#cam-enhance);
     }
     #ar-video.mirrored { transform: scaleX(-1); }
 
@@ -521,6 +521,19 @@
 <body>
 
   <div id="ar-stage">
+
+    <!-- SVG tone-curve filter: lifts shadows independently of highlights -->
+    <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+      <defs>
+        <filter id="cam-enhance" color-interpolation-filters="sRGB">
+          <feComponentTransfer>
+            <feFuncR type="gamma" amplitude="1.05" exponent="0.86" offset="0.018"/>
+            <feFuncG type="gamma" amplitude="1.02" exponent="0.86" offset="0.014"/>
+            <feFuncB type="gamma" amplitude="0.95" exponent="0.90" offset="0.012"/>
+          </feComponentTransfer>
+        </filter>
+      </defs>
+    </svg>
 
     <!-- Camera feed -->
     <video id="ar-video" autoplay playsinline muted></video>

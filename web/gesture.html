@@ -33,7 +33,7 @@
       height: calc(100% - var(--nav-h));
       object-fit: cover;
       background: var(--film-black);
-      filter: brightness(1.08) contrast(0.90) saturate(0.92);
+      filter: url(#cam-enhance);
     }
     #g-video.mirrored { transform: scaleX(-1); }
 
@@ -528,6 +528,19 @@
   <div id="g-debug">
     <div id="g-debug-title">debug â€” pain archive</div>
   </div>
+
+  <!-- SVG tone-curve filter: lifts shadows independently of highlights -->
+  <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <defs>
+      <filter id="cam-enhance" color-interpolation-filters="sRGB">
+        <feComponentTransfer>
+          <feFuncR type="gamma" amplitude="1.05" exponent="0.86" offset="0.018"/>
+          <feFuncG type="gamma" amplitude="1.02" exponent="0.86" offset="0.014"/>
+          <feFuncB type="gamma" amplitude="0.95" exponent="0.90" offset="0.012"/>
+        </feComponentTransfer>
+      </filter>
+    </defs>
+  </svg>
 
   <!-- Camera feed -->
   <video id="g-video" autoplay playsinline muted></video>
