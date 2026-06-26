@@ -203,8 +203,8 @@ export async function initGarden(canvas, options = {}) {
    *
    * Falls back to dark-red LineSegments if customSkel failed to load.
    * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const ANIM_SLOTS   = 3;   // most-recent N traces: full pose cycling + live petals
-  const BREATHE_SLOTS = 18; // traces 3–18: petal breathing only (fixed mid-frame, live clock)
+  const ANIM_SLOTS   = 5;   // most-recent N traces: full pose cycling + live petals
+  const BREATHE_SLOTS = 18; // traces 5–18: petal breathing only (fixed mid-frame, live clock)
   let breatheFrame = 0;     // incremented each update(); breathe redraws throttled to ~15 fps
 
   /* â”€â”€ Soft radial vignette â€” fades petal/edge clipping gracefully â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -490,7 +490,7 @@ export async function initGarden(canvas, options = {}) {
 
       return {
         group,
-        materials:   [{ mat: spriteMat, targetAlpha: 0.80 }],
+        materials:   [{ mat: spriteMat, targetAlpha: 0.95 }],
         boneTex:     tex,
         isLegacy:    false,
         sprite,
@@ -886,7 +886,7 @@ export async function initGarden(canvas, options = {}) {
           const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
           r.skelCtx.clearRect(0, 0, CW, CH);
           if (r.bloomStart > 0) _drawBloom(r.skelCtx, CW, CH, clock - r.bloomStart);
-          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, clock, r.palette);
+          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.80, r.skelSeed, clock, r.palette);
           _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
           if (shouldStarAnim) _drawStarAnim(r.skelCtx, CW, CH, r, clock - r.starAnimStart);
           r.boneTex.needsUpdate = true;
@@ -895,7 +895,7 @@ export async function initGarden(canvas, options = {}) {
           const midIdx = Math.floor(r.skelFrames.length / 2);
           const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
           r.skelCtx.clearRect(0, 0, CW, CH);
-          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, 0, r.palette);
+          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.80, r.skelSeed, 0, r.palette);
           _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
           if (shouldStarAnim) _drawStarAnim(r.skelCtx, CW, CH, r, clock - r.starAnimStart);
           r.boneTex.needsUpdate = true;
@@ -903,7 +903,7 @@ export async function initGarden(canvas, options = {}) {
           const midIdx = Math.floor(r.skelFrames.length / 2);
           const CW = r.skelCanvas.width, CH = r.skelCanvas.height;
           r.skelCtx.clearRect(0, 0, CW, CH);
-          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.65, r.skelSeed, 0, r.palette);
+          customSkel.draw(r.skelCtx, r.skelFrames[midIdx].kp, CW, CH, 0.80, r.skelSeed, 0, r.palette);
           _drawLabel(r.skelCtx, CW, CH, r.labelText, r.palette && r.palette.bone);
           _drawStarAnim(r.skelCtx, CW, CH, r, clock - r.starAnimStart);
           r.boneTex.needsUpdate = true;
@@ -925,7 +925,7 @@ export async function initGarden(canvas, options = {}) {
       }
 
       // No autonomous breathing â€” figures stand still
-      r.group.position.y = r.baseY + Math.sin(clock * r.swayFreq + r.swaySeed) * 0.10;
+      r.group.position.y = r.baseY + Math.sin(clock * r.swayFreq + r.swaySeed) * 0.14;
 
       r.group.position.x += (r.targetX + gardenPanX - r.group.position.x) * 0.14;
       r.group.position.z += (r.targetZ + gardenPanZ - r.group.position.z) * 0.14;
