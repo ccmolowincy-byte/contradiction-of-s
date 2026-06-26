@@ -974,9 +974,12 @@
     startCamera(currentFacing === 'user' ? 'environment' : 'user');
   });
 
-  document.getElementById('g-share-btn')   .addEventListener('click', shareTrace);
-  document.getElementById('g-download-btn').addEventListener('click', downloadTrace);
-  document.getElementById('g-enter-btn')   .addEventListener('click', () => {
+  const _shareBtn = document.getElementById('g-share-btn');
+  const _dlBtn    = document.getElementById('g-download-btn');
+  const _enterBtn = document.getElementById('g-enter-btn');
+  if (_shareBtn)  _shareBtn.addEventListener('click', shareTrace);
+  if (_dlBtn)     _dlBtn.addEventListener('click', downloadTrace);
+  if (_enterBtn)  _enterBtn.addEventListener('click', () => {
     window.location.href = 'ar.html' + (savedTraceId ? '?trace=' + savedTraceId : '');
   });
 
