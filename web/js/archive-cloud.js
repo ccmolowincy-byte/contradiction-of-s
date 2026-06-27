@@ -203,8 +203,8 @@ export async function initGarden(canvas, options = {}) {
    *
    * Falls back to dark-red LineSegments if customSkel failed to load.
    * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const ANIM_SLOTS   = 5;   // most-recent N traces: full pose cycling + live petals
-  const BREATHE_SLOTS = 18; // traces 5–18: petal breathing only (fixed mid-frame, live clock)
+  const ANIM_SLOTS   = 12;  // most-recent N traces: full pose cycling + live petals
+  const BREATHE_SLOTS = 50; // next traces: petal breathing only (fixed mid-frame, live clock)
   let breatheFrame = 0;     // incremented each update(); breathe redraws throttled to ~15 fps
 
   /* â”€â”€ Soft radial vignette â€” fades petal/edge clipping gracefully â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -925,13 +925,13 @@ export async function initGarden(canvas, options = {}) {
       }
 
       // No autonomous breathing â€” figures stand still
-      r.group.position.y = r.baseY + Math.sin(clock * r.swayFreq + r.swaySeed) * 0.14;
+      r.group.position.y = r.baseY + Math.sin(clock * r.swayFreq + r.swaySeed) * 0.32;
 
       r.group.position.x += (r.targetX + gardenPanX - r.group.position.x) * 0.14;
       r.group.position.z += (r.targetZ + gardenPanZ - r.group.position.z) * 0.14;
     }
 
-    gardenGroup.rotation.y += 0.00022;
+    gardenGroup.rotation.y += 0.0007;
 
     renderer.render(scene, camera);
   }

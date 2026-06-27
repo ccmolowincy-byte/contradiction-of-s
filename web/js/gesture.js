@@ -509,7 +509,7 @@
     sampleIv = elapsedIv = skeletonIv = null;
     log('Recording stopped â€” ' + samples.length + ' samples, ' + skeletonSnapshots.length + ' skeleton frames');
 
-    if (samples.length < 5) {
+    if (samples.length < 2) {
       log('Too few samples, returning to preview', 'err');
       setState('preview');
       return;
@@ -536,11 +536,11 @@
 
     let px, py;
 
-    if (ls && rs && ls.score > 0.25 && rs.score > 0.25) {
+    if (ls && rs && ls.score > 0.15 && rs.score > 0.15) {
       px = (ls.x + rs.x) / 2;
       py = (ls.y + rs.y) / 2;
-    } else if (lh && rh && lh.score > 0.25 && rh.score > 0.25) {
-      // Floor exercise fallback â€” hip midpoint (L4/L5 equivalent)
+    } else if (lh && rh && lh.score > 0.15 && rh.score > 0.15) {
+      // Floor exercise fallback — hip midpoint (L4/L5 equivalent)
       px = (lh.x + rh.x) / 2;
       py = (lh.y + rh.y) / 2;
     } else {
