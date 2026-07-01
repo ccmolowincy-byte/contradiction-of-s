@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
   <title>Profile — Contradiction of S</title>
   <link rel="stylesheet" href="style.css">
+  <script src="js/device.js"></script>
   <style>
     .profile-saved-banner {
       display: none;
@@ -110,7 +111,7 @@
     }
   </style>
 </head>
-<body>
+<body class="content">
   <div class="page">
     <div id="saved-banner" class="profile-saved-banner">Profile saved</div>
 
@@ -123,7 +124,7 @@
     <div class="profile-avatar-row">
       <div class="profile-avatar-thumb" id="profile-avatar-thumb">
         <div class="no-avatar" id="no-avatar-msg">No avatar yet</div>
-        <a href="avatar.html">Edit</a>
+        <a href="character.html">Edit</a>
       </div>
       <div class="profile-intro">
         <div class="name-label" id="preview-name"><span class="name-empty"><em>no name</em></span></div>
@@ -175,7 +176,6 @@
   </nav>
 
   <script src="js/app.js"></script>
-  <script src="js/swipe-nav.js"></script>
   <script>
     const nameInput     = document.getElementById('input-name');
     const bioInput      = document.getElementById('input-bio');
@@ -254,5 +254,6 @@
       setTimeout(() => banner.classList.remove('visible'), 2000);
     });
   </script>
+  <script src="js/nav.js"></script>
 </body>
 </html>

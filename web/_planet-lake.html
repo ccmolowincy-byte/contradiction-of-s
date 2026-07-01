@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>planet+lake</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/",
+  "@mkkellogg/gaussian-splats-3d": "https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js"
+} }
+</script>
+<style>html,body{margin:0;background:#0b0b12}#c{display:block}</style>
+</head><body>
+<canvas id="c" width="1024" height="1024"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as GS from '@mkkellogg/gaussian-splats-3d';
+
+const q = new URLSearchParams(location.search);
+const P = (k,d)=>{ const v=q.get(k); return v===null?d:parseFloat(v); };
+const lakeScale = P('ls', 0.62);   // lake XZ diameter as fraction of planet diameter
+const inset     = P('inset', 0.06);// fraction of planet R to sink lake into the pole
+const seatY     = P('seat', 0.02); // lake-space y that should sit at the pole surface
+const lakeRy    = P('lry', 0.0);
+const camEl     = P('el', 0.62);   // camera elevation angle
+const camDist   = P('cd', 4.6);
+const ry        = P('ry', 0.5);    // whole-scene spin
+
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(1); renderer.setSize(1024,1024,false);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.2;
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,0.01,200);
+camera.position.set(Math.sin(ry)*camDist*Math.cos(camEl), Math.sin(camEl)*camDist, Math.cos(ry)*camDist*Math.cos(camEl));
+camera.lookAt(0,0.15,0);
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x404050,1.0));
+const k=new THREE.DirectionalLight(0xB8CDD8,1.0); k.position.set(1.5,3,2.5); scene.add(k);
+const warm=new THREE.DirectionalLight(0xFFE6C0,0.9); warm.position.set(0.4,4,1.2); scene.add(warm);
+
+const R=1.6; // normalised planet bounding-sphere radius
+let topY=R;
+const planetGroup=new THREE.Group(); scene.add(planetGroup);
+
+new GLTFLoader().load('assets/models/sanctuary-planet.glb',(gltf)=>{
+  const root=gltf.scene;
+  const sph=new THREE.Box3().setFromObject(root).getBoundingSphere(new THREE.Sphere());
+  root.position.sub(sph.center);
+  const s=R/(sph.radius||1); root.scale.setScalar(s); root.position.multiplyScalar(s);
+  root.updateMatrixWorld(true);
+  topY=new THREE.Box3().setFromObject(root).max.y;
+  planetGroup.add(root);
+  addLake();
+},undefined,e=>{window.__error='planet:'+(e.message||e);});
+
+const flip = P('flip', 1);         // 1 = rotate 180° so the hollow underside faces the planet
+const vy   = P('vy', -0.18);       // vertical offset of the lake in seat-space (negative sinks in)
+function addLake(){
+  // lake atlas extent ~0.95 in its own units; scale so XZ-diameter = lakeScale * (2R)
+  const lakeExtent=0.95;
+  const kScale=(lakeScale*2*R)/lakeExtent;
+  const seat=new THREE.Group();           // sits at the pole, inherits planet transform
+  seat.position.set(0, topY - inset*R, 0);
+  seat.rotation.y=lakeRy;
+  planetGroup.add(seat);
+  const viewer=new GS.DropInViewer({sharedMemoryForWorkers:false,gpuAcceleratedSort:false});
+  if(flip) viewer.rotation.x=Math.PI;     // lake surface + crystals point OUT, hollow faces planet
+  viewer.position.set(0, vy, 0);
+  viewer.scale.setScalar(kScale);
+  seat.add(viewer);
+  viewer.addSplatScene('assets/models/starry-lake.ply',{showLoadingUI:false,progressiveLoad:false,splatAlphaRemovalThreshold:5})
+    .then(()=>{window.__loaded=true;}).catch(e=>{window.__error='lake:'+(e.message||e);});
+}
+
+let frames=0;
+renderer.setAnimationLoop(()=>{
+  renderer.render(scene,camera);
+  if(window.__loaded){ frames++; if(frames>45){ renderer.render(scene,camera); renderer.setAnimationLoop(null); window.__done=true; } }
+});
+</script>
+</body></html>

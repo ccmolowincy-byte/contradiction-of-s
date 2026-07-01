@@ -1,0 +1,13 @@
+{
+  "name": "pool-assets-pipeline",
+  "private": true,
+  "type": "module",
+  "description": "Flux->Hunyuan->optimize pipeline tooling for the Go for a Swim pool world",
+  "dependencies": {
+    "@gltf-transform/cli": "^4.4.0",
+    "@gltf-transform/core": "^4.4.0",
+    "@gltf-transform/extensions": "^4.4.0",
+    "@gltf-transform/functions": "^4.4.0",
+    "sharp": "^0.35.2"
+  }
+}

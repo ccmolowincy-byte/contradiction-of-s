@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Cosmic Garden — Contradiction of S</title>
+  <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml">
+  <script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/",
+    "@mkkellogg/gaussian-splats-3d": "https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js"
+  } }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="js/device.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; background: #060403; overflow: hidden;
+      font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; }
+
+    /* Background layer (pluggable: camera / aurora / wallpaper / void) */
+    #garden-bg { position: fixed; inset: 0; z-index: 0; background: #060403; }
+
+    /* Garden traces — transparent canvas over the background */
+    #garden-canvas { position: fixed; inset: 0; width: 100%; height: 100%;
+      display: block; z-index: 1; }
+    html.is-touch #garden-canvas { touch-action: none; }
+    /* Desktop: garden is draggable to orbit, wheel to zoom. */
+    html.is-desktop #garden-canvas { cursor: grab; }
+    html.garden-grabbing #garden-canvas { cursor: grabbing; }
+
+    /* UI overlays */
+    #garden-ui { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+    #garden-head { position: absolute; top: 0; left: 0; right: 0;
+      padding: 22px 22px 40px; text-align: center;
+      background: linear-gradient(180deg, rgba(6,4,3,0.55) 0%, rgba(6,4,3,0) 100%); }
+    /* Clear the desktop top nav bar so the title isn't cut off by it. */
+    html.has-cos-nav-top #garden-head { top: var(--cosnav-top-h, 52px); }
+    .g-eyebrow { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: rgba(240,234,224,0.5); margin-bottom: 5px; }
+    .g-title { font-family: 'IM Fell English', Georgia, serif; font-style: italic;
+      font-size: 26px; color: rgba(244,239,230,0.92); letter-spacing: 0.01em; }
+    #garden-count { margin-top: 7px; font-size: 11px; letter-spacing: 0.08em;
+      color: rgba(240,234,224,0.42); }
+    #garden-count.flash { color: rgba(244,239,230,0.95); transition: color 0.3s; }
+
+    /* Centre pulse when a new trace lands */
+    #garden-pulse { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+      text-align: center; opacity: 0; transition: opacity 0.5s; max-width: 80%; }
+    #garden-pulse.visible { opacity: 1; }
+    #garden-pulse .p-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(240,234,224,0.55); margin-bottom: 8px; }
+    #garden-pulse .p-prompt { font-family: 'IM Fell English', serif; font-style: italic;
+      font-size: 19px; color: rgba(244,239,230,0.92); line-height: 1.4; }
+
+    /* Loading + empty states */
+    #garden-status { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+      font-family: 'IM Fell English', serif; font-style: italic; font-size: 16px;
+      color: rgba(240,234,224,0.6); text-align: center; transition: opacity 0.6s; }
+    #garden-status.hide { opacity: 0; pointer-events: none; }
+
+    /* Backdrop picker — visitors can switch */
+    #garden-bg-picker-host { position: fixed; left: 0; right: 0; bottom: 16px; z-index: 20;
+      display: flex; justify-content: center; padding: 0 12px; pointer-events: auto; }
+    html.has-cos-nav-bottom #garden-bg-picker-host {
+      bottom: calc(var(--cosnav-bottom-reserve, 92px) + env(safe-area-inset-bottom, 0px)); }
+    #garden-bg-label { position: fixed; bottom: calc(16px + 40px); left: 0; right: 0; z-index: 20;
+      text-align: center; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+      color: rgba(240,234,224,0.3); pointer-events: none; }
+    html.has-cos-nav-bottom #garden-bg-label { bottom: calc(var(--cosnav-bottom-reserve, 92px) + 42px + env(safe-area-inset-bottom,0px)); }
+    #garden-graphics-host {
+      position: fixed;
+      right: 12px;
+      bottom: calc(16px + 48px);
+      z-index: 24;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      pointer-events: auto;
+    }
+    html.has-cos-nav-bottom #garden-graphics-host {
+      bottom: calc(var(--cosnav-bottom-reserve, 92px) + 48px + env(safe-area-inset-bottom, 0px));
+    }
+    #garden-graphics-label {
+      font-size: 8px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(240,234,224,0.34);
+      pointer-events: none;
+    }
+    .garden-graphics-picker {
+      display: flex;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid rgba(240,234,224,0.18);
+      border-radius: 20px;
+      background: rgba(20,14,12,0.48);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+    }
+    .garden-graphics-btn {
+      min-width: 44px;
+      border: 0;
+      border-radius: 16px;
+      padding: 6px 9px;
+      background: transparent;
+      color: rgba(240,234,224,0.64);
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .garden-graphics-btn.is-active {
+      background: rgba(240,234,224,0.92);
+      color: #1a0e0a;
+    }
+    @media (max-width: 720px) {
+      #garden-graphics-host {
+        left: 12px;
+        right: auto;
+        align-items: flex-start;
+      }
+      .garden-graphics-btn { min-width: 38px; padding-inline: 8px; }
+    }
+    #garden-touch-hint {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: calc(116px + env(safe-area-inset-bottom, 0px));
+      z-index: 30;
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 13px 16px;
+      border: 1px solid rgba(240,234,224,0.16);
+      background: rgba(8,8,8,0.78);
+      backdrop-filter: blur(12px);
+      color: rgba(244,239,230,0.78);
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    #garden-touch-hint.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="garden-bg"></div>
+  <canvas id="garden-canvas"></canvas>
+
+  <div id="garden-ui">
+    <div id="garden-head">
+      <div class="g-eyebrow">Contradiction of S</div>
+      <div class="g-title">Cosmic Garden</div>
+      <div id="garden-count">the garden gathers…</div>
+    </div>
+    <div id="garden-pulse">
+      <div class="p-label">a new trace enters</div>
+      <div class="p-prompt"></div>
+    </div>
+    <div id="garden-status">the garden gathers…</div>
+  </div>
+
+  <div id="garden-bg-label">choose a backdrop</div>
+  <div id="garden-bg-picker-host"></div>
+  <div id="garden-graphics-host">
+    <div id="garden-graphics-label">graphics</div>
+    <div id="garden-graphics-picker" class="garden-graphics-picker" aria-label="Graphics quality"></div>
+  </div>
+  <div id="garden-touch-hint">Drag in the garden to explore. Pinch to zoom. Change pages from the glass nav below.</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/garden-background.js"></script>
+  <script src="js/guided-flow.js"></script>
+  <script src="js/nav.js"></script>
+
+  <script type="module">
+    import { initGarden } from './js/archive-cloud.js?v=42';
+    import { initGardenEntrance } from './js/garden-entrance.js?v=1';
+
+    const SUPA_URL = 'https://oexbsffepplhhhzhyxpy.supabase.co';
+    const SUPA_KEY = 'sb_publishable_GgYdLTverVrWPYq93O6pmA_NJ4olWQ5';
+    const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    const D  = window.COS_DEVICE || {};
+
+    const canvas   = document.getElementById('garden-canvas');
+    const bgHost   = document.getElementById('garden-bg');
+    const countEl  = document.getElementById('garden-count');
+    const statusEl = document.getElementById('garden-status');
+    const pulseEl  = document.getElementById('garden-pulse');
+    const pulseTx  = pulseEl.querySelector('.p-prompt');
+    const bgLabel  = document.getElementById('garden-bg-label');
+    const VIEW_KEY = 'cosGardenViewState';
+    const GRAPHICS_KEY = 'cosGardenGraphicsQuality';
+    const graphicsQuality = resolveGraphicsQuality();
+    let guidedReturnTimer = null;
+
+    function updateCount(n) {
+      countEl.textContent =
+        n === 0 ? 'no traces yet — be the first'
+        : n === 1 ? '1 trace in the garden'
+        : `${n} traces in the garden`;
+    }
+    let pulseTimer = null;
+    function pulse(prompt) {
+      countEl.classList.add('flash');
+      setTimeout(() => countEl.classList.remove('flash'), 1800);
+      pulseTx.textContent = prompt ? `"${prompt}"` : '';
+      pulseEl.classList.add('visible');
+      clearTimeout(pulseTimer);
+      pulseTimer = setTimeout(() => pulseEl.classList.remove('visible'), 4200);
+    }
+    const entrance = initGardenEntrance({ pulse });
+    buildGraphicsPicker();
+
+    function resolveGraphicsQuality() {
+      try {
+        const saved = localStorage.getItem(GRAPHICS_KEY);
+        return /^(auto|low|high)$/.test(saved || '') ? saved : 'auto';
+      } catch (_) {
+        return 'auto';
+      }
+    }
+
+    function effectiveLowGraphics() {
+      return graphicsQuality === 'low' || (graphicsQuality === 'auto' && !!(D.lowPower || ((D.isTouch && !D.isDesktop) && D.isAndroid)));
+    }
+
+    function effectiveHighGraphics() {
+      return graphicsQuality === 'high';
+    }
+
+    function buildGraphicsPicker() {
+      const picker = document.getElementById('garden-graphics-picker');
+      if (!picker) return;
+      const options = [
+        { id: 'auto', label: 'Auto' },
+        { id: 'low', label: 'Low' },
+        { id: 'high', label: 'High' },
+      ];
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'garden-graphics-btn';
+        btn.dataset.graphics = opt.id;
+        btn.textContent = opt.label;
+        btn.classList.toggle('is-active', graphicsQuality === opt.id);
+        btn.addEventListener('click', () => {
+          if (graphicsQuality === opt.id) return;
+          try { localStorage.setItem(GRAPHICS_KEY, opt.id); } catch (_) {}
+          window.location.reload();
+        });
+        picker.appendChild(btn);
+      });
+    }
+
+    (async () => {
+      // 1. Backdrop. On a camera device, default to the live camera (AR); otherwise
+      //    the animated environment. Visitors can switch via the picker.
+      const wantsCamera = D.shouldAutoCamera ? D.shouldAutoCamera() : false;
+      let available = [];
+      try {
+        available = await window.COS_GARDEN_BG.init(bgHost, {
+          preferred: wantsCamera ? 'camera' : 'aurora',
+          picker: document.getElementById('garden-bg-picker-host')
+        });
+      } catch (e) { console.warn('background init failed', e); }
+      if (!available || available.length <= 1) bgLabel.style.display = 'none';
+
+      // 2. Garden (transparent so the backdrop shows through).
+      let garden = null;
+      try {
+        garden = await initGarden(canvas, { opaque: false, sky: true, graphicsQuality, onTraceAdded: updateCount });
+        window.COS_GARDEN = garden;   // debug/control handle
+        if (window.COS_GARDEN_BG && window.COS_GARDEN_BG.syncSky) window.COS_GARDEN_BG.syncSky();
+      } catch (e) {
+        console.error('garden init failed', e);
+        statusEl.textContent = 'the garden could not bloom here.';
+        return;
+      }
+
+      // 2b. Drive the garden's animation loop (without it the traces never render).
+      let prev = performance.now();
+      (function tick(now) {
+        const dt = Math.min((now - prev) / 1000, 0.05);
+        prev = now;
+        garden.update(dt);
+        requestAnimationFrame(tick);
+      })(performance.now());
+
+      // 3. Load existing traces. Touch devices get a lighter first batch.
+      try {
+        const traceLimit = effectiveLowGraphics() ? 42 : (D.isTouch && !D.isDesktop && !effectiveHighGraphics()) ? 64 : 150;
+        let query = db.from('pain_traces')
+          .select('*').order('created_at', { ascending: false }).limit(traceLimit);
+        if (entrance.shouldPlantTrace) query = query.neq('id', entrance.traceId);
+        const { data } = await query;
+        if (data && data.length) { garden.loadBatch([...data].reverse()); updateCount(data.length); }
+        else updateCount(0);
+      } catch (err) { console.warn('trace load failed', err); updateCount(0); }
+      if (!entrance.shouldPlantTrace) restoreGardenView(garden);
+      statusEl.classList.add('hide');
+
+      if (await entrance.prepare(db)) entrance.mount(garden);
+      startGuidedReturnIfNeeded();
+
+      db.channel('garden-live')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pain_traces' },
+          payload => {
+            if (entrance.shouldSkipRealtime(payload.new)) return;
+            garden.addTrace(payload.new);
+            pulse(payload.new.prompt);
+          })
+        .subscribe();
+
+      // 4. Keep the garden sized to the viewport / orientation changes.
+      let rt = null;
+      const onResize = () => { clearTimeout(rt); rt = setTimeout(() => garden.resize(), 120); };
+      window.addEventListener('resize', onResize);
+      window.addEventListener('orientationchange', onResize);
+
+      let persistTimer = null;
+      function persistGardenViewSoon() {
+        clearTimeout(persistTimer);
+        persistTimer = setTimeout(() => persistGardenView(garden), 140);
+      }
+      window.addEventListener('pagehide', () => persistGardenView(garden));
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') persistGardenView(garden);
+      });
+
+      // 5. Pointer controls: desktop wheel/drag; touch uses two-finger drag + pinch.
+      window.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        garden.setZoom(garden.getZoom() + e.deltaY * 0.0045);
+        persistGardenViewSoon();
+      }, { passive: false });
+
+      let dragging = false, lastX = 0, lastY = 0;
+      canvas.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;                 // left button only
+        dragging = true; lastX = e.clientX; lastY = e.clientY;
+        garden.setAutoRotate(false);                // hold still while the user drives
+        document.documentElement.classList.add('garden-grabbing');
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - lastX;
+        lastX = e.clientX; lastY = e.clientY;
+        garden.rotateBy(dx * 0.006);                // horizontal drag → orbit
+      });
+      function endDrag() {
+        if (!dragging) return;
+        dragging = false;
+        document.documentElement.classList.remove('garden-grabbing');
+        persistGardenView(garden);
+        // No auto-spin: the view is manual-only and stays exactly where the user leaves it.
+      }
+      window.addEventListener('mouseup', endDrag);
+      window.addEventListener('mouseleave', endDrag);
+
+      if (D.isTouch && !D.isDesktop) {
+        garden.setAutoRotate(false);
+        const hint = document.getElementById('garden-touch-hint');
+        try {
+          if (hint && localStorage.getItem('cosGardenTouchHintSeen') !== '1') {
+            hint.classList.add('visible');
+            localStorage.setItem('cosGardenTouchHintSeen', '1');
+            setTimeout(() => hint.classList.remove('visible'), 6200);
+            hint.addEventListener('click', () => hint.classList.remove('visible'), { once: true });
+          }
+        } catch (_) {}
+
+        let touchMode = 'none';
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+        let lastMidX = 0;
+        let lastDist = 0;
+        function touchDistance(t0, t1) {
+          return Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+        }
+        function touchMidX(t0, t1) {
+          return (t0.clientX + t1.clientX) * 0.5;
+        }
+        canvas.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          garden.setAutoRotate(false);
+          if (hint) hint.classList.remove('visible');
+          if (e.touches.length === 1) {
+            touchMode = 'drag';
+            lastTouchX = e.touches[0].clientX;
+            lastTouchY = e.touches[0].clientY;
+          } else if (e.touches.length >= 2) {
+            touchMode = 'pinch';
+            lastMidX = touchMidX(e.touches[0], e.touches[1]);
+            lastDist = touchDistance(e.touches[0], e.touches[1]);
+          }
+        }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => {
+          if (touchMode === 'none') return;
+          e.preventDefault();
+          if (touchMode === 'drag' && e.touches.length === 1) {
+            const t = e.touches[0];
+            const dx = t.clientX - lastTouchX;
+            const dy = t.clientY - lastTouchY;
+            const state = garden.getViewState ? garden.getViewState() : {};
+            garden.rotateBy(dx * 0.0065);
+            if (garden.setViewState) {
+              garden.setViewState({ ...state, targetCamY: (state.targetCamY || 2.0) + dy * 0.0028 });
+            }
+            lastTouchX = t.clientX;
+            lastTouchY = t.clientY;
+          } else if (e.touches.length >= 2) {
+            touchMode = 'pinch';
+            const midX = touchMidX(e.touches[0], e.touches[1]);
+            const dist = touchDistance(e.touches[0], e.touches[1]);
+            garden.rotateBy((midX - lastMidX) * 0.0045);
+            garden.setZoom(garden.getZoom() - (dist - lastDist) * 0.010);
+            lastMidX = midX;
+            lastDist = dist;
+          }
+          persistGardenViewSoon();
+        }, { passive: false });
+        canvas.addEventListener('touchend', (e) => {
+          if (e.touches.length === 0) {
+            touchMode = 'none';
+            persistGardenView(garden);
+          } else if (e.touches.length === 1) {
+            touchMode = 'drag';
+            lastTouchX = e.touches[0].clientX;
+            lastTouchY = e.touches[0].clientY;
+          }
+        }, { passive: true });
+        canvas.addEventListener('touchcancel', () => { touchMode = 'none'; persistGardenView(garden); }, { passive: true });
+      }
+    })();
+
+    function restoreGardenView(garden) {
+      if (!garden || !garden.setViewState) return;
+      try {
+        const raw = localStorage.getItem(VIEW_KEY);
+        if (!raw) return;
+        const state = JSON.parse(raw);
+        if (!state || Date.now() - (state.savedAt || 0) > 1000 * 60 * 60 * 24 * 14) return;
+        garden.setViewState(state);
+      } catch (_) {}
+    }
+
+    function persistGardenView(garden) {
+      if (!garden || !garden.getViewState) return;
+      try {
+        localStorage.setItem(VIEW_KEY, JSON.stringify({ ...garden.getViewState(), savedAt: Date.now() }));
+      } catch (_) {}
+    }
+
+    function startGuidedReturnIfNeeded() {
+      if (guidedReturnTimer || !window.COS_GUIDED_FLOW) return;
+      guidedReturnTimer = window.COS_GUIDED_FLOW.startInactivityReturn('garden');
+    }
+  </script>
+</body>
+</html>

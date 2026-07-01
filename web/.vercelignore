@@ -1,0 +1,4 @@
+# Local-only working files — never deploy these.
+assets/temp/
+_planet-lake.html
+_*.html

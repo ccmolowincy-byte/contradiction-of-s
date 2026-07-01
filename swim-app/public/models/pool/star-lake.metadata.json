@@ -1,0 +1,34 @@
+{
+  "assetId": "starLake",
+  "sourceRawGlb": "/swim/models/generated/star-lake/star-lake-concept-j-hunyuan-pro.glb",
+  "sourceConcept": "/swim/generated/star-lake-concepts/asymmetry-round/star-lake-asym-built-in.png",
+  "optimizedGlb": "/swim/models/pool/star-lake.glb",
+  "pipeline": [
+    "gltf-transform prune",
+    "gltf-transform weld",
+    "gltf-transform simplify --ratio 0.03 --error 1"
+  ],
+  "result": {
+    "bytes": 35017680,
+    "triangles": 14998,
+    "vertices": 15122,
+    "textures": [
+      {
+        "slot": "normalTexture",
+        "mimeType": "image/png",
+        "resolution": "4096x4096"
+      },
+      {
+        "slot": "baseColorTexture",
+        "mimeType": "image/png",
+        "resolution": "4096x4096"
+      },
+      {
+        "slot": "metallicRoughnessTexture",
+        "mimeType": "image/png",
+        "resolution": "4096x4096"
+      }
+    ]
+  },
+  "notes": "Flagship composer asset. Geometry is decimated for runtime use, but original Hunyuan 4096px PNG material maps are retained without WebP/downscale texture compression."
+}

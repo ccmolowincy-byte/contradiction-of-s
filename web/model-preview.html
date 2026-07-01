@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sanctuary Planet — preview</title>
+  <script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  } }
+  </script>
+  <style>
+    html,body{margin:0;height:100%;background:#000;overflow:hidden;font:12px/1.5 system-ui;color:#9aa}
+    #c{display:block;width:100vw;height:100vh}
+    #hud{position:fixed;left:12px;top:12px;background:rgba(10,12,16,.6);padding:10px 12px;border-radius:8px;
+         -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);letter-spacing:.03em}
+    #hud b{color:#cdd}
+    #hud label{display:block;margin:6px 0 2px}
+    .row{display:flex;gap:8px;align-items:center}
+    button{font:11px system-ui;color:#cdd;background:#1a2026;border:1px solid #344;border-radius:14px;padding:5px 11px;cursor:pointer}
+    button.on{background:#cdd;color:#111}
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <b>Sanctuary planet</b> — drag to orbit · scroll to zoom<br>
+    <span id="meta">loading…</span>
+    <label>Variant</label>
+    <div class="row">
+      <button id="bDesk" class="on">desktop (1.65MB)</button>
+      <button id="bMob">mobile (710KB)</button>
+    </div>
+    <label>Lighting</label>
+    <div class="row">
+      <button id="bXray" class="on">garden X-ray</button>
+      <button id="bNeutral">neutral studio</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button id="bSpin" class="on">auto-spin</button>
+      <button id="bAxes">axes</button>
+      <button id="bWire">wireframe</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader }   from 'three/addons/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const canvas = document.getElementById('c');
+    const meta   = document.getElementById('meta');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight, false);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+
+    const scene  = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.01, 100);
+    camera.position.set(0, 1.2, 5);
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+
+    // ── Two lighting rigs ──────────────────────────────────────────────
+    // 1) Replica of the garden's cool X-ray rig + the warm top fill we plan to add.
+    const xrayRig = new THREE.Group();
+    xrayRig.add(new THREE.AmbientLight(0x0A1520, 0.4));
+    const k = new THREE.DirectionalLight(0xB8CDD8, 1.0); k.position.set(1.5,3,2.5); xrayRig.add(k);
+    const f = new THREE.DirectionalLight(0x6080A0, 0.28); f.position.set(-2.5,-1,1.5); xrayRig.add(f);
+    const rm = new THREE.DirectionalLight(0xD4C8AA, 0.14); rm.position.set(0,-2,-2.5); xrayRig.add(rm);
+    const warmTop = new THREE.DirectionalLight(0xFFE6C0, 0.9); warmTop.position.set(0.4,4,1.2); xrayRig.add(warmTop);
+    scene.add(xrayRig);
+
+    // 2) Neutral studio so you can judge the raw texture/colour honestly.
+    const studioRig = new THREE.Group();
+    studioRig.add(new THREE.HemisphereLight(0xffffff, 0x404050, 1.1));
+    const s1 = new THREE.DirectionalLight(0xffffff, 1.0); s1.position.set(2,3,2); studioRig.add(s1);
+    studioRig.visible = false;
+    scene.add(studioRig);
+
+    const axes = new THREE.AxesHelper(2); axes.visible = false; scene.add(axes);
+
+    const TARGET_R = 1.6;                 // normalise bounding radius to this
+    let current = null, wire = false;
+    const loader = new GLTFLoader();
+
+    function load(url){
+      meta.textContent = 'loading ' + url + ' …';
+      loader.load(url, (gltf)=>{
+        if (current){ scene.remove(current); current.traverse(o=>{ o.geometry&&o.geometry.dispose(); }); }
+        const root = gltf.scene;
+        // centre + normalise scale via bounding sphere
+        const box = new THREE.Box3().setFromObject(root);
+        const sph = box.getBoundingSphere(new THREE.Sphere());
+        root.position.sub(sph.center);
+        root.scale.setScalar(TARGET_R / sph.radius);
+        let tris = 0;
+        root.traverse(o=>{ if(o.isMesh){ o.material.wireframe = wire;
+          const g=o.geometry; if(g.index) tris += g.index.count/3; }});
+        current = new THREE.Group(); current.add(root); scene.add(current);
+        meta.textContent = url.split('/').pop() + ' · ~' + Math.round(tris/1000) + 'k tris · radius normalised';
+      }, undefined, (e)=>{ meta.textContent = 'ERROR: ' + (e.message||e); });
+    }
+
+    // ── UI ─────────────────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+    function pick(a,b,fn){ a.onclick=()=>{a.classList.add('on');b.classList.remove('on');fn(true);};
+                          b.onclick=()=>{b.classList.add('on');a.classList.remove('on');fn(false);}; }
+    pick($('bDesk'),$('bMob'),  d=> load(d ? 'assets/models/sanctuary-planet.glb' : 'assets/models/sanctuary-planet-mobile.glb'));
+    pick($('bXray'),$('bNeutral'), x=>{ xrayRig.visible=x; studioRig.visible=!x; });
+    let spin=true; $('bSpin').onclick=()=>{ spin=!spin; $('bSpin').classList.toggle('on',spin); };
+    $('bAxes').onclick=()=>{ axes.visible=!axes.visible; $('bAxes').classList.toggle('on',axes.visible); };
+    $('bWire').onclick=()=>{ wire=!wire; $('bWire').classList.toggle('on',wire);
+      current&&current.traverse(o=>{ if(o.isMesh) o.material.wireframe=wire; }); };
+
+    load('assets/models/sanctuary-planet.glb');
+
+    addEventListener('resize', ()=>{ renderer.setSize(innerWidth,innerHeight,false);
+      camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+
+    renderer.setAnimationLoop(()=>{
+      if (spin && current) current.rotation.y += 0.003;
+      controls.update();
+      renderer.render(scene, camera);
+    });
+  </script>
+</body>
+</html>

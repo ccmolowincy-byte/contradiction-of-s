@@ -1,0 +1,25 @@
+{
+  "assetId": "star-lake-concept-j-hunyuan-pro",
+  "sourceConcept": "/swim/generated/star-lake-concepts/asymmetry-round/star-lake-asym-built-in.png",
+  "model": "fal-ai/hunyuan-3d/v3.1/pro/image-to-3d",
+  "requestId": "019f0ff7-14fb-75f3-bf2c-6e818a48db5d",
+  "inputImageUrl": "https://v3b.fal.media/files/b/0aa02715/tPsnR9OK4BB3d_GhjCstf_star-lake-asym-built-in.png",
+  "outputs": {
+    "glb": {
+      "localPath": "/swim/models/generated/star-lake/star-lake-concept-j-hunyuan-pro.glb",
+      "remoteUrl": "https://v3b.fal.media/files/b/0aa02725/tQIL1rMnFRhgYWRiFzJQ8_model.glb",
+      "bytes": 49739904
+    },
+    "preview": {
+      "localPath": "/swim/models/generated/star-lake/star-lake-concept-j-hunyuan-pro-preview.png",
+      "remoteUrl": "https://v3b.fal.media/files/b/0aa02725/HPWUMsQaftpkW07gkw1Rd_preview.png",
+      "bytes": 58409
+    }
+  },
+  "generationSettings": {
+    "generateType": "Normal",
+    "enablePbr": true,
+    "faceCount": 500000
+  },
+  "notes": "Raw Hunyuan Pro output. Optimize before shipping in a live scene."
+}

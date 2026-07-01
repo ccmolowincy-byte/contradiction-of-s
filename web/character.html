@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+  <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml">
+  <title>Character — Contradiction of S</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&family=IM+Fell+English:ital@0;1&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="character.css?v=4">
+  <script src="js/device.js"></script>
+</head>
+<body class="content">
+
+  <div class="page">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div class="eyebrow">Who you might be</div>
+      <h1 class="page-title">Character <em>Builder</em></h1>
+      <p class="page-subtitle">Build a figure with red marks, simple layers, and a single ink brush.</p>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="char-tabs" role="tablist" aria-label="Character builder">
+      <button class="char-tab active" id="tab-build" role="tab" aria-selected="true" data-panel="panel-build">Build</button>
+      <button class="char-tab" id="tab-name" role="tab" aria-selected="false" data-panel="panel-name">Name</button>
+    </div>
+
+    <!-- Build panel -->
+    <div class="char-panel active" id="panel-build" role="tabpanel" aria-labelledby="tab-build">
+      <div class="avatar-creator">
+
+        <!-- Instrument rail -->
+        <div class="avatar-toolbar" role="toolbar" aria-label="Drawing tools">
+          <span class="rail-cap">Tools</span>
+          <button class="tool-btn active" id="tool-select" title="Select / move / resize / rotate">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M4 0l16 12-7 2-4 8L4 0z"/></svg>
+            Move
+          </button>
+          <button class="tool-btn" id="tool-draw" title="Red brush">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            Brush
+          </button>
+          <button class="tool-btn" id="tool-erase" title="Erase red marks">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.24 3.56a2 2 0 012.83 0l1.37 1.37a2 2 0 010 2.83L10.2 18H4.5L2 15.5 16.24 3.56zM5.33 16h4.04l8.24-8.24-2.37-2.37L4.5 14.4 5.33 16zM13 20h9v2h-9z"/></svg>
+            Erase
+          </button>
+          <button class="tool-btn" id="tool-scissors" title="Cut a paper sticker">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="6" cy="7" r="2.4"></circle>
+              <circle cx="6" cy="17" r="2.4"></circle>
+              <path d="M8.2 8.2 20 20"></path>
+              <path d="M8.2 15.8 20 4"></path>
+            </svg>
+            Scissors
+          </button>
+          <span class="rail-rule" aria-hidden="true"></span>
+          <button class="tool-btn" id="tool-remove" title="Remove selected layer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            Remove
+          </button>
+          <button class="tool-btn" id="tool-undo" title="Undo (Ctrl+Z)" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05 1-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+            Undo
+          </button>
+          <button class="tool-btn" id="tool-redo" title="Redo (Ctrl+Shift+Z)" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.4 10.6C16.55 9 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
+            Redo
+          </button>
+          <button class="tool-btn danger-tool" id="tool-clear-draw" title="Tap twice to reset everything">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13h14v-2H5v2zm7-9C6.48 4 2 8.48 2 14s4.48 10 10 10 10-4.48 10-10S17.52 4 12 4z"/></svg>
+            Reset
+          </button>
+        </div>
+
+        <!-- Contextual brush controls (shown when Brush / Erase is active) -->
+        <div class="brush-sliders" id="brush-sliders" aria-label="Brush controls">
+          <span class="ctx-label">Red ink</span>
+          <label class="range-control">Width <input id="brush-size-range" type="range" min="1" max="18" step="1" value="5"></label>
+          <label class="range-control">Opacity <input id="brush-opacity-range" type="range" min="0.12" max="1" step="0.02" value="0.72"></label>
+        </div>
+
+        <!-- Specimen plate -->
+        <figure class="stage-area">
+          <div id="avatar-stage-wrap">
+            <div class="plate-spine" aria-hidden="true"></div>
+            <div class="plate-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <canvas id="bg-canvas"></canvas>
+            <div id="avatar-stage">
+              <canvas id="drawing-canvas"></canvas>
+              <canvas id="distort-cursor"></canvas>
+            </div>
+          </div>
+          <figcaption class="plate-cartouche">
+            <span class="cartouche-rule" aria-hidden="true"></span>
+            <span class="cartouche-name" id="plate-cartouche">unnamed specimen</span>
+            <span class="cartouche-sub">Specimen · Contradiction of S</span>
+          </figcaption>
+        </figure>
+
+        <!-- Specimen cabinet -->
+        <div class="cabinet">
+
+          <div class="asset-panel">
+            <button class="asset-drawer-toggle" id="asset-drawer-toggle" aria-expanded="true">
+              <span>Assets</span>
+              <span class="asset-drawer-status">Collapse</span>
+            </button>
+
+            <div class="cat-tabs" role="tablist">
+              <button class="cat-tab active" data-cat="body" role="tab">Body</button>
+              <button class="cat-tab cat-tab-collection" data-cat="collection" role="tab" title="My sticker collection">Stickers</button>
+              <button class="cat-tab" data-cat="face" role="tab">Face</button>
+              <button class="cat-tab" data-cat="hair-top" role="tab">Hair</button>
+              <button class="cat-tab" data-cat="tops" role="tab">Tops</button>
+              <button class="cat-tab" data-cat="bottoms" role="tab">Bottoms</button>
+              <button class="cat-tab cat-tab-bg" data-cat="background" role="tab" title="Draw background">Bg</button>
+              <button class="cat-tab cat-tab-layers" data-cat="__layers" role="tab" title="Layer order &amp; visibility">Layers</button>
+            </div>
+
+            <!-- Draw tool controls -->
+            <div class="draw-controls" id="draw-controls">
+              <span class="control-label">Red ink only</span>
+            </div>
+
+            <!-- Asset thumbnails -->
+            <div class="asset-tray" id="asset-tray"></div>
+
+            <!-- Layer panel -->
+            <div id="layer-panel"></div>
+          </div>
+
+          <!-- Identity panel -->
+          <div class="identity-wrap" id="identity-wrap">
+            <button class="identity-toggle" id="identity-toggle">
+              <span class="toggle-label">Identity</span>
+              <span class="identity-preview" id="identity-preview">— scroll to choose —</span>
+              <span class="chevron">▾</span>
+            </button>
+            <div id="identity-panel">
+              <div class="identity-pickers-row">
+                <div class="picker-col">
+                  <div class="picker-col-label">Colour of Condition</div>
+                  <div class="picker-wrap">
+                    <div class="picker-sel-band"></div>
+                    <div class="picker-drum" id="colour-drum"></div>
+                  </div>
+                </div>
+                <div class="picker-sep">+</div>
+                <div class="picker-col">
+                  <div class="picker-col-label">Shape of Condition</div>
+                  <div class="picker-wrap">
+                    <div class="picker-sel-band"></div>
+                    <div class="picker-drum" id="shape-drum"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="identity-result" id="identity-result">—</div>
+            </div>
+          </div>
+
+          <!-- Save portrait -->
+          <div id="save-portrait-row">
+            <button id="save-portrait-btn">Save portrait</button>
+          </div>
+
+        </div><!-- /.cabinet -->
+
+      </div><!-- /.avatar-creator -->
+    </div><!-- /#panel-build -->
+
+    <!-- Name panel -->
+    <div class="char-panel" id="panel-name" role="tabpanel" aria-labelledby="tab-name">
+      <div class="name-hero">
+        <div class="name-stars" aria-hidden="true">
+          <svg class="star-float" width="12" height="12" viewBox="0 0 24 24" fill="var(--burgundy)" opacity="0.25"><path d="M12 2l2.2 6.6H21l-5.6 4 2.2 6.6L12 15.2 6.4 19.2l2.2-6.6L3 8.6h6.8z"/></svg>
+          <svg class="star-float-2" width="8" height="8" viewBox="0 0 24 24" fill="var(--burgundy)" opacity="0.18"><path d="M12 2l2.2 6.6H21l-5.6 4 2.2 6.6L12 15.2 6.4 19.2l2.2-6.6L3 8.6h6.8z"/></svg>
+        </div>
+        <div class="name-stars-r" aria-hidden="true">
+          <svg class="star-float-3" width="10" height="10" viewBox="0 0 24 24" fill="var(--burgundy)" opacity="0.2"><path d="M12 2l2.2 6.6H21l-5.6 4 2.2 6.6L12 15.2 6.4 19.2l2.2-6.6L3 8.6h6.8z"/></svg>
+          <svg class="star-float" width="15" height="15" viewBox="0 0 24 24" fill="var(--burgundy)" opacity="0.15"><path d="M12 2l2.2 6.6H21l-5.6 4 2.2 6.6L12 15.2 6.4 19.2l2.2-6.6L3 8.6h6.8z"/></svg>
+        </div>
+      </div>
+
+      <div id="name-display" aria-live="polite">—</div>
+
+      <div class="name-actions">
+        <button class="btn btn-primary" id="gen-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          Generate name
+        </button>
+        <button class="btn btn-ghost" id="save-current-btn">☆ Save</button>
+      </div>
+
+      <div class="name-history-section">
+        <div class="history-header">
+          <h2>Past names</h2>
+        </div>
+        <p id="name-history-empty" style="display:none;">No names generated yet</p>
+        <div class="scroll-fade">
+          <div id="name-history-list"></div>
+        </div>
+      </div>
+    </div><!-- /#panel-name -->
+
+  </div><!-- /.page -->
+
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <span class="nav-d-label">Character</span>
+    <div class="nav-d-dots">
+      <a href="index.html" class="nav-dot" aria-label="Home"></a>
+      <a href="gesture.html" class="nav-dot" aria-label="Leave a Trace"></a>
+      <a href="ar.html" class="nav-dot" aria-label="Archive"></a>
+    </div>
+  </nav>
+
+  <!-- "Take them for a swim" invite — shown once a portrait is saved.
+       The transparent full-body figure is already in localStorage
+       (avatarPortraitTransparent); the pool at /swim/ reads it directly. -->
+  <div id="swim-invite" aria-hidden="true">
+    <div class="swim-invite-card" role="dialog" aria-labelledby="swim-invite-title">
+      <button class="swim-invite-close" id="swim-invite-close" aria-label="Stay here">×</button>
+      <div class="swim-invite-figure"><img id="swim-invite-img" alt="Your character" /></div>
+      <div class="swim-invite-eyebrow">Your character is ready</div>
+      <h2 class="swim-invite-title" id="swim-invite-title">Take them <em>for a swim</em></h2>
+      <p class="swim-invite-text">Set your paper figure adrift in the pool — they’ll float and warp with the water.</p>
+      <div class="swim-invite-actions">
+        <a class="swim-invite-go" id="swim-invite-go" href="swim/">Go for a Swim</a>
+        <button class="swim-invite-stay" id="swim-invite-stay">Keep building</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- "Float your sticker in the forum" invite — shown once a sticker is saved. -->
+  <div id="sticker-forum-invite" aria-hidden="true">
+    <div class="swim-invite-card" role="dialog" aria-labelledby="sticker-forum-invite-title">
+      <button class="swim-invite-close" id="sticker-forum-invite-close" aria-label="Stay here">×</button>
+      <div class="swim-invite-figure"><img id="sticker-forum-invite-img" alt="Your sticker" /></div>
+      <div class="swim-invite-eyebrow">Your sticker is saved</div>
+      <h2 class="swim-invite-title" id="sticker-forum-invite-title">Float it in the <em>forum</em></h2>
+      <p class="swim-invite-text">Attach your sticker to a story in the community forum.</p>
+      <div class="swim-invite-actions">
+        <a class="swim-invite-go" id="sticker-forum-invite-go" href="community.html">Go to Forum</a>
+        <button class="swim-invite-stay" id="sticker-forum-invite-stay">Keep building</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Crop modal -->
+  <div id="crop-modal" aria-hidden="true">
+    <div class="crop-header">
+      <span class="crop-header-label">Frame your portrait</span>
+      <div class="crop-zoom-btns">
+        <button class="crop-zoom-btn" id="crop-zoom-out">−</button>
+        <button class="crop-zoom-btn" id="crop-zoom-in">+</button>
+      </div>
+    </div>
+    <div class="crop-viewport" id="crop-viewport">
+      <canvas id="crop-canvas"></canvas>
+    </div>
+    <div class="crop-footer">
+      <button class="btn btn-ghost btn-sm" id="crop-cancel">Retake</button>
+      <button class="btn btn-primary btn-sm" id="crop-confirm">Confirm portrait</button>
+    </div>
+  </div>
+
+
+
+  <!-- Tab switching -->
+  <script>
+  (function () {
+    var tabs = document.querySelectorAll('.char-tab');
+    var panels = document.querySelectorAll('.char-panel');
+    function switchTab(id) {
+      tabs.forEach(function (t) {
+        var active = t.dataset.panel === id;
+        t.classList.toggle('active', active);
+        t.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      panels.forEach(function (p) {
+        p.classList.toggle('active', p.id === id);
+      });
+      // The Build tab uses a viewport-fit layout (no page scroll); Name
+      // scroll naturally. Tag the body so the CSS can scope that.
+      document.body.classList.toggle('build-active', id === 'panel-build');
+      window.dispatchEvent(new Event('resize'));
+      window.dispatchEvent(new CustomEvent('character-tab-switched', { detail: { panel: id } }));
+    }
+    document.body.classList.add('build-active'); // Build is the default panel
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () { switchTab(t.dataset.panel); });
+    });
+    window.CHARACTER_UI = { switchTab: switchTab };
+    var hash = location.hash.replace('#', '');
+    if (hash === 'name') switchTab('panel-name');
+
+  })();
+  </script>
+
+  <!-- Plate cartouche: mirror the live identity into the museum label under the
+       plate. Read-only reflection of #identity-result — no change to builder JS. -->
+  <script>
+  (function () {
+    var src  = document.getElementById('identity-result');
+    var dest = document.getElementById('plate-cartouche');
+    if (!src || !dest) return;
+    function sync() {
+      var t = (src.textContent || '').trim();
+      dest.textContent = (t && t !== '—') ? t : 'unnamed specimen';
+    }
+    new MutationObserver(sync).observe(src, { childList: true, characterData: true, subtree: true });
+    sync();
+    /* Ensure the stage scales to the new layout once fonts/layout settle. */
+    window.addEventListener('load', function () { window.dispatchEvent(new Event('resize')); });
+  }());
+  </script>
+
+  <!-- Shared runtime -->
+  <script src="js/transitions.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Supabase persistence for the Character Builder -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/character-store.js?v=3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/p5@2.3.0/lib/p5.min.js"></script>
+  <script src="vendor/p5-brush/p5.brush.js?v=1"></script>
+  <script src="js/ink-brush.js?v=6"></script>
+
+  <!-- Character Builder tabs -->
+  <script src="js/character-build.js?v=4"></script>
+  <script src="js/character-name.js"></script>
+
+  <!-- Navigation -->
+  <script src="js/nav.js"></script>
+
+</body>
+</html>

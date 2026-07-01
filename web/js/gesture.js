@@ -1,6 +1,5 @@
-/* gesture.js â€” Body movement capture with TF.js MoveNet
- * Tracks shoulder midpoint as anatomical spine proxy.
- * Flow: loading â†’ preview â†’ recording (20 s) â†’ review â†’ saving â†’ ar.html
+/* gesture.js - Browser body movement capture with MediaPipe Pose Landmarker.
+ * Maps named anatomical landmarks to Wincy's red-star body rig.
  */
 (function () {
   'use strict';
@@ -9,7 +8,7 @@
   const SUPA_KEY = 'sb_publishable_GgYdLTverVrWPYq93O6pmA_NJ4olWQ5';
   let db; // assigned inside init() after CDN guard — avoids top-level throw if supabase CDN fails
 
-  /* â”€â”€ Single exhibition prompt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Single exhibition prompt ---------------------------------------------- */
   const PROMPTS = [
     'Move the way you move when no one is watching.',
     'Do the exercise you\'re most familiar with.',
@@ -22,23 +21,33 @@
   ];
   const PROMPT = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
 
-  /* â”€â”€ Recording constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const RECORD_DURATION = 20;   // seconds
+  /* -- Recording constants --------------------------------------------------- */
+  const RECORD_DURATION = 10;   // seconds
   const SAMPLE_INTERVAL = 80;   // ms between pose samples
   const MAX_SAVED_PTS   = 60;   // points stored per trace (enough for smooth curve)
   const SMOOTH_RADIUS     = 4;    // moving-average half-window for path smoothing
   const SKELETON_INTERVAL = 400;  // ms between full-body keypoint snapshots
-  const SKELETON_MAX      = 50;   // max skeleton frames stored per recording
+  const SKELETON_MAX      = 30;   // max skeleton frames stored per recording
 
-  /* â”€â”€ Skeleton connections for overlay drawing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Skeleton connections for overlay drawing ------------------------------ */
   const CONNECTIONS = [
-    [0,1],[0,2],[1,3],[2,4],
-    [5,7],[7,9],[6,8],[8,10],
-    [5,6],[5,11],[6,12],[11,12],
-    [11,13],[13,15],[12,14],[14,16],
+    [11,12],
+    [11,13],[13,15],
+    [12,14],[14,16],
+    [15,19],[15,21],[15,17],
+    [16,20],[16,22],[16,18],
+    [11,23],[12,24],
+    [23,24],
+    [23,25],[25,27],
+    [24,26],[26,28],
+    [27,29],[29,31],
+    [28,30],[30,32],
   ];
+  const FALLBACK_BODY_DOTS = new Set([
+    11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,
+  ]);
 
-  /* â”€â”€ DOM refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- DOM refs -------------------------------------------------------------- */
   const video        = document.getElementById('g-video');
   const overlay      = document.getElementById('g-overlay');
   const ctx          = overlay.getContext('2d');
@@ -48,8 +57,9 @@
   const progressBarEl= document.getElementById('g-progress-bar');
   const reviewCv     = document.getElementById('g-review-canvas');
   const debugEl      = document.getElementById('g-debug');
+  const D            = window.COS_DEVICE || {};
 
-  /* â”€â”€ Debug log (visible on screen + console) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Debug log (visible on screen + console) ------------------------------- */
   function log(msg, type) {
     if (!debugEl) return;
     const line = document.createElement('div');
@@ -60,9 +70,22 @@
     debugEl.scrollTop = debugEl.scrollHeight;
   }
 
-  /* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  function setCameraError(kind) {
+    const el = document.getElementById('g-error-text');
+    if (!el) return;
+    const messages = {
+      noCamera: 'No webcam was detected on this computer.<br>The body-capture experience works best on a mobile device with a camera.',
+      denied: 'Not everyone is comfortable with body capture.<br>The community still welcomes everybody - explore the garden or create an anonymous avatar.',
+      unsupported: 'This browser cannot open a camera here.<br>The body-capture experience works best on a mobile device with a camera.',
+      generic: 'Camera access is required for body capture.<br>You can reload to try again, or continue into the garden.'
+    };
+    el.innerHTML = messages[kind] || messages.generic;
+  }
+
+  /* -- State ----------------------------------------------------------------- */
   let currentState  = 'loading';
   let detector      = null;
+  let poseLandmarker = null;
   let stream        = null;
   let rafId         = null;
   let sampleIv      = null;
@@ -79,12 +102,13 @@
 
   let skeletonSnapshots  = [];
   let skeletonIv         = null;
-  let customSkel         = null;   // loaded async after MoveNet; used by drawSkeleton
+  let customSkel         = null;   // loaded async after pose model; used by drawSkeleton
   let lastFrameTime      = 0;      // for dt calculation in the animation loop
-  let smoothedKeypoints  = null;   // EMA-smoothed MoveNet output (reduces jitter)
+  let smoothedKeypoints  = null;   // EMA-smoothed pose-landmark output (reduces jitter)
   let savedTraceId       = null;   // assigned after successful Supabase save
+  let chosenColour       = null;   // hex picked from the star colour wheel on the review screen
 
-  /* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Helpers --------------------------------------------------------------- */
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function lerp(a, b, t)    { return a + (b - a) * clamp(t, 0, 1); }
 
@@ -111,6 +135,112 @@
     ]);
   }
 
+  const MP_NAMES = [
+    'nose',
+    'left_eye_inner','left_eye','left_eye_outer',
+    'right_eye_inner','right_eye','right_eye_outer',
+    'left_ear','right_ear',
+    'mouth_left','mouth_right',
+    'left_shoulder','right_shoulder',
+    'left_elbow','right_elbow',
+    'left_wrist','right_wrist',
+    'left_pinky','right_pinky',
+    'left_index','right_index',
+    'left_thumb','right_thumb',
+    'left_hip','right_hip',
+    'left_knee','right_knee',
+    'left_ankle','right_ankle',
+    'left_heel','right_heel',
+    'left_foot_index','right_foot_index',
+  ];
+
+  const COCO_FROM_MP = [
+    0, 2, 5, 7, 8,
+    11, 12, 13, 14, 15, 16,
+    23, 24, 25, 26, 27, 28,
+  ];
+
+  function landmarkScore(lm) {
+    if (!lm) return 0;
+    const visibility = lm.visibility ?? 1;
+    const presence = lm.presence ?? 1;
+    return Math.max(0, Math.min(1, visibility * presence));
+  }
+
+  function normalisePoseLandmarks(landmarks) {
+    const full = (landmarks || []).map((lm, i) => {
+      const x = currentFacing === 'user' ? 1 - lm.x : lm.x;
+      return {
+        x: clamp(x, -0.2, 1.2),
+        y: clamp(lm.y, -0.2, 1.2),
+        z: lm.z || 0,
+        score: landmarkScore(lm),
+        visibility: lm.visibility ?? null,
+        presence: lm.presence ?? null,
+        name: MP_NAMES[i] || ('landmark_' + i),
+      };
+    });
+
+    const vW = video.videoWidth || 1280;
+    const vH = video.videoHeight || 720;
+    const coco = COCO_FROM_MP.map((mpIndex, i) => {
+      const lm = full[mpIndex];
+      return lm ? {
+        x: lm.x * vW,
+        y: lm.y * vH,
+        score: lm.score,
+        name: lm.name,
+        mpIndex,
+        cocoIndex: i,
+      } : { x: 0, y: 0, score: 0, name: 'missing', mpIndex, cocoIndex: i };
+    });
+    coco.model = 'mediapipe_pose_landmarker';
+    coco.landmarks = full;
+    return coco;
+  }
+
+  function smoothPoseFrame(raw) {
+    if (!raw || !raw.landmarks) return raw;
+    const alpha = 0.58;
+
+    if (!smoothedKeypoints || !smoothedKeypoints.landmarks || smoothedKeypoints.landmarks.length !== raw.landmarks.length) {
+      const first = raw.map(k => ({ ...k }));
+      first.model = raw.model;
+      first.landmarks = raw.landmarks.map(k => ({ ...k }));
+      return first;
+    }
+
+    const smoothLandmarks = raw.landmarks.map((rk, i) => {
+      const sk = smoothedKeypoints.landmarks[i] || rk;
+      if (!rk || rk.score < 0.12) {
+        return { ...sk, score: (sk.score || 0) * 0.90 };
+      }
+      return {
+        ...rk,
+        x: sk.x * (1 - alpha) + rk.x * alpha,
+        y: sk.y * (1 - alpha) + rk.y * alpha,
+        z: (sk.z || 0) * (1 - alpha) + (rk.z || 0) * alpha,
+        score: (sk.score || 0) * 0.35 + rk.score * 0.65,
+      };
+    });
+
+    const smooth = raw.map((rk, i) => {
+      const sk = smoothedKeypoints[i] || rk;
+      if (!rk || rk.score < 0.12) {
+        return { ...sk, score: (sk.score || 0) * 0.90 };
+      }
+      return {
+        ...rk,
+        x: sk.x * (1 - alpha) + rk.x * alpha,
+        y: sk.y * (1 - alpha) + rk.y * alpha,
+        score: (sk.score || 0) * 0.35 + rk.score * 0.65,
+      };
+    });
+    smooth.model = raw.model;
+    smooth.landmarks = smoothLandmarks;
+    return smooth;
+  }
+
   function setState(s) {
     stopReviewAnimation();
     currentState = s;
@@ -130,6 +260,17 @@
     if (reviewAnimId !== null) { cancelAnimationFrame(reviewAnimId); reviewAnimId = null; }
   }
 
+  function resetCapture() {
+    stopReviewAnimation();
+    samples = [];
+    skeletonSnapshots = [];
+    lastKeypoints = null;
+    savedTraceId = null;
+    const more = document.getElementById('g-more-actions');
+    if (more) more.hidden = true;
+    setState('preview');
+  }
+
   // Tap debug panel to expand/collapse
   if (debugEl) {
     debugEl.addEventListener('click', () => {
@@ -142,11 +283,12 @@
     });
   }
 
-  /* â”€â”€ Camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Camera ---------------------------------------------------------------- */
   async function startCamera(facing) {
     currentFacing = facing || 'user';
     if (!navigator.mediaDevices?.getUserMedia) {
       log('ERROR: getUserMedia not supported', 'err');
+      setCameraError('unsupported');
       setState('error'); return false;
     }
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
@@ -179,48 +321,74 @@
       return true;
     } catch (e) {
       log('Camera error: ' + e.message, 'err');
+      if (e && (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError')) {
+        setCameraError('denied');
+      } else if (e && (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError')) {
+        setCameraError('noCamera');
+      } else if (D.isDesktop) {
+        setCameraError('noCamera');
+      } else {
+        setCameraError('generic');
+      }
       setState('error');
       return false;
     }
   }
 
-  /* â”€â”€ MoveNet init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* MediaPipe Pose Landmarker init */
   async function loadDetector() {
-    log('Step 3/5 — initialising TensorFlow backend…');
-    setLoadingStatus('Initialising TensorFlow…', 'setting up GPU / WebGL backend');
-    await withTimeout(tf.ready(), 20000, 'TensorFlow backend');
-    const backend = tf.getBackend();
-    log('TensorFlow ready — backend: ' + backend, 'ok');
-    setLoadingStatus('TensorFlow ready (' + backend + ')', '');
-
-    log('Step 4/5 — creating MoveNet detector…');
-    setLoadingStatus('Downloading MoveNet model…', 'cached after first visit — please wait');
-    const det = await withTimeout(
-      poseDetection.createDetector(
-        poseDetection.SupportedModels.MoveNet,
-        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
-      ),
-      90000,
-      'MoveNet model download'
+    log('Step 3/5 - loading MediaPipe vision runtime...');
+    setLoadingStatus('Loading body tracker...', 'cached after first visit - please wait');
+    const visionBase = new URL('../vendor/mediapipe/tasks-vision/', import.meta.url).href;
+    const visionModule = await withTimeout(
+      import(visionBase + 'vision_bundle.mjs'),
+      30000,
+      'MediaPipe vision runtime'
     );
-    log('MoveNet detector created', 'ok');
-    setLoadingStatus('MoveNet detector ready', '');
+    const { FilesetResolver, PoseLandmarker } = visionModule;
+
+    log('Step 4/5 - creating Pose Landmarker...');
+    const fileset = await withTimeout(
+      FilesetResolver.forVisionTasks(visionBase + 'wasm'),
+      30000,
+      'MediaPipe wasm files'
+    );
+
+    const createLandmarker = delegate => PoseLandmarker.createFromOptions(fileset, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task',
+          delegate,
+        },
+        runningMode: 'VIDEO',
+        numPoses: 1,
+        minPoseDetectionConfidence: 0.35,
+        minPosePresenceConfidence: 0.35,
+        minTrackingConfidence: 0.35,
+      });
+
+    let det;
+    try {
+      det = await withTimeout(createLandmarker('GPU'), 90000, 'Pose Landmarker model download');
+    } catch (gpuErr) {
+      log('GPU delegate failed, retrying Pose Landmarker on CPU: ' + (gpuErr.message || gpuErr), 'err');
+      det = await withTimeout(createLandmarker('CPU'), 90000, 'Pose Landmarker CPU model download');
+    }
+    poseLandmarker = det;
+    log('Pose Landmarker ready', 'ok');
+    setLoadingStatus('Body tracker ready', '');
     return det;
   }
 
-  /* â”€â”€ Main init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Main init ------------------------------------------------------------- */
   async function init() {
     setState('loading');
     log('Init started');
     setLoadingStatus('Starting up…', '');
 
-    // Step 1: verify CDN scripts loaded (tf, poseDetection, supabase)
+    // Step 1: verify CDN scripts loaded.
     log('Step 1/5 — checking dependencies…');
     setLoadingStatus('Checking dependencies…', '');
-    const missingLib = typeof tf === 'undefined' ? 'TensorFlow.js'
-                     : typeof poseDetection === 'undefined' ? 'pose-detection'
-                     : typeof supabase === 'undefined' ? 'Supabase'
-                     : null;
+    const missingLib = typeof supabase === 'undefined' ? 'Supabase' : null;
     if (missingLib) {
       log('ERROR: ' + missingLib + ' script not loaded (CDN failure?)', 'err');
       setLoadingStatus('Could not load ' + missingLib, 'check your connection and reload');
@@ -230,7 +398,7 @@
       return;
     }
     db = supabase.createClient(SUPA_URL, SUPA_KEY);
-    log('TF.js v' + (tf.version_core || tf.version?.tfjs || '?') + ', poseDetection, supabase confirmed', 'ok');
+    log('Supabase confirmed; MediaPipe loads as module', 'ok');
     setLoadingStatus('Dependencies loaded', '');
 
     currentPrompt = PROMPT;
@@ -244,7 +412,7 @@
     log('Camera ready', 'ok');
     setLoadingStatus('Camera ready', '');
 
-    // Steps 3 + 4: TF backend + MoveNet model (inside loadDetector)
+    // Steps 3 + 4: MediaPipe Pose Landmarker model
     try {
       detector = await loadDetector();
     } catch (e) {
@@ -265,8 +433,8 @@
     setState('preview');
     log('Ready — pose detection active', 'ok');
 
-    // Load custom skeleton assets in background â€” overlay degrades gracefully until ready
-    import('./custom-skel-draw.js?v=15')
+    // Load custom skeleton assets in background - overlay degrades gracefully until ready
+    import('./custom-skel-draw.js?v=18')
       .then(m => m.loadCustomSkel('assets/skel/'))
       .then(skel => {
         customSkel = skel;
@@ -277,54 +445,47 @@
     startDetectionLoop();
   }
 
-  /* â”€â”€ Detection loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Detection loop --------------------------------------------------------- */
   function startDetectionLoop() {
     lastFrameTime = performance.now();
     async function loop() {
       const now = performance.now();
-      const dt  = Math.min((now - lastFrameTime) / 1000, 0.05);
+      const dt = Math.min((now - lastFrameTime) / 1000, 0.05);
       lastFrameTime = now;
 
       if (currentState === 'saving' || currentState === 'error' || currentState === 'loading') {
         rafId = requestAnimationFrame(loop);
         return;
       }
+
       if (detector && video.readyState >= 2 && !video.paused) {
         try {
-          const poses = await detector.estimatePoses(video);
-          if (poses.length > 0 && poses[0].keypoints) {
-            const raw = poses[0].keypoints;
-            // Exponential moving average â€” smooths jitter without adding visible lag
-            const alpha = 0.60;
-            if (!smoothedKeypoints || smoothedKeypoints.length !== raw.length) {
-              smoothedKeypoints = raw.map(k => ({ x: k.x, y: k.y, score: k.score, name: k.name }));
+          const result = detector.detectForVideo(video, now);
+          const landmarks = result && result.landmarks && result.landmarks[0];
+          if (landmarks && landmarks.length >= 33) {
+            const raw = normalisePoseLandmarks(landmarks);
+            const trackedMajor = raw.landmarks
+              .filter((lm, i) => [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28].includes(i) && lm.score >= 0.34)
+              .length;
+            if (trackedMajor >= 3) {
+              smoothedKeypoints = smoothPoseFrame(raw);
+              currentKeypoints = smoothedKeypoints;
+              noBodyFrames = 0;
             } else {
-              smoothedKeypoints = smoothedKeypoints.map((sk, i) => {
-                const rk = raw[i];
-                if (!rk || rk.score < 0.12) {
-                  // Joint briefly lost â€” decay score slowly so it fades out rather than snapping off.
-                  // Position is held from last known good frame (sk.x, sk.y).
-                  return { ...sk, score: sk.score * 0.92 };
-                }
-                return {
-                  x:     sk.x     * (1 - alpha) + rk.x     * alpha,
-                  y:     sk.y     * (1 - alpha) + rk.y     * alpha,
-                  score: sk.score * 0.35    + rk.score * 0.65,
-                  name:  rk.name,
-                };
-              });
+              currentKeypoints = null;
+              noBodyFrames++;
             }
-            currentKeypoints = smoothedKeypoints;
-            noBodyFrames = 0;
           } else {
             currentKeypoints = null;
             noBodyFrames++;
-            if (noBodyFrames > 90) smoothedKeypoints = null;  // reset only after sustained absence
+            if (noBodyFrames > 90) smoothedKeypoints = null;
           }
-        } catch (_) {
+        } catch (err) {
+          log('Pose frame failed: ' + (err.message || err), 'err');
           currentKeypoints = null;
         }
       }
+
       if (customSkel) customSkel.update(dt);
       noBodyEl.style.opacity = (currentState === 'preview' && noBodyFrames > 60) ? '1' : '0';
       drawOverlay();
@@ -333,7 +494,7 @@
     rafId = requestAnimationFrame(loop);
   }
 
-  /* â”€â”€ Overlay drawing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Overlay drawing ------------------------------------------------------- */
   function resizeOverlay() {
     overlay.width  = overlay.offsetWidth  || window.innerWidth;
     overlay.height = overlay.offsetHeight || (window.innerHeight - 56);
@@ -355,12 +516,11 @@
   }
 
   function drawSkeleton(kps, W, H) {
-    const vW = video.videoWidth  || W;
+    const vW = video.videoWidth || W;
     const vH = video.videoHeight || H;
 
     if (customSkel) {
-      // Normalise raw video-pixel keypoints to [0â€“1] for custom-skel-draw.js
-      const normKps = kps.map(kp => ({
+      const normKps = kps.landmarks || kps.map(kp => ({
         x: kp.x / vW,
         y: kp.y / vH,
         s: kp.score,
@@ -369,26 +529,33 @@
       return;
     }
 
-    // Fallback: faint blue-line skeleton while custom assets are loading
-    const sx = W / vW, sy = H / vH;
+    const fallbackPts = kps.landmarks || kps;
+    const useNormalisedPts = fallbackPts === kps.landmarks;
+    const px = kp => useNormalisedPts ? kp.x * W : kp.x * (W / vW);
+    const py = kp => useNormalisedPts ? kp.y * H : kp.y * (H / vH);
+    const score = kp => kp.score ?? kp.s ?? kp.visibility ?? 0;
+
     ctx.save();
-    ctx.strokeStyle = 'rgba(138,188,218,0.20)';
-    ctx.lineWidth   = 1;
+    ctx.strokeStyle = 'rgba(215,56,76,0.42)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     ctx.beginPath();
     CONNECTIONS.forEach(([a, b]) => {
-      const ka = kps[a], kb = kps[b];
-      if (!ka || !kb || ka.score < 0.20 || kb.score < 0.20) return;
-      ctx.moveTo(ka.x * sx, ka.y * sy);
-      ctx.lineTo(kb.x * sx, kb.y * sy);
+      const ka = fallbackPts[a], kb = fallbackPts[b];
+      if (!ka || !kb || score(ka) < 0.24 || score(kb) < 0.24) return;
+      ctx.moveTo(px(ka), py(ka));
+      ctx.lineTo(px(kb), py(kb));
     });
     ctx.stroke();
-    const ls = kps[5], rs = kps[6];
-    if (ls && rs && ls.score > 0.25 && rs.score > 0.25) {
+    ctx.fillStyle = 'rgba(215,56,76,0.82)';
+    fallbackPts.forEach((kp, i) => {
+      if (!FALLBACK_BODY_DOTS.has(i)) return;
+      if (!kp || score(kp) < 0.30) return;
       ctx.beginPath();
-      ctx.arc(((ls.x + rs.x) / 2) * sx, ((ls.y + rs.y) / 2) * sy, 5, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(238,246,248,0.70)';
+      ctx.arc(px(kp), py(kp), 3.5, 0, Math.PI * 2);
       ctx.fill();
-    }
+    });
     ctx.restore();
   }
 
@@ -417,7 +584,7 @@
     ctx.restore();
   }
 
-  /* Faint full-body outline â€” shows when body isn't detected so user knows where to stand. */
+  /* Faint full-body outline - shows when body isn't detected so user knows where to stand. */
   function drawFramingGuide(W, H) {
     const cx  = W / 2;
     const sc  = H * 0.26;    // scale relative to canvas height
@@ -446,22 +613,22 @@
     ctx.beginPath();
     ctx.moveTo(cx - sc * 0.33, mid - sc * 0.49);
     ctx.lineTo(cx + sc * 0.33, mid - sc * 0.49);
-    // L arm â†’ elbow â†’ wrist
+    // L arm -> elbow -> wrist
     ctx.moveTo(cx - sc * 0.33, mid - sc * 0.49);
     ctx.lineTo(cx - sc * 0.27, mid - sc * 0.14);
     ctx.lineTo(cx - sc * 0.22, mid + sc * 0.12);
-    // R arm â†’ elbow â†’ wrist
+    // R arm -> elbow -> wrist
     ctx.moveTo(cx + sc * 0.33, mid - sc * 0.49);
     ctx.lineTo(cx + sc * 0.27, mid - sc * 0.14);
     ctx.lineTo(cx + sc * 0.22, mid + sc * 0.12);
     // Hip bar
     ctx.moveTo(cx - sc * 0.18, mid);
     ctx.lineTo(cx + sc * 0.18, mid);
-    // L leg â†’ knee â†’ ankle
+    // L leg -> knee -> ankle
     ctx.moveTo(cx - sc * 0.12, mid);
     ctx.lineTo(cx - sc * 0.13, mid + sc * 0.26);
     ctx.lineTo(cx - sc * 0.14, mid + sc * 0.53);
-    // R leg â†’ knee â†’ ankle
+    // R leg -> knee -> ankle
     ctx.moveTo(cx + sc * 0.12, mid);
     ctx.lineTo(cx + sc * 0.13, mid + sc * 0.26);
     ctx.lineTo(cx + sc * 0.14, mid + sc * 0.53);
@@ -470,7 +637,7 @@
     ctx.restore();
   }
 
-  /* â”€â”€ Recording â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Recording ------------------------------------------------------------- */
   function startRecording() {
     samples           = [];
     skeletonSnapshots = [];
@@ -483,7 +650,7 @@
       if (currentKeypoints) sampleFrame(currentKeypoints);
     }, SAMPLE_INTERVAL);
 
-    // Full skeleton snapshot every 400 ms (50 snapshots over 20 s)
+    // Full skeleton snapshot every 400 ms.
     skeletonIv = setInterval(() => {
       if (currentKeypoints && skeletonSnapshots.length < SKELETON_MAX) {
         captureSkeletonSnapshot(currentKeypoints);
@@ -507,7 +674,7 @@
     clearInterval(elapsedIv);
     clearInterval(skeletonIv);
     sampleIv = elapsedIv = skeletonIv = null;
-    log('Recording stopped â€” ' + samples.length + ' samples, ' + skeletonSnapshots.length + ' skeleton frames');
+    log('Recording stopped - ' + samples.length + ' samples, ' + skeletonSnapshots.length + ' skeleton frames');
 
     if (samples.length < 2) {
       log('Too few samples, returning to preview', 'err');
@@ -518,14 +685,14 @@
     renderReviewTrace();
   }
 
-  /* â”€â”€ Spine-proxy sample: shoulder midpoint (T1 vertebra equivalent) â”€â”€â”€â”€â”€â”€â”€ *
+  /* -- Spine-proxy sample: shoulder midpoint (T1 vertebra equivalent) ------- *
    *                                                                            *
    * WHY: The composite centroid of all 17 joints barely moves during           *
-   * scoliosis exercises â€” bilateral symmetry cancels out. The shoulder         *
+   * scoliosis exercises - bilateral symmetry cancels out. The shoulder         *
    * midpoint (left[5] + right[6]) tracks the top of the functional spine       *
    * and produces clear, intentional arcs during lateral bends, rotations,      *
    * and Schroth exercises. Visually it becomes the path of the spine apex.     *
-   * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+   * --------------------------------------------------------------------------- */
   function sampleFrame(keypoints) {
     const now = Date.now();
     const vW  = video.videoWidth  || 1280;
@@ -571,21 +738,31 @@
     lastKeypoints = keypoints.slice();
   }
 
-  /* â”€â”€ Full-body skeleton snapshot (saved every 400 ms during recording) â”€â”€â”€â”€â”€â”€ */
+  /* -- Full-body skeleton snapshot (saved every 400 ms during recording) ------ */
   function captureSkeletonSnapshot(keypoints) {
     const vW = video.videoWidth  || 1280;
     const vH = video.videoHeight || 720;
     skeletonSnapshots.push({
-      t:  Date.now() - recordingStart,
+      t: Date.now() - recordingStart,
+      model: keypoints.model || 'mediapipe_pose_landmarker',
       kp: keypoints.map(kpt => ({
         x: kpt.x / vW,
         y: kpt.y / vH,
         s: kpt.score,
       })),
+      landmarks: (keypoints.landmarks || []).map(kpt => ({
+        name: kpt.name,
+        x: kpt.x,
+        y: kpt.y,
+        z: kpt.z || 0,
+        s: kpt.score,
+        visibility: kpt.visibility,
+        presence: kpt.presence,
+      })),
     });
   }
 
-  /* â”€â”€ Path smoothing â€” moving average removes pose-detection jitter â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Path smoothing - moving average removes pose landmark jitter --------- */
   function smoothSamples(pts) {
     return pts.map((p, i) => {
       const lo = Math.max(0, i - SMOOTH_RADIUS);
@@ -599,7 +776,7 @@
     });
   }
 
-  /* â”€â”€ Visual params â€” 5 movement qualities â†’ unique rendering fingerprint â”€â”€â”€ */
+  /* -- Visual params - 5 movement qualities -> unique rendering fingerprint --- */
   function computeVisualParams(pts) {
     const fallback = {
       vertebraCount: 12, tubeRadius: 0.034,
@@ -647,12 +824,58 @@
     };
   }
 
-  /* â”€â”€ Review: render smoothed 2D trace preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ *
+  /* -- Review: render smoothed 2D trace preview ------------------------------ *
    * Draws segments with time-fading opacity so repeated oscillations read as   *
    * intentional density (motion history) rather than random scribble.          *
    * Earlier segments = faint; later segments = bright.                         *
-   * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+   * --------------------------------------------------------------------------- */
+  function renderReviewSkeleton() {
+    if (!reviewCv || !customSkel || skeletonSnapshots.length < 2) return false;
+    stopReviewAnimation();
+
+    const W = reviewCv.width = reviewCv.offsetWidth;
+    const H = reviewCv.height = reviewCv.offsetHeight;
+    const rc = reviewCv.getContext('2d');
+    if (W < 1 || H < 1) return false;
+
+    const frames = skeletonSnapshots
+      .map(f => ({ kp: f.landmarks && f.landmarks.length ? f.landmarks : f.kp }))
+      .filter(f => f.kp && f.kp.length);
+    if (frames.length < 2) return false;
+
+    let last = 0;
+    let playhead = 0;
+    function frame(ts) {
+      if (!last) last = ts;
+      const dt = Math.min((ts - last) / 1000, 0.05);
+      last = ts;
+      customSkel.update(dt);
+      playhead = (playhead + dt * 5.5) % frames.length;
+      const ph = Math.floor(playhead);
+
+      rc.fillStyle = '#07090B';
+      rc.fillRect(0, 0, W, H);
+      const grad = rc.createRadialGradient(W * 0.5, H * 0.48, 0, W * 0.5, H * 0.48, Math.max(W, H) * 0.58);
+      grad.addColorStop(0, 'rgba(74,143,170,0.10)');
+      grad.addColorStop(0.55, 'rgba(196,160,96,0.055)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      rc.fillStyle = grad;
+      rc.fillRect(0, 0, W, H);
+
+      for (let t = 7; t >= 1; t--) {
+        const idx = (ph - t + frames.length * 3) % frames.length;
+        customSkel.draw(rc, frames[idx].kp, W, H, 0.045 + (7 - t) * 0.018);
+      }
+      customSkel.draw(rc, frames[ph].kp, W, H, 0.92);
+      reviewAnimId = requestAnimationFrame(frame);
+    }
+
+    reviewAnimId = requestAnimationFrame(frame);
+    return true;
+  }
+
   function renderReviewTrace() {
+    if (renderReviewSkeleton()) return;
     if (!reviewCv || samples.length < 2) return;
     stopReviewAnimation();
 
@@ -869,9 +1092,9 @@
     reviewAnimId = requestAnimationFrame(frame);
   }
 
-  /* â”€â”€ Save to Supabase â†’ redirect to ar.html?trace=<id> â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Save to Supabase -> redirect to ar.html?trace=<id> -------------------- */
   async function saveTrace() {
-    log('Preparing to save â€” ' + samples.length + ' raw samples');
+    log('Preparing to save - ' + samples.length + ' raw samples');
     setState('saving');
 
     // 1. Smooth the captured path
@@ -885,13 +1108,14 @@
     log('After smooth + downsample: ' + strokeData.length + ' points');
 
     const visual_params = computeVisualParams(downsampled);
+    if (chosenColour) visual_params.colour = chosenColour;
     log('visual_params: vertebrae=' + visual_params.vertebraCount
       + ' radius=' + visual_params.tubeRadius
       + ' orient=' + visual_params.orientation);
 
     let _saveTimer;
     const _timeout = new Promise((_, reject) => {
-      _saveTimer = setTimeout(() => reject(new Error('save timed out — check connection')), 15000);
+      _saveTimer = setTimeout(() => reject(new Error('save timed out - check connection')), 15000);
     });
 
     try {
@@ -916,7 +1140,8 @@
       }
 
       log('Saved! trace ID: ' + data.id, 'ok');
-      transitionToSaved(data.id);
+      savedTraceId = data.id;
+      window.location.href = 'garden.html?trace=' + data.id + '&plant=1';
 
     } catch (e) {
       clearTimeout(_saveTimer);
@@ -927,29 +1152,27 @@
   }
 
   /* ── Post-save: snapshot canvas + share / download ────────────────────────── */
-  function transitionToSaved(traceId) {
-    savedTraceId = traceId;
-    const savedCv = document.getElementById('g-saved-canvas');
-    savedCv.width  = reviewCv.width;
-    savedCv.height = reviewCv.height;
-    savedCv.getContext('2d').drawImage(reviewCv, 0, 0);
-    stopReviewAnimation();
-    setState('saved');
+  function getPreviewBlob() {
+    const cv = reviewCv || document.getElementById('g-saved-canvas');
+    return new Promise(resolve => {
+      if (!cv || !cv.toBlob) { resolve(null); return; }
+      cv.toBlob(blob => resolve(blob), 'image/png', 0.92);
+    });
   }
 
   async function shareTrace() {
-    if (!savedTraceId) return;
-    const traceUrl = new URL('ar.html?trace=' + savedTraceId, location.href).href;
+    const traceUrl = savedTraceId
+      ? new URL('garden.html?trace=' + savedTraceId + '&plant=1', location.href).href
+      : new URL('garden.html', location.href).href;
     const shareData = {
       title: 'The Contradiction of S',
-      text: 'My movement trace in the garden.',
-      url: traceUrl,
+      text: 'My movement capture for the garden.',
     };
+    if (savedTraceId) shareData.url = traceUrl;
     try {
-      const blob = await new Promise(res =>
-        document.getElementById('g-saved-canvas').toBlob(res, 'image/png', 0.92)
-      );
-      const file = new File([blob], 'trace-of-s.png', { type: 'image/png' });
+      const blob = await getPreviewBlob();
+      if (!blob) throw new Error('preview export failed');
+      const file = new File([blob], 'movement-capture.png', { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) shareData.files = [file];
     } catch (_) {}
     if (navigator.share) {
@@ -961,24 +1184,28 @@
     }
   }
 
-  function downloadTrace() {
-    document.getElementById('g-saved-canvas').toBlob(blob => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'trace-of-s.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    }, 'image/png', 0.92);
+  async function downloadTrace() {
+    const blob = await getPreviewBlob();
+    if (!blob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'movement-capture.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
   }
 
-  /* â”€â”€ Button handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Button handlers ------------------------------------------------------- */
   document.getElementById('g-start-btn') .addEventListener('click', startRecording);
   document.getElementById('g-stop-btn')  .addEventListener('click', stopRecording);
   document.getElementById('g-save-btn')  .addEventListener('click', saveTrace);
-  document.getElementById('g-retake-btn').addEventListener('click', () => { samples = []; setState('preview'); });
-  document.getElementById('g-delete-btn').addEventListener('click', () => { samples = []; setState('preview'); });
+  document.getElementById('g-retake-btn').addEventListener('click', resetCapture);
+  const _moreBtn = document.getElementById('g-more-btn');
+  if (_moreBtn) _moreBtn.addEventListener('click', () => {
+    const more = document.getElementById('g-more-actions');
+    if (more) more.hidden = !more.hidden;
+  });
 
   document.getElementById('g-switch-btn').addEventListener('click', () => {
     startCamera(currentFacing === 'user' ? 'environment' : 'user');
@@ -986,16 +1213,49 @@
 
   const _shareBtn = document.getElementById('g-share-btn');
   const _dlBtn    = document.getElementById('g-download-btn');
-  const _enterBtn = document.getElementById('g-enter-btn');
+  const _enterBtn = document.getElementById('g-saved-enter-btn');
   if (_shareBtn)  _shareBtn.addEventListener('click', shareTrace);
   if (_dlBtn)     _dlBtn.addEventListener('click', downloadTrace);
   if (_enterBtn)  _enterBtn.addEventListener('click', () => {
-    window.location.href = 'ar.html' + (savedTraceId ? '?trace=' + savedTraceId : '');
+    window.location.href = 'garden.html' + (savedTraceId ? '?trace=' + savedTraceId + '&plant=1' : '');
   });
+
+  /* ── Colour wheel: tap the star on the review screen to pick your colour ──── */
+  (function () {
+    const wheel  = document.getElementById('g-colour-wheel');
+    const swatch = document.getElementById('g-colour-swatch');
+    const hexEl  = document.getElementById('g-colour-hex');
+    if (!wheel) return;
+    const sampler = document.createElement('canvas');
+    let sctx = null;
+    function ensureSampler() {
+      if (sctx) return true;
+      const w = wheel.naturalWidth, h = wheel.naturalHeight;
+      if (!w || !h) return false;
+      sampler.width = w; sampler.height = h;
+      sctx = sampler.getContext('2d', { willReadFrequently: true });
+      sctx.drawImage(wheel, 0, 0, w, h);
+      return true;
+    }
+    const toHex = n => ('0' + n.toString(16)).slice(-2);
+    wheel.addEventListener('click', (e) => {
+      if (!ensureSampler()) return;
+      const rect = wheel.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left) / rect.width  * sampler.width);
+      const y = Math.floor((e.clientY - rect.top)  / rect.height * sampler.height);
+      let px;
+      try { px = sctx.getImageData(x, y, 1, 1).data; } catch (_) { return; }
+      // Ignore the white/transparent background outside the star shape.
+      if (px[3] < 40 || (px[0] > 244 && px[1] > 244 && px[2] > 244)) return;
+      chosenColour = '#' + toHex(px[0]) + toHex(px[1]) + toHex(px[2]);
+      if (swatch) swatch.style.background = chosenColour;
+      if (hexEl)  hexEl.textContent = chosenColour.toUpperCase();
+    });
+  })();
 
   window.addEventListener('resize', resizeOverlay);
 
-  /* â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Boot ------------------------------------------------------------------ */
   init().catch(e => {
     console.error('[gesture] Unhandled init error:', e);
     const el = document.getElementById('g-loading-status') || document.querySelector('.g-loading-text');
@@ -1005,6 +1265,3 @@
     setState('error');
   });
 })();
-
-
-

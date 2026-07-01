@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Star Lake Asset Concepts</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        background: #09090d;
+        color: #f3f0ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 18% 0%, rgba(96, 217, 220, 0.12), transparent 30rem),
+          radial-gradient(circle at 85% 10%, rgba(213, 126, 255, 0.12), transparent 32rem),
+          #09090d;
+      }
+
+      main {
+        width: min(1440px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 32px 0 48px;
+      }
+
+      header {
+        display: grid;
+        gap: 14px;
+        max-width: 960px;
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 4.25rem);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin: 0;
+        color: #cfc8e8;
+        line-height: 1.55;
+      }
+
+      .prompt {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 16px;
+        border-radius: 8px;
+        color: #ded8f7;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+        gap: 18px;
+      }
+
+      article {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        overflow: hidden;
+        background: rgba(12, 12, 18, 0.92);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+      }
+
+      figure {
+        margin: 0;
+        background: #000;
+      }
+
+      img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        object-fit: contain;
+        background: #000;
+      }
+
+      .meta {
+        display: grid;
+        gap: 8px;
+        padding: 14px 14px 16px;
+      }
+
+      h2 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0;
+        font-size: 1.05rem;
+        letter-spacing: 0;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(137, 230, 235, 0.32);
+        color: #9ff0f2;
+        font-size: 0.78rem;
+        white-space: nowrap;
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 4px 10px;
+        margin: 0;
+        color: #bdb5d7;
+        font-size: 0.9rem;
+      }
+
+      dt {
+        color: #81799c;
+      }
+
+      dd {
+        margin: 0;
+      }
+
+      a {
+        color: #9ff0f2;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .note {
+        color: #cfc8e8;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Star Lake Asset Concepts</h1>
+        <p>
+          Five fal generations for the surreal sacred star-lake prop. Pick the image
+          direction you want to send into Hunyuan for the first 3D asset pass.
+        </p>
+        <p class="prompt">
+          Prompt direction: isolated 2D render of a stylized 3D game prop; an
+          alien sacred lake in an imperfect organic five-point star shape; broad
+          calm luminous water for a future tiling wave shader; low lavender
+          moonrock or cliff rim; dreamy cyan, violet, opal, and rose-gold tones;
+          asset-library composition with the full silhouette visible.
+        </p>
+      </header>
+
+      <section class="grid" aria-label="Generated star lake concepts">
+        <article>
+          <figure>
+            <img src="star-lake-flux-a.png" alt="Concept A, Flux 2 Max, crystalline moonrock star lake on black background">
+          </figure>
+          <div class="meta">
+            <h2>Concept A <span class="tag">Flux 2 Max</span></h2>
+            <dl>
+              <dt>Seed</dt>
+              <dd>13017</dd>
+              <dt>Read</dt>
+              <dd>Most sculptural and magical; strong cliff rim and crystals, but a busier edge.</dd>
+              <dt>File</dt>
+              <dd><a href="star-lake-flux-a.png">star-lake-flux-a.png</a></dd>
+            </dl>
+          </div>
+        </article>
+
+        <article>
+          <figure>
+            <img src="star-lake-flux-b.png" alt="Concept B, Flux 2 Max, stone basin star lake on black background">
+          </figure>
+          <div class="meta">
+            <h2>Concept B <span class="tag">Flux 2 Max</span></h2>
+            <dl>
+              <dt>Seed</dt>
+              <dd>48291</dd>
+              <dt>Read</dt>
+              <dd>Best clear star silhouette and model-like rim; more constructed, less natural.</dd>
+              <dt>File</dt>
+              <dd><a href="star-lake-flux-b.png">star-lake-flux-b.png</a></dd>
+            </dl>
+          </div>
+        </article>
+
+        <article>
+          <figure>
+            <img src="star-lake-nano-a.png" alt="Concept C, Nano Banana Pro, hand-painted star lake on light background">
+          </figure>
+          <div class="meta">
+            <h2>Concept C <span class="tag">Nano Banana Pro</span></h2>
+            <dl>
+              <dt>Seed</dt>
+              <dd>75103</dd>
+              <dt>Read</dt>
+              <dd>Cleanest friendly art direction and simple water shape; white plate, but easy reference for Hunyuan.</dd>
+              <dt>File</dt>
+              <dd><a href="star-lake-nano-a.png">star-lake-nano-a.png</a></dd>
+            </dl>
+          </div>
+        </article>
+
+        <article>
+          <figure>
+            <img src="star-lake-nano-b.png" alt="Concept D, Nano Banana Pro, minimal glowing star lake on black background">
+          </figure>
+          <div class="meta">
+            <h2>Concept D <span class="tag">Nano Banana Pro</span></h2>
+            <dl>
+              <dt>Seed</dt>
+              <dd>90241</dd>
+              <dt>Read</dt>
+              <dd>Simplest lake basin and most readable for conversion; softer and less moonrock-cliff detail.</dd>
+              <dt>File</dt>
+              <dd><a href="star-lake-nano-b.png">star-lake-nano-b.png</a></dd>
+            </dl>
+          </div>
+        </article>
+
+        <article>
+          <figure>
+            <img src="star-lake-nano-c.png" alt="Concept E, Nano Banana Pro, large soft star lake with lavender rim">
+          </figure>
+          <div class="meta">
+            <h2>Concept E <span class="tag">Nano Banana Pro</span></h2>
+            <dl>
+              <dt>Seed</dt>
+              <dd>61127</dd>
+              <dt>Read</dt>
+              <dd>Broadest flat water surface and strong rim; has plate spill, but the object is clear.</dd>
+              <dt>File</dt>
+              <dd><a href="star-lake-nano-c.png">star-lake-nano-c.png</a></dd>
+            </dl>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

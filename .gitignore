@@ -20,5 +20,9 @@ node_modules/
 Thumbs.db
 *.log
 
+# ── swim-app (Elemental-Serenity) build cache; its built output lives in web/swim ──
+swim-app/.vite/
+swim-app/dist/
+
 # ── Claude internal files ──────────────────────────────────────────────────────
 .claude/

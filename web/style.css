@@ -786,7 +786,48 @@ hr.divider {
 .star-float-2 { animation: starFloat 8s ease-in-out 1.5s infinite; }
 .star-float-3 { animation: starFloat 7s ease-in-out 3s infinite; }
 
-/* ── Landscape: hide portrait nav bar across all pages ────────────────────── */
+/* ── Landscape: hide nav only on fullscreen camera/canvas pages ───────────────
+   Content pages (body.content) keep their nav so landscape never becomes a
+   navigation dead-end on a tablet. Stage pages (ar, draw) stay chrome-free. */
 @media (orientation: landscape) {
   .bottom-nav { display: none; }
+  body.content .bottom-nav { display: flex; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE & DEVICE-AWARE LAYER  (added 2026-06-27)
+   Targets: visitor phones (iOS/Android), cheap Android tablet, iPad Pro, desktop.
+   Phones (<600px) keep the original 430px design unchanged.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* iOS dynamic-viewport fix: 100vh counts Safari's toolbars and overflows the
+   visible area, pushing the nav/buttons off-screen. Use dvh where supported;
+   the original 100vh rules above remain the fallback for old browsers. */
+@supports (height: 100dvh) {
+  .page           { min-height: 100dvh; }
+  .avatar-creator { min-height: calc(100dvh - var(--nav-h)); }
+  .archive-layout { height: calc(100dvh - var(--nav-h)); }
+}
+
+/* Safe-area insets (iPhone/iPad notch + home indicator). Needs viewport-fit=cover
+   in the page <meta>; env() resolves to 0 elsewhere, so this is inert on Android. */
+.bottom-nav {
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.page:not(.no-nav) {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Adaptive scale-up: on tablets/desktop, widen the content column and lift the
+   base type so the app uses the larger screen instead of stranding a phone-width
+   strip in empty space. Scoped to body.content so full-bleed/stage pages are
+   untouched. The nav rail tracks the same width. */
+@media (min-width: 600px) {
+  body.content        { max-width: 600px; font-size: 16px; }
+  body.content .bottom-nav { max-width: 600px; }
+}
+@media (min-width: 1024px) {
+  body.content        { max-width: 680px; font-size: 17px; }
+  body.content .bottom-nav { max-width: 680px; }
 }

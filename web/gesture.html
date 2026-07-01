@@ -1,11 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
   <title>Record — The Garden of S</title>
+  <link rel="icon" href="icons/app-icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&family=IM+Fell+English:ital@0;1&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="js/device.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,7 +27,7 @@
       color: var(--bone-white);
     }
 
-    /* â”€â”€ Camera feed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* -- Camera feed -------------------------------------------------------- */
     #g-video {
       position: fixed;
       inset: 0 0 var(--nav-h) 0;
@@ -37,7 +39,7 @@
     }
     #g-video.mirrored { transform: scaleX(-1); }
 
-    /* â”€â”€ Skeleton + trail overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* -- Skeleton + trail overlay ------------------------------------------- */
     #g-overlay {
       position: fixed;
       inset: 0 0 var(--nav-h) 0;
@@ -47,7 +49,7 @@
       pointer-events: none;
     }
 
-    /* â”€â”€ State panels â€” all absolute over the camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* -- State panels - all absolute over the camera ------------------------ */
     .s-panel {
       position: fixed;
       inset: 0 0 var(--nav-h) 0;
@@ -57,8 +59,14 @@
       pointer-events: none;
     }
     .s-panel.hidden { display: none; }
+    html.has-cos-nav-top #g-video,
+    html.has-cos-nav-top #g-overlay,
+    html.has-cos-nav-top .s-panel {
+      top: var(--cosnav-top-h, 52px);
+      height: calc(100% - var(--cosnav-top-h, 52px));
+    }
 
-    /* â”€â”€ LOADING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* -- LOADING ----------------------------------------------------------- */
     #s-loading {
       justify-content: center;
       gap: 20px;
@@ -105,7 +113,7 @@
     @keyframes gLoadDraw { to { stroke-dashoffset: 0; } }
     @keyframes gLoadFill { to { fill-opacity: 1; } }
 
-    /* â”€â”€ PREVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* -- PREVIEW ----------------------------------------------------------- */
     #s-preview {
       justify-content: space-between;
       padding: 28px 0 80px;
@@ -184,7 +192,7 @@
       color: rgba(200,216,224,0.28);
     }
 
-    /* Switch camera â€” top right corner */
+    /* Switch camera - top right corner */
     #g-switch-btn {
       position: absolute;
       top: 18px; right: 18px;
@@ -200,7 +208,7 @@
     }
     #g-switch-btn svg { opacity: 0.45; }
 
-    /* â”€â”€ RECORDING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* -- RECORDING ---------------------------------------------------------- */
     #s-recording {
       justify-content: space-between;
       padding: 22px 0 80px;
@@ -274,11 +282,12 @@
       padding: 0 40px;
     }
 
-    /* â”€â”€ REVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* -- REVIEW ------------------------------------------------------------- */
     #s-review {
       background: rgba(6,10,14,0.92);
-      justify-content: flex-end;
-      padding-bottom: 80px;
+      justify-content: center;
+      gap: 26px;
+      padding-bottom: 40px;
       pointer-events: auto;
     }
     #g-review-header {
@@ -303,11 +312,7 @@
       letter-spacing: 0.02em;
     }
     #g-review-canvas {
-      position: absolute;
-      top: 100px;
-      left: 20px; right: 20px;
-      bottom: 180px;
-      border-radius: 2px;
+      display: none;   /* skeleton preview removed — the colour wheel is the focus */
     }
     #g-review-actions {
       display: flex;
@@ -335,7 +340,18 @@
     #g-save-btn:active { border-color: rgba(200,216,224,0.9); color: var(--vert-white); }
     #g-review-secondary {
       display: flex;
-      gap: 40px;
+      gap: 28px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    #g-more-actions {
+      display: flex;
+      gap: 28px;
+      justify-content: center;
+      width: 100%;
+    }
+    #g-more-actions[hidden] {
+      display: none;
     }
     .g-secondary-btn {
       background: none;
@@ -351,7 +367,7 @@
     }
     .g-secondary-btn:active { color: rgba(200,216,224,0.55); }
 
-    /* â”€â”€ SAVING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* -- SAVING ------------------------------------------------------------- */
     #s-saving {
       justify-content: center;
       gap: 22px;
@@ -367,7 +383,7 @@
       padding: 0 40px;
     }
 
-    /* â”€â”€ ERROR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* -- ERROR -------------------------------------------------------------- */
     #s-error {
       justify-content: center;
       gap: 20px;
@@ -395,8 +411,26 @@
       cursor: pointer;
       border-radius: 2px;
     }
+    #g-error-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      max-width: 420px;
+    }
+    .g-error-link {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: rgba(238,246,248,0.68);
+      border: 1px solid rgba(238,246,248,0.24);
+      border-radius: 999px;
+      padding: 11px 15px;
+    }
 
-    /* â”€â”€ Debug panel â€” hidden by default; show with ?debug=1 in URL â”€â”€â”€â”€â”€â”€â”€ */
+    /* -- Debug panel - hidden by default; show with ?debug=1 in URL ------- */
     #g-debug {
       display: none;   /* hidden unless ?debug=1 */
       position: fixed;
@@ -434,13 +468,13 @@
       user-select: none;
     }
     #g-debug-title::after {
-      content: '  â–¾ tap to expand';
+      content: '  v tap to expand';
       opacity: 0.35;
       font-size: 7px;
       letter-spacing: 0.1em;
     }
-    #g-debug.expanded #g-debug-title::after { content: '  â–´ tap to collapse'; }
-    #g-debug.compact  #g-debug-title::after { content: '  â–¸'; }
+    #g-debug.expanded #g-debug-title::after { content: '  ^ tap to collapse'; }
+    #g-debug.compact  #g-debug-title::after { content: '  >'; }
     .g-debug-line { opacity: 0.9; }
     .g-debug-line.err { color: #ff6060; }
     .g-debug-line.ok  { color: #60ffb0; }
@@ -563,7 +597,7 @@
       width: 100%;
       padding: 0 40px;
     }
-    #g-share-btn {
+    #g-saved-share-btn {
       width: 100%;
       padding: 16px;
       background: transparent;
@@ -578,7 +612,7 @@
       -webkit-tap-highlight-color: transparent;
       transition: border-color 0.15s, color 0.15s;
     }
-    #g-share-btn:active { border-color: rgba(200,216,224,0.9); color: var(--vert-white); }
+    #g-saved-share-btn:active { border-color: rgba(200,216,224,0.9); color: var(--vert-white); }
     #g-saved-secondary {
       display: flex;
       gap: 40px;
@@ -598,7 +632,7 @@
 
   <!-- Debug panel (remove before exhibition) -->
   <div id="g-debug">
-    <div id="g-debug-title">debug â€” pain archive</div>
+      <div id="g-debug-title">debug — body capture</div>
   </div>
 
   <!-- Camera feed -->
@@ -608,23 +642,23 @@
   <canvas id="g-overlay"></canvas>
 
   <!-- No body detected hint -->
-  <div id="g-no-body">step into the frame. the archive is waiting.</div>
+  <div id="g-no-body">step into the frame so the body can be seen.</div>
 
-  <!-- â”€â”€ LOADING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- -- LOADING ------------------------------------------------------------ -->
   <div id="s-loading" class="s-panel">
     <div id="g-load-star">
       <svg viewBox="20 5 95 128" width="72" height="98" aria-hidden="true">
         <path id="g-load-path" d="M87.085930,112.291977 C87.572365,118.436356 84.936508,122.692001 80.475388,125.776062 C79.209877,126.650932 76.959808,126.824310 75.477005,126.344215 C74.780518,126.118713 74.106544,123.203819 74.655014,122.148003 C82.258606,107.511009 78.160362,93.264801 73.525200,79.006416 C73.271065,78.224655 72.916862,77.475433 72.153320,75.578255 C69.586800,78.171249 67.274574,80.344925 65.168297,82.702576 C64.085670,83.914413 63.668297,85.904953 62.414822,86.733917 C60.785385,87.811508 58.614010,88.498367 56.696087,88.455223 C56.104683,88.441917 54.830772,85.317093 55.157734,83.918076 C56.355686,78.792221 57.333950,73.380386 59.795483,68.834641 C64.527908,60.095222 62.808609,53.363026 56.219818,46.403652 C47.612812,37.312546 39.602207,27.640726 31.670940,17.943981 C30.534494,16.554565 30.405281,13.103568 31.347885,11.525060 C32.994530,8.767548 35.188736,10.713937 37.072407,12.229750 C46.336731,19.684841 55.642582,27.088642 64.972946,34.460972 C66.213142,35.440903 67.677017,36.137764 69.717751,37.379879 C70.247086,32.780041 70.341873,28.837475 71.270874,25.102400 C71.793129,23.002674 73.693115,21.245625 74.972412,19.334194 C76.645515,21.057970 79.184067,22.512033 79.821838,24.558470 C81.432358,29.726280 82.652786,35.114651 83.185081,40.498142 C84.181145,50.571987 93.044281,52.366066 99.438469,56.749794 C101.745857,58.331696 104.606964,59.122131 106.858139,60.763668 C108.181648,61.728756 109.919022,64.234489 109.506714,65.031555 C108.656593,66.674965 106.659142,68.213638 104.827682,68.749580 C101.853340,69.619995 98.642738,69.832390 95.514717,69.997208 C88.998024,70.340591 87.686745,71.570351 89.131592,77.779541 C91.832253,89.385628 89.799370,100.622772 87.085930,112.291977 z"/>
       </svg>
     </div>
-    <div class="g-loading-text" id="g-loading-status">the archive stirs.</div>
+    <div class="g-loading-text" id="g-loading-status">the camera is learning the body.</div>
     <div id="g-loading-sub">first visit learns to see the body — give it a moment</div>
   </div>
 
-  <!-- â”€â”€ PREVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- -- PREVIEW ------------------------------------------------------------ -->
   <div id="s-preview" class="s-panel hidden">
     <div id="g-prompt-wrap">
-      <div id=”g-eyebrow”>The Garden of S — Body Capture</div>
+      <div id="g-eyebrow">The Garden of S — Body Capture</div>
       <div id="g-prompt-text"></div>
     </div>
     <div id="g-body-hint">move in frame so your whole body is visible</div>
@@ -639,59 +673,75 @@
     </button>
   </div>
 
-  <!-- â”€â”€ RECORDING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- -- RECORDING ---------------------------------------------------------- -->
   <div id="s-recording" class="s-panel hidden">
     <div id="g-progress-wrap"><div id="g-progress-bar"></div></div>
     <div id="g-rec-top">
       <div id="g-rec-dot"></div>
-      <div id="g-countdown">20</div>
+      <div id="g-countdown">10</div>
     </div>
     <button id="g-stop-btn" aria-label="Stop recording"></button>
-    <div id=”g-recording-note”>move freely &mdash; recording stops automatically</div>
+    <div id="g-recording-note">move freely &mdash; recording stops automatically</div>
   </div>
 
-  <!-- â”€â”€ REVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- -- REVIEW ------------------------------------------------------------- -->
   <div id="s-review" class="s-panel hidden">
     <div id="g-review-header">
-      <div id="g-review-eyebrow">Your movement trace</div>
-      <div id="g-review-title">this trace will enter the archive</div>
+      <div id="g-review-eyebrow">Your movement capture</div>
+      <div id="g-review-title">your recorded movement is ready</div>
     </div>
     <canvas id="g-review-canvas"></canvas>
+    <div id="g-colour-pick" style="display:flex;flex-direction:column;align-items:center;gap:18px;margin:0;">
+      <div id="g-colour-prompt" style="font-family:'Space Grotesk',sans-serif;font-size:13px;letter-spacing:0.30em;text-transform:uppercase;color:rgba(200,216,224,0.62);">choose your colour</div>
+      <img id="g-colour-wheel" src="assets/ui/star-colour-wheel.png" alt="Colour wheel — tap to choose your colour" draggable="false" style="width:min(440px,46vh);height:auto;cursor:crosshair;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 6px 24px rgba(0,0,0,0.55));">
+      <div id="g-colour-readout" style="display:flex;align-items:center;gap:12px;font-family:'Space Grotesk',sans-serif;font-size:16px;letter-spacing:0.16em;color:rgba(238,246,248,0.88);">
+        <span id="g-colour-swatch" aria-hidden="true" style="width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,0.4);background:transparent;display:inline-block;"></span>
+        <span id="g-colour-hex">tap the star</span>
+      </div>
+    </div>
     <div id="g-review-actions">
-      <button id="g-save-btn">Save this trace</button>
+      <button id="g-save-btn">Enter garden</button>
       <div id="g-review-secondary">
-        <button class="g-secondary-btn" id="g-retake-btn">Record again</button>
-        <button class="g-secondary-btn" id="g-delete-btn">Discard</button>
+        <button class="g-secondary-btn" id="g-retake-btn">Discard and recapture</button>
+        <button class="g-secondary-btn" id="g-more-btn">More</button>
+      </div>
+      <div id="g-more-actions" hidden>
+        <button class="g-secondary-btn" id="g-download-btn">Save to device</button>
+        <button class="g-secondary-btn" id="g-share-btn">Share</button>
       </div>
     </div>
   </div>
 
-  <!-- â”€â”€ SAVING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
-  <div id=”s-saving” class=”s-panel hidden”>
-    <div class=”g-spinner”></div>
-    <div id=”g-saving-text”>Your trace is entering the archive&hellip;</div>
+  <!-- -- SAVING -------------------------------------------------------------- -->
+  <div id="s-saving" class="s-panel hidden">
+    <div class="g-spinner"></div>
+    <div id="g-saving-text">Planting your movement in the garden&hellip;</div>
   </div>
 
   <!-- ── SAVED ─────────────────────────────────────────────────────────────────── -->
-  <div id=”s-saved” class=”s-panel hidden”>
-    <div id=”g-saved-header”>
-      <div id=”g-saved-eyebrow”>trace released</div>
-      <div id=”g-saved-title”>it is now in the garden</div>
+  <div id="s-saved" class="s-panel hidden">
+    <div id="g-saved-header">
+      <div id="g-saved-eyebrow">trace released</div>
+      <div id="g-saved-title">it is now in the garden</div>
     </div>
-    <canvas id=”g-saved-canvas”></canvas>
-    <div id=”g-saved-actions”>
-      <button id=”g-share-btn”>Share this trace</button>
-      <div id=”g-saved-secondary”>
-        <button class=”g-secondary-btn” id=”g-download-btn”>Download</button>
-        <button class=”g-secondary-btn” id=”g-enter-btn”>Enter the garden</button>
+    <canvas id="g-saved-canvas"></canvas>
+    <div id="g-saved-actions">
+      <button id="g-saved-share-btn">Share this trace</button>
+      <div id="g-saved-secondary">
+        <button class="g-secondary-btn" id="g-saved-download-btn">Download</button>
+        <button class="g-secondary-btn" id="g-saved-enter-btn">Enter the garden</button>
       </div>
     </div>
   </div>
 
-  <!-- â”€â”€ ERROR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- -- ERROR --------------------------------------------------------------- -->
   <div id="s-error" class="s-panel hidden">
     <div id="g-error-text">Camera access is required.<br>Please allow camera in your browser settings and reload.</div>
-    <button id="g-error-retry" onclick="location.reload()">Reload</button>
+    <div id="g-error-actions">
+      <button id="g-error-retry" onclick="location.reload()">Reload</button>
+      <a class="g-error-link" href="garden.html">Garden</a>
+      <a class="g-error-link" href="character.html">Character builder</a>
+    </div>
   </div>
 
   <!-- Step indicator bar -->
@@ -795,21 +845,18 @@
       // Poetic text phases — override gesture.js status messages
       var el = document.getElementById('g-loading-status');
       window._setLoadPhase = function(txt) { if (el) el.textContent = txt; };
-      window._setLoadPhase('the archive stirs.');
+      window._setLoadPhase('learning to see the body.');
       setTimeout(function() { window._setLoadPhase('learning to see the body.'); }, 2400);
       setTimeout(function() { window._setLoadPhase('almost.'); }, 4800);
     })();
   </script>
 
   <script src="js/transitions.js"></script>
-  <script src="js/swipe-nav.js"></script>
-  <!-- TF.js full bundle (includes core, webgl backend, converter) + MoveNet -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"></script>
+  <script src="js/nav.js"></script>
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <!-- Gesture logic -->
-  <script type="module" src="js/gesture.js?v=10"></script>
+  <script type="module" src="js/gesture.js?v=15"></script>
 
   <!-- Step indicator logic -->
   <script>
@@ -898,6 +945,3 @@
 
 </body>
 </html>
-
-
-
